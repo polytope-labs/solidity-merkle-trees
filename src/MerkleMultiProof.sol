@@ -24,30 +24,30 @@ library MerkleMultiProof {
         Node[] memory previous_layer;
 
         for (uint256 layer = 0; layer < proof.length; layer++) {
-            Node[] memory layer_nodes;
-            if (previous_layer[0].node == bytes32(0)) {
-                layer_nodes = proof[layer];
+            Node[] memory current_layer;
+            if (previous_layer.length == 0) {
+                current_layer = proof[layer];
             } else {
-                layer_nodes = merge_proofs(proof[layer], previous_layer);
-                quick_sort(layer_nodes, 0, layer_nodes.length - 1);
+                current_layer = merge_proofs(proof[layer], previous_layer);
+                quick_sort(current_layer, 0, current_layer.length - 1);
                 delete previous_layer;
             }
 
             uint32 i = 0;
-            for (uint256 index = 0; index < layer_nodes.length; index += 2) {
-                if (index + 1 >= layer_nodes.length) {
-                    previous_layer[i] = layer_nodes[index];
+            for (uint256 index = 0; index < current_layer.length; index += 2) {
+                if (index + 1 >= current_layer.length) {
+                    previous_layer[i] = current_layer[index];
                     previous_layer[i].index = div_floor(
-                        layer_nodes[index].index,
+                        current_layer[index].index,
                         2
                     );
                 } else {
                     Node memory node;
-                    node.index = div_floor(layer_nodes[index].index, 2);
+                    node.index = div_floor(current_layer[index].index, 2);
                     node.node = keccak256(
                         abi.encodePacked(
-                            layer_nodes[index].node,
-                            layer_nodes[index + 1].node
+                            current_layer[index].node,
+                            current_layer[index + 1].node
                         )
                     );
                     previous_layer[i] = node;
@@ -56,12 +56,9 @@ library MerkleMultiProof {
             }
         }
 
-        require(previous_layer.length == 2);
+        require(previous_layer.length == 1);
 
-        return
-            keccak256(
-                abi.encodePacked(previous_layer[0].node, previous_layer[1].node)
-            );
+        return previous_layer[0].node;
     }
 
     function div_floor(uint32 x, uint32 y) public pure returns (uint32) {
