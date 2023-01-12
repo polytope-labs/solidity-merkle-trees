@@ -93,12 +93,7 @@ contract MerkleMultiProofTest is Test {
         proof[6] = layer7;
         proof[7] = layer8;
         proof[8] = empty;
-        MerkleMultiProof prover = new MerkleMultiProof();
         
-        assertEq(prover.calculate_multi_root(proof), root);
+        assertEq(MerkleMultiProof.calculateRoot(proof), root);
     }
 }
-
-// no iter methods for mapping
-// no std lib for working with buffers
-// can't fucking initialize arrays

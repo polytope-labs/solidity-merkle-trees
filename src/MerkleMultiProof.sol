@@ -2,45 +2,49 @@ pragma solidity ^0.8.17;
 
 // SPDX-License-Identifier: Apache2
 struct Node {
-    uint32 index;
+    uint256 index;
     bytes32 node;
 }
 
 library MerkleMultiProof {
-    function verifyMultiProof(bytes32 root, Node[][] calldata proof)
+    function verifyProof(bytes32 root, Node[][] calldata proof)
         public
         pure
         returns (bool)
     {
-        return root == calculateMultiRoot(proof);
+        return root == calculateRoot(proof);
     }
 
-    function calculateMultiRoot(Node[][] calldata proof)
+    function calculateRoot(Node[][] calldata proof)
         public
         pure
         returns (bytes32)
     {
         // holds the output from hashing a previous layer
-        Node[] memory previous_layer;
+        Node[] memory next_layer = new Node[](0);
 
-        for (uint256 layer = 0; layer < proof.length; layer++) {
-            Node[] memory current_layer;
-            if (previous_layer.length == 0) {
-                current_layer = proof[layer];
+        for (uint256 height = 0; height < proof.length; height++) {
+            Node[] memory current_layer = new Node[](0);
+
+            if (next_layer.length == 0) {
+                current_layer = proof[height];
             } else {
-                current_layer = merge_proofs(proof[layer], previous_layer);
+                current_layer = new Node[](
+                    proof[height].length + next_layer.length
+                );
+                merge_arrays(current_layer, proof[height], next_layer);
                 quick_sort(current_layer, 0, current_layer.length - 1);
-                delete previous_layer;
+                delete next_layer;
             }
 
-            uint32 i = 0;
+            next_layer = new Node[](div_ceil(current_layer.length, 2));
+
+            uint256 p = 0;
             for (uint256 index = 0; index < current_layer.length; index += 2) {
                 if (index + 1 >= current_layer.length) {
-                    previous_layer[i] = current_layer[index];
-                    previous_layer[i].index = div_floor(
-                        current_layer[index].index,
-                        2
-                    );
+                    Node memory node = current_layer[index];
+                    node.index = div_floor(current_layer[index].index, 2);
+                    next_layer[p] = node;
                 } else {
                     Node memory node;
                     node.index = div_floor(current_layer[index].index, 2);
@@ -50,21 +54,26 @@ library MerkleMultiProof {
                             current_layer[index + 1].node
                         )
                     );
-                    previous_layer[i] = node;
+                    next_layer[p] = node;
+                    p++;
                 }
-                i++;
             }
         }
 
-        require(previous_layer.length == 1);
+        // we should have arrived at the root node
+        require(next_layer.length == 1);
 
-        return previous_layer[0].node;
+        return next_layer[0].node;
     }
 
-    function div_floor(uint32 x, uint32 y) public pure returns (uint32) {
-        uint32 result = x / y;
+    function div_floor(uint256 x, uint256 y) internal pure returns (uint256) {
+        return x / y;
+    }
+
+    function div_ceil(uint256 x, uint256 y) internal pure returns (uint256) {
+        uint256 result = x / y;
         if (x % y != 0) {
-            result - 1;
+            result += 1;
         }
 
         return result;
@@ -74,44 +83,43 @@ library MerkleMultiProof {
         Node[] memory arr,
         uint256 left,
         uint256 right
-    ) public pure {
+    ) internal pure {
         uint256 i = left;
         uint256 j = right;
         if (i == j) return;
         uint256 pivot = arr[uint256(left + (right - left) / 2)].index;
         while (i <= j) {
             while (arr[uint256(i)].index < pivot) i++;
-            while (pivot < arr[uint256(j)].index) j--;
+            while (pivot < arr[uint256(j)].index) if (j > 0) j--;
             if (i <= j) {
                 (arr[uint256(i)], arr[uint256(j)]) = (
                     arr[uint256(j)],
                     arr[uint256(i)]
                 );
                 i++;
-                j--;
+                if (j > 0) j--;
             }
         }
         if (left < j) quick_sort(arr, left, j);
         if (i < right) quick_sort(arr, i, right);
     }
 
-    function merge_proofs(Node[] memory proof1, Node[] memory proof2)
-        public
-        pure
-        returns (Node[] memory)
-    {
-        Node[] memory returnArr = new Node[](proof1.length + proof2.length);
-
+    function merge_arrays(
+        Node[] memory out,
+        Node[] memory arr1,
+        Node[] memory arr2
+    ) internal pure {
+        // merge the two arrays
         uint256 i = 0;
-        for (; i < proof1.length; i++) {
-            returnArr[i] = proof1[i];
+        for (; i < arr1.length; i++) {
+            out[i] = arr1[i];
         }
 
         uint256 j = 0;
-        while (j < proof1.length) {
-            returnArr[i++] = proof2[j++];
+        while (j < arr2.length) {
+            out[i] = arr2[j];
+            i++;
+            j++;
         }
-
-        return returnArr;
     }
 }
