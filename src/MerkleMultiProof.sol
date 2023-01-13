@@ -33,6 +33,7 @@ library MerkleMultiProof {
                     proof[height].length + next_layer.length
                 );
                 merge_arrays(current_layer, proof[height], next_layer);
+                // todo: use insertion sort.
                 quick_sort(current_layer, 0, current_layer.length - 1);
                 delete next_layer;
             }
@@ -61,7 +62,7 @@ library MerkleMultiProof {
         }
 
         // we should have arrived at the root node
-//        require(next_layer.length == 1);
+        require(next_layer.length == 1);
 
         return next_layer[0].node;
     }

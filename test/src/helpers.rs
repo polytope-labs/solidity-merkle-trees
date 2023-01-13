@@ -1,25 +1,34 @@
-use std::fmt::Debug;
-use std::path::{Path, PathBuf};
-use ethers::abi::{Detokenize, Tokenize};
-use ethers::solc::{Project, ProjectCompileOutput, ProjectPathsConfig};
-use forge::executor::opts::{Env, EvmOpts};
-use forge::{ContractRunner, MultiContractRunner, MultiContractRunnerBuilder};
-use forge::executor::inspector::CheatsConfig;
-use once_cell::sync::Lazy;
-use ethers::types::U256;
-use forge::result::TestSetup;
-use foundry_config::{Config, FsPermissions, RpcEndpoint, RpcEndpoints};
-use foundry_config::fs_permissions::PathPermission;
+use ethers::{
+    abi::{Detokenize, Tokenize},
+    solc::{Project, ProjectCompileOutput, ProjectPathsConfig},
+    types::U256,
+};
+use forge::{
+    executor::{
+        inspector::CheatsConfig,
+        opts::{Env, EvmOpts},
+    },
+    result::TestSetup,
+    ContractRunner, MultiContractRunner, MultiContractRunnerBuilder,
+};
+use foundry_config::{
+    fs_permissions::PathPermission, Config, FsPermissions, RpcEndpoint, RpcEndpoints,
+};
 use foundry_evm::executor::{Backend, ExecutorBuilder};
+use once_cell::sync::Lazy;
+use std::{
+    fmt::Debug,
+    path::{Path, PathBuf},
+};
 
-pub static PROJECT: Lazy<Project> = Lazy::new(|| {
+static PROJECT: Lazy<Project> = Lazy::new(|| {
     let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     root = PathBuf::from(root.parent().unwrap().clone());
     let paths = ProjectPathsConfig::builder().root(root.clone()).sources(root).build().unwrap();
     Project::builder().paths(paths).ephemeral().no_artifacts().build().unwrap()
 });
 
-pub static EVM_OPTS: Lazy<EvmOpts> = Lazy::new(|| EvmOpts {
+static EVM_OPTS: Lazy<EvmOpts> = Lazy::new(|| EvmOpts {
     env: Env {
         gas_limit: 18446744073709551615,
         chain_id: Some(foundry_common::DEV_CHAIN_ID),
@@ -35,7 +44,7 @@ pub static EVM_OPTS: Lazy<EvmOpts> = Lazy::new(|| EvmOpts {
     ..Default::default()
 });
 
-pub static COMPILED: Lazy<ProjectCompileOutput> = Lazy::new(|| {
+static COMPILED: Lazy<ProjectCompileOutput> = Lazy::new(|| {
     let out = (*PROJECT).compile().unwrap();
     if out.has_compiler_errors() {
         eprintln!("{out}");
@@ -45,11 +54,11 @@ pub static COMPILED: Lazy<ProjectCompileOutput> = Lazy::new(|| {
 });
 
 /// Builds a base runner
-pub fn base_runner() -> MultiContractRunnerBuilder {
+fn base_runner() -> MultiContractRunnerBuilder {
     MultiContractRunnerBuilder::default().sender(EVM_OPTS.sender)
 }
 
-pub fn manifest_root() -> PathBuf {
+fn manifest_root() -> PathBuf {
     let mut root = Path::new(env!("CARGO_MANIFEST_DIR"));
     // need to check here where we're executing the test from, if in `forge` we need to also allow
     // `testdata`
@@ -59,15 +68,8 @@ pub fn manifest_root() -> PathBuf {
     root.to_path_buf()
 }
 
-/// Builds a non-tracing runner
-pub fn runner() -> MultiContractRunner {
-    let mut config = Config::with_root(PROJECT.root());
-    config.fs_permissions = FsPermissions::new(vec![PathPermission::read_write(manifest_root())]);
-    runner_with_config(config)
-}
-
 /// the RPC endpoints used during tests
-pub fn rpc_endpoints() -> RpcEndpoints {
+fn rpc_endpoints() -> RpcEndpoints {
     RpcEndpoints::new([
         (
             "rpcAlias",
@@ -80,7 +82,7 @@ pub fn rpc_endpoints() -> RpcEndpoints {
 }
 
 /// Builds a non-tracing runner
-pub fn runner_with_config(mut config: Config) -> MultiContractRunner {
+fn runner_with_config(mut config: Config) -> MultiContractRunner {
     config.rpc_endpoints = rpc_endpoints();
     config.allow_paths.push(manifest_root());
 
@@ -96,14 +98,28 @@ pub fn runner_with_config(mut config: Config) -> MultiContractRunner {
         .unwrap()
 }
 
-pub fn execute<T: Tokenize, R: Detokenize + Debug>(runner: &mut MultiContractRunner, contract_name: &'static str, fn_name: &'static str, args: T) {
+/// Builds a non-tracing runner
+pub fn runner() -> MultiContractRunner {
+    let mut config = Config::with_root(PROJECT.root());
+    config.fs_permissions = FsPermissions::new(vec![PathPermission::read_write(manifest_root())]);
+    runner_with_config(config)
+}
+
+pub fn execute<T, R>(
+    runner: &mut MultiContractRunner,
+    contract_name: &'static str,
+    fn_name: &'static str,
+    args: T,
+) where
+    T: Tokenize,
+    R: Detokenize + Debug,
+{
     let db = Backend::spawn(runner.fork.take());
 
-    let (_, (abi, deploy_code, libs)) = runner.contracts
+    let (_, (abi, deploy_code, libs)) = runner
+        .contracts
         .iter()
-        .find(|(id, (abi, _, _))| {
-            id.name == contract_name && abi.functions.contains_key(fn_name)
-        })
+        .find(|(id, (abi, _, _))| id.name == contract_name && abi.functions.contains_key(fn_name))
         .unwrap();
 
     let function = abi.functions.get(fn_name).unwrap().first().unwrap().clone();
@@ -130,15 +146,17 @@ pub fn execute<T: Tokenize, R: Detokenize + Debug>(runner: &mut MultiContractRun
     let setup = single_runner.setup(false).unwrap();
     let TestSetup { address, .. } = setup;
 
-    let result = single_runner.executor.execute_test::<R, _, _>(
-        single_runner.sender,
-        address,
-        function,
-        args,
-        0.into(),
-        single_runner.errors,
-    ).unwrap();
-
+    let result = single_runner
+        .executor
+        .execute_test::<R, _, _>(
+            single_runner.sender,
+            address,
+            function,
+            args,
+            0.into(),
+            single_runner.errors,
+        )
+        .unwrap();
 
     println!("{:#?}", result.result)
 }
