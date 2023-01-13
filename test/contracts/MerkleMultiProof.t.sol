@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import "../src/MerkleMultiProof.sol";
+import "../../src/MerkleMultiProof.sol";
 
 contract MerkleMultiProofTest is Test {
     function testVerify() public {
@@ -71,7 +71,7 @@ contract MerkleMultiProofTest is Test {
             1,
             0x48459896facce34edda5a7bbc502c1436a7b21bb6eafd4e234b938e7d8d814a2
         );
- 
+
         Node[] memory layer7 = new Node[](1);
         layer7[0] = Node(
             1,
@@ -93,7 +93,15 @@ contract MerkleMultiProofTest is Test {
         proof[6] = layer7;
         proof[7] = layer8;
         proof[8] = empty;
-        
+
         assertEq(MerkleMultiProof.calculateRoot(proof), root);
+    }
+
+    function calculateRoot(Node[][] calldata proof)
+    public
+    pure
+    returns (bytes32)
+    {
+        return MerkleMultiProof.calculateRoot(proof);
     }
 }

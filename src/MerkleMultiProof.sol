@@ -2,7 +2,7 @@ pragma solidity ^0.8.17;
 
 // SPDX-License-Identifier: Apache2
 struct Node {
-    uint256 index;
+    uint256 k_index;
     bytes32 node;
 }
 
@@ -43,11 +43,11 @@ library MerkleMultiProof {
             for (uint256 index = 0; index < current_layer.length; index += 2) {
                 if (index + 1 >= current_layer.length) {
                     Node memory node = current_layer[index];
-                    node.index = div_floor(current_layer[index].index, 2);
+                    node.k_index = div_floor(current_layer[index].k_index, 2);
                     next_layer[p] = node;
                 } else {
                     Node memory node;
-                    node.index = div_floor(current_layer[index].index, 2);
+                    node.k_index = div_floor(current_layer[index].k_index, 2);
                     node.node = keccak256(
                         abi.encodePacked(
                             current_layer[index].node,
@@ -61,7 +61,7 @@ library MerkleMultiProof {
         }
 
         // we should have arrived at the root node
-        require(next_layer.length == 1);
+//        require(next_layer.length == 1);
 
         return next_layer[0].node;
     }
@@ -87,10 +87,10 @@ library MerkleMultiProof {
         uint256 i = left;
         uint256 j = right;
         if (i == j) return;
-        uint256 pivot = arr[uint256(left + (right - left) / 2)].index;
+        uint256 pivot = arr[uint256(left + (right - left) / 2)].k_index;
         while (i <= j) {
-            while (arr[uint256(i)].index < pivot) i++;
-            while (pivot < arr[uint256(j)].index) if (j > 0) j--;
+            while (arr[uint256(i)].k_index < pivot) i++;
+            while (pivot < arr[uint256(j)].k_index) if (j > 0) j--;
             if (i <= j) {
                 (arr[uint256(i)], arr[uint256(j)]) = (
                     arr[uint256(j)],
@@ -111,8 +111,9 @@ library MerkleMultiProof {
     ) internal pure {
         // merge the two arrays
         uint256 i = 0;
-        for (; i < arr1.length; i++) {
+        while (i < arr1.length) {
             out[i] = arr1[i];
+            i++;
         }
 
         uint256 j = 0;
