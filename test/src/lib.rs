@@ -8,7 +8,7 @@ mod tests {
 
     #[test]
     fn test_solidity() {
-        let _root = hex!("72b0acd7c302a84f1f6b6cefe0ba7194b7398afb440e1b44a9dbbe270394ca53");
+        let root = hex!("72b0acd7c302a84f1f6b6cefe0ba7194b7398afb440e1b44a9dbbe270394ca53");
         let proof = vec![
             vec![
                 (0, hex!("1a8da6deeedf22a65b8a552ec76a1f7ef67907c1f41c9279981423911e1bb742")),
@@ -51,6 +51,8 @@ mod tests {
 
         let mut runner = runner();
 
-        execute::<_, Token>(&mut runner, "MerkleMultiProofTest", "calculateRoot", (args));
+        let calculated= execute::<_, [u8; 32]>(&mut runner, "MerkleMultiProofTest", "calculateRoot", (args));
+
+        assert_eq!(&root[..], &calculated)
     }
 }

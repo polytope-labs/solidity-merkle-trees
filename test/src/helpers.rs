@@ -12,7 +12,7 @@ use forge::{
     ContractRunner, MultiContractRunner, MultiContractRunnerBuilder,
 };
 use foundry_config::{
-    fs_permissions::PathPermission, Config, FsPermissions, RpcEndpoint, RpcEndpoints,
+    fs_permissions::PathPermission, Config, FsPermissions,
 };
 use foundry_evm::executor::{Backend, ExecutorBuilder};
 use once_cell::sync::Lazy;
@@ -68,22 +68,8 @@ fn manifest_root() -> PathBuf {
     root.to_path_buf()
 }
 
-/// the RPC endpoints used during tests
-fn rpc_endpoints() -> RpcEndpoints {
-    RpcEndpoints::new([
-        (
-            "rpcAlias",
-            RpcEndpoint::Url(
-                "https://eth-mainnet.alchemyapi.io/v2/Lc7oIGYeL_QvInzI0Wiu_pOZZDEKBrdf".to_string(),
-            ),
-        ),
-        ("rpcEnvAlias", RpcEndpoint::Env("${RPC_ENV_ALIAS}".to_string())),
-    ])
-}
-
 /// Builds a non-tracing runner
 fn runner_with_config(mut config: Config) -> MultiContractRunner {
-    config.rpc_endpoints = rpc_endpoints();
     config.allow_paths.push(manifest_root());
 
     base_runner()
@@ -110,7 +96,8 @@ pub fn execute<T, R>(
     contract_name: &'static str,
     fn_name: &'static str,
     args: T,
-) where
+) -> R
+where
     T: Tokenize,
     R: Detokenize + Debug,
 {
@@ -158,5 +145,7 @@ pub fn execute<T, R>(
         )
         .unwrap();
 
-    println!("{:#?}", result.result)
+    println!("Gas used: {:#?}\nGas refunded: {:#?}", result.gas_used, result.gas_refunded);
+
+    result.result
 }
