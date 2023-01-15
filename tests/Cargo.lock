@@ -1388,7 +1388,7 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 [[package]]
 name = "forge"
 version = "0.2.0"
-source = "git+https://github.com/foundry-rs/foundry?rev=nightly-925626516788be4274ba70f47e82ba30f58b5fbb#925626516788be4274ba70f47e82ba30f58b5fbb"
+source = "git+https://github.com/polytope-labs/foundry?branch=seun/support-forge-lib#4d6875906992933e076b254f2e5d9c9ce7a55620"
 dependencies = [
  "comfy-table",
  "ethers",
@@ -1417,7 +1417,7 @@ dependencies = [
 [[package]]
 name = "forge-fmt"
 version = "0.2.0"
-source = "git+https://github.com/foundry-rs/foundry?rev=nightly-925626516788be4274ba70f47e82ba30f58b5fbb#925626516788be4274ba70f47e82ba30f58b5fbb"
+source = "git+https://github.com/polytope-labs/foundry?branch=seun/support-forge-lib#4d6875906992933e076b254f2e5d9c9ce7a55620"
 dependencies = [
  "ethers-core",
  "foundry-config",
@@ -1439,7 +1439,7 @@ dependencies = [
 [[package]]
 name = "foundry-common"
 version = "0.1.0"
-source = "git+https://github.com/foundry-rs/foundry?rev=nightly-925626516788be4274ba70f47e82ba30f58b5fbb#925626516788be4274ba70f47e82ba30f58b5fbb"
+source = "git+https://github.com/polytope-labs/foundry?branch=seun/support-forge-lib#4d6875906992933e076b254f2e5d9c9ce7a55620"
 dependencies = [
  "atty",
  "clap 4.0.32",
@@ -1468,7 +1468,7 @@ dependencies = [
 [[package]]
 name = "foundry-config"
 version = "0.2.0"
-source = "git+https://github.com/foundry-rs/foundry?rev=nightly-925626516788be4274ba70f47e82ba30f58b5fbb#925626516788be4274ba70f47e82ba30f58b5fbb"
+source = "git+https://github.com/polytope-labs/foundry?branch=seun/support-forge-lib#4d6875906992933e076b254f2e5d9c9ce7a55620"
 dependencies = [
  "Inflector",
  "dirs-next",
@@ -1497,7 +1497,7 @@ dependencies = [
 [[package]]
 name = "foundry-evm"
 version = "0.2.0"
-source = "git+https://github.com/foundry-rs/foundry?rev=nightly-925626516788be4274ba70f47e82ba30f58b5fbb#925626516788be4274ba70f47e82ba30f58b5fbb"
+source = "git+https://github.com/polytope-labs/foundry?branch=seun/support-forge-lib#4d6875906992933e076b254f2e5d9c9ce7a55620"
 dependencies = [
  "auto_impl 1.0.1",
  "bytes",
@@ -1529,7 +1529,7 @@ dependencies = [
 [[package]]
 name = "foundry-macros"
 version = "0.1.0"
-source = "git+https://github.com/foundry-rs/foundry?rev=nightly-925626516788be4274ba70f47e82ba30f58b5fbb#925626516788be4274ba70f47e82ba30f58b5fbb"
+source = "git+https://github.com/polytope-labs/foundry?branch=seun/support-forge-lib#4d6875906992933e076b254f2e5d9c9ce7a55620"
 dependencies = [
  "ethers-core",
  "foundry-common",
@@ -1539,7 +1539,7 @@ dependencies = [
 [[package]]
 name = "foundry-macros-impl"
 version = "0.0.0"
-source = "git+https://github.com/foundry-rs/foundry?rev=nightly-925626516788be4274ba70f47e82ba30f58b5fbb#925626516788be4274ba70f47e82ba30f58b5fbb"
+source = "git+https://github.com/polytope-labs/foundry?branch=seun/support-forge-lib#4d6875906992933e076b254f2e5d9c9ce7a55620"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1549,7 +1549,7 @@ dependencies = [
 [[package]]
 name = "foundry-utils"
 version = "0.2.0"
-source = "git+https://github.com/foundry-rs/foundry?rev=nightly-925626516788be4274ba70f47e82ba30f58b5fbb#925626516788be4274ba70f47e82ba30f58b5fbb"
+source = "git+https://github.com/polytope-labs/foundry?branch=seun/support-forge-lib#4d6875906992933e076b254f2e5d9c9ce7a55620"
 dependencies = [
  "ethers-addressbook",
  "ethers-contract",
@@ -3091,6 +3091,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "rs_merkle"
+version = "1.1.0"
+source = "git+https://github.com/polytope-labs/rs-merkle?branch=seun/2d-merkle-proofs#924cc14574c08df8dfd7dde80c8963c718bab62f"
+dependencies = [
+ "sha2 0.9.9",
+]
+
+[[package]]
 name = "rustc-hex"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3486,8 +3494,10 @@ dependencies = [
  "foundry-common",
  "foundry-config",
  "foundry-evm",
+ "hex",
  "hex-literal",
  "once_cell",
+ "rs_merkle",
 ]
 
 [[package]]

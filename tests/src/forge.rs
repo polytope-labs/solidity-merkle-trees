@@ -11,9 +11,7 @@ use forge::{
     result::TestSetup,
     ContractRunner, MultiContractRunner, MultiContractRunnerBuilder,
 };
-use foundry_config::{
-    fs_permissions::PathPermission, Config, FsPermissions,
-};
+use foundry_config::{fs_permissions::PathPermission, Config, FsPermissions};
 use foundry_evm::executor::{Backend, ExecutorBuilder};
 use once_cell::sync::Lazy;
 use std::{
@@ -125,7 +123,7 @@ where
         abi,
         deploy_code.clone(),
         runner.evm_opts.initial_balance,
-        None,
+        runner.sender,
         runner.errors.as_ref(),
         libs,
     );
@@ -145,7 +143,7 @@ where
         )
         .unwrap();
 
-    println!("Gas used: {:#?}\nGas refunded: {:#?}", result.gas_used, result.gas_refunded);
+    println!("Gas used: {:#?}", result.gas_used);
 
     result.result
 }
