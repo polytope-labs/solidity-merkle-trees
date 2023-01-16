@@ -1,0 +1,18 @@
+[package]
+name = "solidity-merkle-trees-test"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+forge = { git = "https://github.com/polytope-labs/foundry", branch = "seun/support-forge-lib" }
+foundry-common = { git = "https://github.com/polytope-labs/foundry", branch = "seun/support-forge-lib" }
+foundry-config = { git = "https://github.com/polytope-labs/foundry", branch = "seun/support-forge-lib" }
+foundry-evm = { git = "https://github.com/polytope-labs/foundry", branch = "seun/support-forge-lib" }
+ethers = { git = "https://github.com/gakonst/ethers-rs", default-features = false, features = [
+    "solc-full",
+    "solc-tests",
+] }
+once_cell = "1.17.0"
+hex-literal = "0.3.4"
+rs_merkle = { git = "https://github.com/polytope-labs/rs-merkle", branch = "seun/2d-merkle-proofs" }
+hex = "0.4.3"
