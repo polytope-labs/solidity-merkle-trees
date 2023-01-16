@@ -3,11 +3,7 @@ pub mod forge;
 #[cfg(test)]
 mod tests {
     use crate::forge::{execute, runner};
-    use ethers::{
-        abi::Token,
-        types::U256,
-        utils::keccak256,
-    };
+    use ethers::{abi::Token, types::U256, utils::keccak256};
     use hex_literal::hex;
     use rs_merkle::{Hasher, MerkleTree};
 
@@ -199,22 +195,8 @@ mod tests {
 
         let tree = MerkleTree::<Keccak256>::from_leaves(&leaf_hashes);
 
-        let leaves = vec![
-            0,
-            2,
-            5,
-            9,
-            20,
-            25,
-            31,
-        ];
-
-        let leaves_with_indices = leaves
-            .iter()
-            .map(|i| {
-                (*i, leaf_hashes[*i])
-            })
-            .collect::<Vec<_>>();
+        let leaves = vec![0, 2, 5, 9, 20, 25, 31];
+        let leaves_with_indices = leaves.iter().map(|i| (*i, leaf_hashes[*i])).collect::<Vec<_>>();
 
         let mut proof = tree.proof_2d(&leaves);
         proof[0].extend(leaves_with_indices.iter());
@@ -238,8 +220,12 @@ mod tests {
 
         let mut runner = runner();
 
-        let calculated =
-            execute::<_, [u8; 32]>(&mut runner, "MerkleMultiProofTest", "testCalculateRoot", (args));
+        let calculated = execute::<_, [u8; 32]>(
+            &mut runner,
+            "MerkleMultiProofTest",
+            "testCalculateRoot",
+            (args),
+        );
 
         assert_eq!(tree.root().unwrap(), calculated)
     }
