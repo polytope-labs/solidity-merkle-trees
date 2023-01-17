@@ -465,6 +465,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ckb-merkle-mountain-range"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56ccb671c5921be8a84686e6212ca184cb1d7c51cadcdbfcbd1cc3f042f5dfb8"
+dependencies = [
+ "cfg-if",
+]
+
+[[package]]
 name = "clap"
 version = "3.2.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3489,6 +3498,7 @@ dependencies = [
 name = "solidity-merkle-trees-test"
 version = "0.1.0"
 dependencies = [
+ "ckb-merkle-mountain-range",
  "ethers",
  "forge",
  "foundry-common",

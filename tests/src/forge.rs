@@ -143,7 +143,7 @@ where
         )
         .unwrap();
 
-    println!("Gas used: {:#?}", result.gas_used);
+    println!("Gas used {fn_name}: {:#?}", result.gas_used);
 
     result.result
 }

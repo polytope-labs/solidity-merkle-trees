@@ -2,6 +2,9 @@ pub mod forge;
 
 #[cfg(test)]
 mod tests {
+    use ckb_merkle_mountain_range::helper::{get_peaks, pos_height_in_tree};
+    use ckb_merkle_mountain_range::{Error, Merge, MMR, mmr_position_to_k_index};
+    use ckb_merkle_mountain_range::util::MemStore;
     use crate::forge::{execute, runner};
     use ethers::{abi::Token, types::U256, utils::keccak256};
     use hex_literal::hex;
@@ -17,6 +20,31 @@ mod tests {
             keccak256(data)
         }
     }
+
+    struct MergeKeccak;
+
+    impl Merge for MergeKeccak {
+        type Item = NumberHash;
+        fn merge(lhs: &Self::Item, rhs: &Self::Item) -> Result<Self::Item, Error> {
+            let mut concat = vec![];
+            concat.extend(&lhs.0);
+            concat.extend(&rhs.0);
+            let hash = keccak256(&concat);
+            Ok(NumberHash(hash.to_vec().into()))
+        }
+    }
+
+    #[derive(Eq, PartialEq, Clone, Debug, Default)]
+    struct NumberHash(pub Vec<u8>);
+
+    impl From<u32> for NumberHash {
+        fn from(num: u32) -> Self {
+            let mut hash = keccak256(&num.to_le_bytes());
+            NumberHash(hash.to_vec())
+        }
+    }
+
+    type MmrLeaf = (u64, u64, [u8; 32]);
 
     #[test]
     fn multi_merkle_proof() {
@@ -228,5 +256,160 @@ mod tests {
         );
 
         assert_eq!(tree.root().unwrap(), calculated)
+    }
+
+    #[test]
+    fn test_mmr_utils() {
+        let mut runner = runner();
+
+        let leading_zeros = execute::<_, U256>(
+            &mut runner,
+            "MerkleMultiProofTest",
+            "countLeadingZeros",
+            (Token::Uint(U256::from(17))),
+        );
+
+        assert_eq!(leading_zeros.as_u32(), 17u64.leading_zeros());
+
+        let count_zeros = execute::<_, U256>(
+            &mut runner,
+            "MerkleMultiProofTest",
+            "countZeroes",
+            (Token::Uint(U256::from(17))),
+        );
+
+        assert_eq!(count_zeros.as_u32(), 17u64.count_zeros());
+
+        let count_ones = execute::<_, U256>(
+            &mut runner,
+            "MerkleMultiProofTest",
+            "countOnes",
+            (Token::Uint(U256::from(17))),
+        );
+
+        assert_eq!(count_ones.as_u32(), 17u64.count_ones());
+
+        for pos in [45, 98, 200, 412] {
+            let height = execute::<_, U256>(
+                &mut runner,
+                "MerkleMultiProofTest",
+                "posToHeight",
+                (Token::Uint(U256::from(pos))),
+            );
+
+            assert_eq!(height.as_u32(), pos_height_in_tree(pos));
+        }
+
+        let left = vec![1, 2, 3, 4].into_iter().map(|n| Token::Uint(U256::from(n))).collect();
+        let right = vec![2, 4, 5, 6, 7].into_iter().map(|n| Token::Uint(U256::from(n))).collect();
+
+        let height = execute::<_, Vec<u64>>(
+            &mut runner,
+            "MerkleMultiProofTest",
+            "difference",
+            (Token::Array(left), Token::Array(right)),
+        );
+
+        assert_eq!(height, vec![1, 3]);
+
+        let input: Vec<_> = vec![1, 1, 1, 2, 2, 4, 4, 4, 5, 6, 6, 6, 6, 7].into_iter().map(|n| Token::Uint(U256::from(n))).collect();
+
+        let result = execute::<_, Vec<u64>>(
+            &mut runner,
+            "MerkleMultiProofTest",
+            "removeDuplicates",
+            (input),
+        );
+
+        assert_eq!(vec![1, 2, 4, 5, 6, 7], result);
+    }
+
+    #[test]
+    fn test_merkle_mountain_range() {
+        let mut runner = runner();
+
+        for pos in [45, 98, 200, 412] {
+            let peaks = execute::<_, Vec<u64>>(
+                &mut runner,
+                "MerkleMultiProofTest",
+                "getPeaks",
+                (Token::Uint(U256::from(pos))),
+            );
+
+            assert_eq!(peaks, get_peaks(pos));
+        }
+
+        let store = MemStore::default();
+        let mut mmr = MMR::<_, MergeKeccak, _>::new(0, &store);
+        let positions: Vec<u64> = (0u32..=13)
+            .map(|i| mmr.push(NumberHash::from(i)).unwrap())
+            .collect();
+        let root = mmr.get_root().expect("get root");
+        let proof = mmr
+            .gen_proof(vec![
+                positions[2],
+                positions[5],
+                positions[8],
+                positions[10],
+                positions[12],
+            ])
+            .unwrap();
+
+        let leaves = vec![
+            (NumberHash::from(2), positions[2]),
+            (NumberHash::from(5), positions[5]),
+            (NumberHash::from(8), positions[8]),
+            (NumberHash::from(10), positions[10]),
+            (NumberHash::from(12), positions[12]),
+        ]
+            .into_iter()
+            .map(|(a, b)| (b, a))
+            .collect::<Vec<_>>();
+
+        let positions = leaves.iter().map(|(pos, _)| *pos).collect();
+        let pos_with_index = mmr_position_to_k_index(positions, proof.mmr_size());
+
+        let mut custom_leaves = pos_with_index
+            .into_iter()
+            .zip(leaves.clone())
+            .map(|((pos, index), (_, leaf))| {
+                let mut hash = [0u8; 32];
+                hash.copy_from_slice(&leaf.0);
+                (pos, index, hash)
+            })
+            .collect::<Vec<_>>();
+
+
+        custom_leaves.sort_by(|(a_pos, _, _), (b_pos, _, _)| a_pos.cmp(b_pos));
+
+        let token_leaves = custom_leaves.into_iter()
+            .map(|(pos, index, hash)| {
+                Token::Tuple(vec![
+                    Token::Uint(U256::from(index)),
+                    Token::Uint(U256::from(pos)),
+                    Token::FixedBytes(hash.to_vec())
+                ])
+            })
+            .collect::<Vec<_>>();
+
+        let nodes = proof
+            .proof_items()
+            .iter()
+            .map(|n| {
+                Token::FixedBytes(n.0.clone())
+            })
+            .collect::<Vec<_>>();
+
+
+        let root = execute::<_, Vec<[u8; 32]>>(
+            &mut runner,
+            "MerkleMultiProofTest",
+            "calculateRoot",
+            (token_leaves, Token::Uint(mmr.mmr_size().into()), nodes),
+        );
+
+        println!("{:?}", root);
+
+        // assert_eq!(root.to_vec(), mmr.get_root().unwrap().0);
     }
 }

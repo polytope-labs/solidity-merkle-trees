@@ -11,3 +11,4 @@ out/
 .env
 
 target/
+.cargo/

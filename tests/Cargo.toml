@@ -16,3 +16,4 @@ once_cell = "1.17.0"
 hex-literal = "0.3.4"
 rs_merkle = { git = "https://github.com/polytope-labs/rs-merkle", branch = "seun/2d-merkle-proofs" }
 hex = "0.4.3"
+ckb-merkle-mountain-range = "0.5.2"
