@@ -7,7 +7,7 @@ struct Node {
 }
 
 library MerkleMultiProof {
-    function verifyProof(bytes32 root, Node[][] calldata proof)
+    function verifyProof(bytes32 root, Node[][] memory proof)
         public
         pure
         returns (bool)
@@ -15,7 +15,7 @@ library MerkleMultiProof {
         return root == calculateRoot(proof);
     }
 
-    function calculateRoot(Node[][] calldata proof)
+    function calculateRoot(Node[][] memory proof)
         public
         pure
         returns (bytes32)
@@ -32,9 +32,9 @@ library MerkleMultiProof {
                 current_layer = new Node[](
                     proof[height].length + next_layer.length
                 );
-                merge_arrays(current_layer, proof[height], next_layer);
-                // todo: use insertion sort.
-                quick_sort(current_layer, 0, current_layer.length - 1);
+                mergeArrays(current_layer, proof[height], next_layer);
+                // todo: insertion sort isn't possible with solidity, sigh.
+                quickSort(current_layer, 0, current_layer.length - 1);
                 delete next_layer;
             }
 
@@ -80,11 +80,11 @@ library MerkleMultiProof {
         return result;
     }
 
-    function quick_sort(
+    function quickSort(
         Node[] memory arr,
         uint256 left,
         uint256 right
-    ) internal pure {
+    ) public pure {
         uint256 i = left;
         uint256 j = right;
         if (i == j) return;
@@ -101,15 +101,15 @@ library MerkleMultiProof {
                 if (j > 0) j--;
             }
         }
-        if (left < j) quick_sort(arr, left, j);
-        if (i < right) quick_sort(arr, i, right);
+        if (left < j) quickSort(arr, left, j);
+        if (i < right) quickSort(arr, i, right);
     }
 
-    function merge_arrays(
+    function mergeArrays(
         Node[] memory out,
         Node[] memory arr1,
         Node[] memory arr2
-    ) internal pure {
+    ) public pure {
         // merge the two arrays
         uint256 i = 0;
         while (i < arr1.length) {
