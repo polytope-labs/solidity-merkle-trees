@@ -1,34 +1,38 @@
-name: test
+name: Rust
 
-on: workflow_dispatch
+on: [push, pull_request]
 
 env:
-  FOUNDRY_PROFILE: ci
+  CARGO_TERM_COLOR: always
 
 jobs:
-  check:
-    strategy:
-      fail-fast: true
-
-    name: Foundry project
+  test:
+    name: Test
     runs-on: ubuntu-latest
+    working-directory: ./test
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
         with:
-          submodules: recursive
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
+          profile: minimal
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
         with:
-          version: nightly
+          command: test
 
-      - name: Run Forge build
-        run: |
-          forge --version
-          forge build --sizes
-        id: build
-
-      - name: Run Forge tests
-        run: |
-          forge test -vvv
-        id: test
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    working-directory: ./test
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: rustfmt
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check

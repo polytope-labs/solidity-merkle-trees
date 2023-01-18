@@ -376,12 +376,6 @@ library MerkleMountainRange {
         return (pos - (msb - 1));
     }
 
-    function onesComplement(uint64 x) public pure returns (uint64) {
-        uint256 n = floorLog2(uint256(x)) + 1;
-        return uint64(((1 << n) - 1) ^ n);
-    }
-
-
     function countLeadingZeros(uint64 num) public pure returns (uint64) {
         uint64 size = 64;
         uint64 count = 0;

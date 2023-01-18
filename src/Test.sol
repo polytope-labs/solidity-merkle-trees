@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "./MerkleMultiProof.sol";
 import "./MerkleMountainRange.sol";
 
-contract MerkleMultiProofTest is Test {
+contract MerkleTests is Test {
     function testCalculateRoot(Node[][] calldata proof)
     public
     pure

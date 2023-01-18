@@ -253,7 +253,7 @@ fn multi_merkle_proof() {
     let mut runner = runner();
 
     let calculated =
-        execute::<_, [u8; 32]>(&mut runner, "MerkleMultiProofTest", "testCalculateRoot", (args));
+        execute::<_, [u8; 32]>(&mut runner, "MerkleTests", "testCalculateRoot", (args));
 
     assert_eq!(tree.root().unwrap(), calculated)
 }
@@ -264,7 +264,7 @@ fn test_mmr_utils() {
 
     let leading_zeros = execute::<_, U256>(
         &mut runner,
-        "MerkleMultiProofTest",
+        "MerkleTests",
         "countLeadingZeros",
         (Token::Uint(U256::from(17))),
     );
@@ -273,7 +273,7 @@ fn test_mmr_utils() {
 
     let count_zeros = execute::<_, U256>(
         &mut runner,
-        "MerkleMultiProofTest",
+        "MerkleTests",
         "countZeroes",
         (Token::Uint(U256::from(17))),
     );
@@ -282,7 +282,7 @@ fn test_mmr_utils() {
 
     let count_ones = execute::<_, U256>(
         &mut runner,
-        "MerkleMultiProofTest",
+        "MerkleTests",
         "countOnes",
         (Token::Uint(U256::from(17))),
     );
@@ -293,7 +293,7 @@ fn test_mmr_utils() {
         for pos in [45, 98, 200, 412] {
             let height = execute::<_, U256>(
                 &mut runner,
-                "MerkleMultiProofTest",
+                "MerkleTests",
                 "posToHeight",
                 (Token::Uint(U256::from(pos))),
             );
@@ -308,7 +308,7 @@ fn test_mmr_utils() {
 
         let height = execute::<_, Vec<u64>>(
             &mut runner,
-            "MerkleMultiProofTest",
+            "MerkleTests",
             "difference",
             (Token::Array(left), Token::Array(right)),
         );
@@ -321,7 +321,7 @@ fn test_mmr_utils() {
             vec![2, 5].into_iter().map(|i| Token::Uint(U256::from(i))).collect::<Vec<_>>();
         let siblings = execute::<_, Vec<u64>>(
             &mut runner,
-            "MerkleMultiProofTest",
+            "MerkleTests",
             "siblingIndices",
             (indices),
         );
@@ -350,7 +350,7 @@ fn test_mmr_utils() {
 
         let result = execute::<_, (Vec<(u64, [u8; 32])>, Vec<u64>)>(
             &mut runner,
-            "MerkleMultiProofTest",
+            "MerkleTests",
             "mmrLeafToNode",
             (leaves.clone()),
         );
@@ -360,7 +360,7 @@ fn test_mmr_utils() {
 
         let result = execute::<_, (Vec<MmrLeaf>, Vec<MmrLeaf>)>(
             &mut runner,
-            "MerkleMultiProofTest",
+            "MerkleTests",
             "leavesForPeak",
             (leaves, Token::Uint(U256::from(15))),
         );
@@ -377,7 +377,7 @@ fn test_mmr_utils() {
 
         let result = execute::<_, Vec<u64>>(
             &mut runner,
-            "MerkleMultiProofTest",
+            "MerkleTests",
             "removeDuplicates",
             (input),
         );
@@ -389,7 +389,7 @@ fn test_mmr_utils() {
         for pos in [45, 98, 200, 412] {
             let peaks = execute::<_, Vec<u64>>(
                 &mut runner,
-                "MerkleMultiProofTest",
+                "MerkleTests",
                 "getPeaks",
                 (Token::Uint(U256::from(pos))),
             );
@@ -455,7 +455,7 @@ fn test_merkle_mountain_range() {
 
     let root = execute::<_, [u8; 32]>(
         &mut runner,
-        "MerkleMultiProofTest",
+        "MerkleTests",
         "calculateRoot",
         (token_leaves, Token::Uint(mmr.mmr_size().into()), nodes),
     );
