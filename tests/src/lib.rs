@@ -280,12 +280,8 @@ fn test_mmr_utils() {
 
     assert_eq!(count_zeros.as_u32(), 17u64.count_zeros());
 
-    let count_ones = execute::<_, U256>(
-        &mut runner,
-        "MerkleTests",
-        "countOnes",
-        (Token::Uint(U256::from(17))),
-    );
+    let count_ones =
+        execute::<_, U256>(&mut runner, "MerkleTests", "countOnes", (Token::Uint(U256::from(17))));
 
     assert_eq!(count_ones.as_u32(), 17u64.count_ones());
 
@@ -319,12 +315,8 @@ fn test_mmr_utils() {
     {
         let indices =
             vec![2, 5].into_iter().map(|i| Token::Uint(U256::from(i))).collect::<Vec<_>>();
-        let siblings = execute::<_, Vec<u64>>(
-            &mut runner,
-            "MerkleTests",
-            "siblingIndices",
-            (indices),
-        );
+        let siblings =
+            execute::<_, Vec<u64>>(&mut runner, "MerkleTests", "siblingIndices", (indices));
 
         assert_eq!(siblings, vec![3, 4]);
     }
@@ -375,12 +367,8 @@ fn test_mmr_utils() {
             .map(|n| Token::Uint(U256::from(n)))
             .collect();
 
-        let result = execute::<_, Vec<u64>>(
-            &mut runner,
-            "MerkleTests",
-            "removeDuplicates",
-            (input),
-        );
+        let result =
+            execute::<_, Vec<u64>>(&mut runner, "MerkleTests", "removeDuplicates", (input));
 
         assert_eq!(vec![1, 2, 4, 5, 6, 7], result);
     }

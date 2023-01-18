@@ -16,10 +16,10 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-      - uses: marcopolo/cargo@master
+      - uses: actions-rs/cargo@v1
         with:
-          working-directory: ./test
           command: test
+          args: --manifest-path ./tests/Cargo.toml
 
   fmt:
     name: Rustfmt
@@ -31,8 +31,7 @@ jobs:
           toolchain: stable
           override: true
           components: rustfmt
-      - uses: marcopolo/cargo@master
+      - uses: actions-rs/cargo@v1
         with:
-          working-directory: ./test
           command: fmt
-          args: --all -- --check
+          args: --manifest-path ./tests/Cargo.toml --all -- --check
