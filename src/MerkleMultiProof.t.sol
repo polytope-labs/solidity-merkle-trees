@@ -46,11 +46,20 @@ contract MerkleMultiProofTest is Test {
         return MerkleMountainRange.removeDuplicates(arr);
     }
 
+
+    function siblingIndices(uint256[] memory indices) public pure returns (uint256[] memory) {
+        return MerkleMountainRange.siblingIndices(indices);
+    }
+
+    function mmrLeafToNode(MmrLeaf[] memory leaves) public pure returns (Node[] memory, uint256[] memory) {
+        return MerkleMountainRange.mmrLeafToNode(leaves);
+    }
+
     function calculateRoot(
         MmrLeaf[] memory leaves,
         uint256 mmrSize,
         bytes32[] memory proof
-    ) public pure returns (bytes32[] memory) {
+    ) public pure returns (bytes32) {
         return MerkleMountainRange.calculateRoot(leaves, mmrSize, proof);
     }
 }
