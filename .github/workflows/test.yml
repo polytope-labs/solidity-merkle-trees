@@ -9,7 +9,6 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    working-directory: ./test
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -19,6 +18,7 @@ jobs:
           override: true
       - uses: actions-rs/cargo@v1
         with:
+          cwd: ./test
           command: test
 
   fmt:
@@ -34,5 +34,6 @@ jobs:
           components: rustfmt
       - uses: actions-rs/cargo@v1
         with:
+          cwd: ./test
           command: fmt
           args: --all -- --check
