@@ -24,7 +24,6 @@ jobs:
   fmt:
     name: Rustfmt
     runs-on: ubuntu-latest
-    working-directory: ./test
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
