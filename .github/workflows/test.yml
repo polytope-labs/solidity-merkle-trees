@@ -1,6 +1,6 @@
 name: Rust
 
-on: [push, pull_request]
+on: [pull_request]
 
 env:
   CARGO_TERM_COLOR: always
@@ -16,9 +16,9 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-      - uses: actions-rs/cargo@v1
+      - uses: marcopolo/cargo@master
         with:
-          cwd: ./test
+          working-directory: ./test
           command: test
 
   fmt:
@@ -31,8 +31,8 @@ jobs:
           toolchain: stable
           override: true
           components: rustfmt
-      - uses: actions-rs/cargo@v1
+      - uses: marcopolo/cargo@master
         with:
-          cwd: ./test
+          working-directory: ./test
           command: fmt
           args: --all -- --check
