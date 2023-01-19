@@ -4,7 +4,7 @@
 
 This library contains the implementations of various merkle tree verification algorithms. Currently supported algorithms:
 <br />
- - [x] Merkle Trees (supports unbalanced trees),
+ - [x] Merkle Trees (supports unbalanced trees).
  - [x] Merkle Mountain Ranges.
  - [ ] Merkle-Patricia Trie (Soon™).
 
@@ -23,7 +23,7 @@ You can use it to verify proofs like so:
 ```solidity
 pragma solidity ^0.8.0;
 
-import "@polytope-labs/solidity-merkle-trees/contracts/MerkleMultiProof.sol";
+import "@polytope-labs/solidity-merkle-trees/lib/MerkleMultiProof.sol";
 
 contract YourContract {
     function verify(
@@ -47,7 +47,7 @@ You can use it to verify proofs like so:
 ```solidity
 pragma solidity ^0.8.0;
 
-import "@polytope-labs/solidity-merkle-trees/contracts/MerkleMountainRange.sol";
+import "@polytope-labs/solidity-merkle-trees/lib/MerkleMountainRange.sol";
 
 contract YourContract {
     function verify(
