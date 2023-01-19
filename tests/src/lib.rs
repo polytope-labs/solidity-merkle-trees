@@ -228,11 +228,14 @@ fn multi_merkle_proof() {
     let tree = MerkleTree::<Keccak256>::from_leaves(&leaf_hashes);
 
     let leaves = vec![0, 2, 5, 9, 20, 25, 31];
-    let leaves_with_indices = leaves.iter().map(|i| (*i, leaf_hashes[*i])).collect::<Vec<_>>();
+    let leaves_with_indices = leaves.iter().map(|i| {
+        Token::Tuple(vec![
+            Token::Uint(U256::from(*i)),
+            Token::FixedBytes(leaf_hashes[*i].to_vec())
+        ])
+    }).collect::<Vec<_>>();
 
-    let mut proof = tree.proof_2d(&leaves);
-    proof[0].extend(leaves_with_indices.iter());
-    proof[0].sort_by(|a, b| a.0.cmp(&b.0));
+    let proof = tree.proof_2d(&leaves);
 
     let args = proof
         .into_iter()
@@ -253,7 +256,7 @@ fn multi_merkle_proof() {
     let mut runner = runner();
 
     let calculated =
-        execute::<_, [u8; 32]>(&mut runner, "MerkleTests", "testCalculateRoot", (args));
+        execute::<_, [u8; 32]>(&mut runner, "MerkleTests", "testCalculateRoot", (args, leaves_with_indices));
 
     assert_eq!(tree.root().unwrap(), calculated)
 }
@@ -362,18 +365,6 @@ fn test_mmr_utils() {
     }
 
     {
-        let input: Vec<_> = vec![1, 1, 1, 2, 2, 4, 4, 4, 5, 6, 6, 6, 6, 7]
-            .into_iter()
-            .map(|n| Token::Uint(U256::from(n)))
-            .collect();
-
-        let result =
-            execute::<_, Vec<u64>>(&mut runner, "MerkleTests", "removeDuplicates", (input));
-
-        assert_eq!(vec![1, 2, 4, 5, 6, 7], result);
-    }
-
-    {
         for pos in [45, 98, 200, 412] {
             let peaks = execute::<_, Vec<u64>>(
                 &mut runner,
@@ -445,7 +436,7 @@ fn test_merkle_mountain_range() {
         &mut runner,
         "MerkleTests",
         "calculateRoot",
-        (token_leaves, Token::Uint(mmr.mmr_size().into()), nodes),
+        (nodes, token_leaves, Token::Uint(mmr.mmr_size().into())),
     );
 
     assert_eq!(root.to_vec(), mmr.get_root().unwrap().0);

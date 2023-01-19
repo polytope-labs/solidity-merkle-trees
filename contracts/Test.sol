@@ -6,12 +6,12 @@ import "./MerkleMultiProof.sol";
 import "./MerkleMountainRange.sol";
 
 contract MerkleTests is Test {
-    function testCalculateRoot(Node[][] calldata proof)
+    function testCalculateRoot(Node[][] memory proof, Node[] memory leaves)
     public
     pure
     returns (bytes32)
     {
-        return MerkleMultiProof.calculateRoot(proof);
+        return MerkleMultiProof.calculateRoot(proof, leaves);
     }
 
     function countZeroes(uint64 num) public pure returns (uint256) {
@@ -42,11 +42,6 @@ contract MerkleTests is Test {
         return MerkleMountainRange.difference(left, right);
     }
 
-    function removeDuplicates(uint256[] memory arr) public pure returns (uint256[] memory) {
-        return MerkleMountainRange.removeDuplicates(arr);
-    }
-
-
     function siblingIndices(uint256[] memory indices) public pure returns (uint256[] memory) {
         return MerkleMountainRange.siblingIndices(indices);
     }
@@ -56,10 +51,10 @@ contract MerkleTests is Test {
     }
 
     function calculateRoot(
+        bytes32[] memory proof,
         MmrLeaf[] memory leaves,
-        uint256 mmrSize,
-        bytes32[] memory proof
+        uint256 mmrSize
     ) public pure returns (bytes32) {
-        return MerkleMountainRange.calculateRoot(leaves, mmrSize, proof);
+        return MerkleMountainRange.calculateRoot(proof, leaves, mmrSize);
     }
 }
