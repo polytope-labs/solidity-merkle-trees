@@ -1,8 +1,12 @@
 # `@polytope-labs/solidity-merkle-trees`
 
-![Tests](https://github.com/polytope-labs/solidity-merkle-trees/actions/workflows/test.yml/badge.svg)
+![Unit Tests](https://github.com/polytope-labs/solidity-merkle-trees/actions/workflows/test.yml/badge.svg)
 
-This library contains the implementations of various merkle tree verification algorithms.
+This library contains the implementations of various merkle tree verification algorithms. Currently supported algorithms:
+<br />
+ - [x] Merkle Trees (supports unbalanced trees),
+ - [x] Merkle Mountain Ranges.
+ - [ ] Merkle-Patricia Trie (Soon™).
 
 ## Installation
 
@@ -58,3 +62,7 @@ contract YourContract {
 ```
 
 You can derive the k-indices for the mmr leaves using this rust lib [polytope-labs/merkle-mountain-range](https://github.com/polytope-labs/merkle-mountain-range).
+
+## License
+
+This library is licensed under the [Apache 2.0 License](./LICENSE), Copyright (c) 2023 Polytope Labs.

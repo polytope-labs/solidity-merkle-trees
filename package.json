@@ -1,7 +1,7 @@
 {
   "name": "@polytope-labs/solidity-merkle-trees",
-  "version": "1.0.0",
-  "description": "This library contains the solidity implementations of various merkle tree verification algorithms.",
+  "version": "0.1.0",
+  "description": "The most advanced solidity library for merkle multi proof verification of varying merkle tree constructions.",
   "directories": {
     "lib": "lib",
     "test": "tests"
@@ -24,6 +24,5 @@
   "bugs": {
     "url": "https://github.com/polytope-labs/solidity-merkle-trees/issues"
   },
-  "homepage": "https://github.com/polytope-labs/solidity-merkle-trees#readme",
-  "main": "index.js"
+  "homepage": "https://github.com/polytope-labs/solidity-merkle-trees#readme"
 }
