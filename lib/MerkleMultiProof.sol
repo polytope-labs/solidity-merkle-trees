@@ -7,21 +7,27 @@ struct Node {
 }
 
 library MerkleMultiProof {
-    function verifyProof(bytes32 root, Node[][] memory proof)
+    function verifyProof(bytes32 root, Node[][] memory proof, Node[] memory leaves)
         public
         pure
         returns (bool)
     {
-        return root == calculateRoot(proof);
+        return root == calculateRoot(proof, leaves);
     }
 
-    function calculateRoot(Node[][] memory proof)
+    function calculateRoot(Node[][] memory proof, Node[] memory leaves)
         public
         pure
         returns (bytes32)
     {
         // holds the output from hashing a previous layer
         Node[] memory next_layer = new Node[](0);
+
+        // merge leaves
+        Node[] memory base = new Node[](leaves.length + proof[0].length);
+        mergeArrays(base, leaves, proof[0]);
+        quickSort(base, 0, base.length - 1);
+        proof[0] = base;
 
         for (uint256 height = 0; height < proof.length; height++) {
             Node[] memory current_layer = new Node[](0);
@@ -84,7 +90,7 @@ library MerkleMultiProof {
         Node[] memory arr,
         uint256 left,
         uint256 right
-    ) public pure {
+    ) internal pure {
         uint256 i = left;
         uint256 j = right;
         if (i == j) return;
@@ -109,7 +115,7 @@ library MerkleMultiProof {
         Node[] memory out,
         Node[] memory arr1,
         Node[] memory arr2
-    ) public pure {
+    ) internal pure {
         // merge the two arrays
         uint256 i = 0;
         while (i < arr1.length) {

@@ -13,17 +13,17 @@ struct MmrLeaf {
 library MerkleMountainRange {
     function verifyProof(
         bytes32 root,
+        bytes32[] memory proof,
         MmrLeaf[] memory leaves,
-        uint256 mmrSize,
-        bytes32[] memory proof
+        uint256 mmrSize
     ) public pure returns (bool) {
-        return root == calculateRoot(leaves, mmrSize, proof);
+        return root == calculateRoot(proof, leaves, mmrSize);
     }
 
     function calculateRoot(
+        bytes32[] memory proof,
         MmrLeaf[] memory leaves,
-        uint256 mmrSize,
-        bytes32[] memory proof
+        uint256 mmrSize
     ) public pure returns (bytes32) {
         uint256[] memory peaks = getPeaks(mmrSize);
         bytes32[] memory peakRoots = new bytes32[](peaks.length);
@@ -91,17 +91,9 @@ library MerkleMountainRange {
             }
 
             current_layer = parentIndices(siblings);
-
-            // insert the leaves at the base height
-            if (i == 0) {
-                Node[] memory base = new Node[](leaves.length + layers[0].length);
-                mergeArrays(base, leaves, layers[0]);
-                quickSort(base, 0, base.length - 1);
-                layers[i] = base;
-            }
         }
 
-        return (MerkleMultiProof.calculateRoot(layers), pc);
+        return (MerkleMultiProof.calculateRoot(layers, leaves), pc);
     }
 
     function difference(uint256[] memory left, uint256[] memory right) public pure returns (uint256[] memory) {
@@ -147,84 +139,6 @@ library MerkleMountainRange {
         }
 
         return siblings;
-    }
-
-    function removeDuplicates(uint256[] memory arr) public pure returns (uint256[] memory) {
-        uint256 i = 0;
-        uint256 j = 0;
-        uint256[] memory temp = new uint256[](arr.length);
-        for (; i < arr.length - 1; i++) {
-            if (arr[i] != arr[i + 1]) {
-                temp[j] = arr[i];
-                j++;
-            }
-        }
-        temp[j] = arr[arr.length - 1];
-        j++;
-
-        if (i == j) {
-            return temp;
-        }
-
-        // copy array to new one, sigh solidity.
-        uint256 k = 0;
-        uint256[] memory out = new uint256[](j);
-        while (k < j) {
-            out[k] = temp[k];
-            k++;
-        }
-
-        return out;
-    }
-
-    function quickSort(
-        uint256[] memory arr,
-        uint256 left,
-        uint256 right
-    ) public pure {
-        uint256 i = left;
-        uint256 j = right;
-        if (i == j) return;
-        uint256 pivot = arr[uint256(left + (right - left) / 2)];
-        while (i <= j) {
-            while (arr[uint256(i)] < pivot) i++;
-            while (pivot < arr[uint256(j)]) if (j > 0) j--;
-            if (i <= j) {
-                (arr[uint256(i)], arr[uint256(j)]) = (
-                arr[uint256(j)],
-                arr[uint256(i)]
-                );
-                i++;
-                if (j > 0) j--;
-            }
-        }
-        if (left < j) quickSort(arr, left, j);
-        if (i < right) quickSort(arr, i, right);
-    }
-
-    function quickSort(
-        MmrLeaf[] memory arr,
-        uint256 left,
-        uint256 right
-    ) public pure {
-        uint256 i = left;
-        uint256 j = right;
-        if (i == j) return;
-        uint256 pivot = arr[uint256(left + (right - left) / 2)].mmr_pos;
-        while (i <= j) {
-            while (arr[uint256(i)].mmr_pos < pivot) i++;
-            while (pivot < arr[uint256(j)].mmr_pos) if (j > 0) j--;
-            if (i <= j) {
-                (arr[uint256(i)], arr[uint256(j)]) = (
-                arr[uint256(j)],
-                arr[uint256(i)]
-                );
-                i++;
-                if (j > 0) j--;
-            }
-        }
-        if (left < j) quickSort(arr, left, j);
-        if (i < right) quickSort(arr, i, right);
     }
 
     function parentIndices(uint256[] memory indices) public pure returns (uint256[] memory) {
@@ -456,6 +370,56 @@ library MerkleMountainRange {
         while (i <= j) {
             while (arr[uint256(i)].k_index < pivot) i++;
             while (pivot < arr[uint256(j)].k_index) if (j > 0) j--;
+            if (i <= j) {
+                (arr[uint256(i)], arr[uint256(j)]) = (
+                arr[uint256(j)],
+                arr[uint256(i)]
+                );
+                i++;
+                if (j > 0) j--;
+            }
+        }
+        if (left < j) quickSort(arr, left, j);
+        if (i < right) quickSort(arr, i, right);
+    }
+
+    function quickSort(
+        uint256[] memory arr,
+        uint256 left,
+        uint256 right
+    ) public pure {
+        uint256 i = left;
+        uint256 j = right;
+        if (i == j) return;
+        uint256 pivot = arr[uint256(left + (right - left) / 2)];
+        while (i <= j) {
+            while (arr[uint256(i)] < pivot) i++;
+            while (pivot < arr[uint256(j)]) if (j > 0) j--;
+            if (i <= j) {
+                (arr[uint256(i)], arr[uint256(j)]) = (
+                arr[uint256(j)],
+                arr[uint256(i)]
+                );
+                i++;
+                if (j > 0) j--;
+            }
+        }
+        if (left < j) quickSort(arr, left, j);
+        if (i < right) quickSort(arr, i, right);
+    }
+
+    function quickSort(
+        MmrLeaf[] memory arr,
+        uint256 left,
+        uint256 right
+    ) public pure {
+        uint256 i = left;
+        uint256 j = right;
+        if (i == j) return;
+        uint256 pivot = arr[uint256(left + (right - left) / 2)].mmr_pos;
+        while (i <= j) {
+            while (arr[uint256(i)].mmr_pos < pivot) i++;
+            while (pivot < arr[uint256(j)].mmr_pos) if (j > 0) j--;
             if (i <= j) {
                 (arr[uint256(i)], arr[uint256(j)]) = (
                 arr[uint256(j)],

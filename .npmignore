@@ -1,0 +1,10 @@
+target/
+cache/
+out/
+
+.idea/
+
+lib/forge-std
+
+tests/
+.github/
