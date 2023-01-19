@@ -1,5 +1,7 @@
 # `@polytope-labs/solidity-merkle-trees`
 
+![Tests](https://github.com/polytope-labs/solidity-merkle-trees/actions/workflows/test.yml/badge.svg)
+
 This library contains the implementations of various merkle tree verification algorithms.
 
 ## Installation
