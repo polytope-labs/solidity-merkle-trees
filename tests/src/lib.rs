@@ -228,12 +228,15 @@ fn multi_merkle_proof() {
     let tree = MerkleTree::<Keccak256>::from_leaves(&leaf_hashes);
 
     let leaves = vec![0, 2, 5, 9, 20, 25, 31];
-    let leaves_with_indices = leaves.iter().map(|i| {
-        Token::Tuple(vec![
-            Token::Uint(U256::from(*i)),
-            Token::FixedBytes(leaf_hashes[*i].to_vec())
-        ])
-    }).collect::<Vec<_>>();
+    let leaves_with_indices = leaves
+        .iter()
+        .map(|i| {
+            Token::Tuple(vec![
+                Token::Uint(U256::from(*i)),
+                Token::FixedBytes(leaf_hashes[*i].to_vec()),
+            ])
+        })
+        .collect::<Vec<_>>();
 
     let proof = tree.proof_2d(&leaves);
 
@@ -255,8 +258,12 @@ fn multi_merkle_proof() {
 
     let mut runner = runner();
 
-    let calculated =
-        execute::<_, [u8; 32]>(&mut runner, "MerkleTests", "testCalculateRoot", (args, leaves_with_indices));
+    let calculated = execute::<_, [u8; 32]>(
+        &mut runner,
+        "MerkleTests",
+        "testCalculateRoot",
+        (args, leaves_with_indices),
+    );
 
     assert_eq!(tree.root().unwrap(), calculated)
 }
