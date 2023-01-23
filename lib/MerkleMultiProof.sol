@@ -8,7 +8,7 @@ struct Node {
 
 library MerkleMultiProof {
     function verifyProof(bytes32 root, Node[][] memory proof, Node[] memory leaves)
-        public
+        external
         pure
         returns (bool)
     {
@@ -29,7 +29,8 @@ library MerkleMultiProof {
         quickSort(base, 0, base.length - 1);
         proof[0] = base;
 
-        for (uint256 height = 0; height < proof.length; height++) {
+        uint256 proof_length = proof.length;
+        for (uint256 height = 0; height < proof_length; height++) {
             Node[] memory current_layer = new Node[](0);
 
             if (next_layer.length == 0) {
@@ -47,22 +48,22 @@ library MerkleMultiProof {
             next_layer = new Node[](div_ceil(current_layer.length, 2));
 
             uint256 p = 0;
-            for (uint256 index = 0; index < current_layer.length; index += 2) {
-                if (index + 1 >= current_layer.length) {
+            uint256 current_layer_length = current_layer.length;
+            for (uint256 index = 0; index < current_layer_length; index += 2) {
+                if (index + 1 >= current_layer_length) {
                     Node memory node = current_layer[index];
                     node.k_index = div_floor(current_layer[index].k_index, 2);
                     next_layer[p] = node;
                 } else {
                     Node memory node;
                     node.k_index = div_floor(current_layer[index].k_index, 2);
-                    node.node = keccak256(
-                        abi.encodePacked(
+                    node.node = _optimizedHash(
                             current_layer[index].node,
-                            current_layer[index + 1].node
-                        )
-                    );
+                            current_layer[index + 1].node);
                     next_layer[p] = node;
-                    p++;
+                    unchecked {
+                        p++;
+                    }
                 }
             }
         }
@@ -80,7 +81,9 @@ library MerkleMultiProof {
     function div_ceil(uint256 x, uint256 y) internal pure returns (uint256) {
         uint256 result = x / y;
         if (x % y != 0) {
-            result += 1;
+            unchecked {
+                result += 1;
+            }
         }
 
         return result;
@@ -118,16 +121,35 @@ library MerkleMultiProof {
     ) internal pure {
         // merge the two arrays
         uint256 i = 0;
-        while (i < arr1.length) {
+        uint256 arr1_length = arr1.length;
+        while (i < arr1_length) {
             out[i] = arr1[i];
-            i++;
+            unchecked {
+                i++;
+            }
         }
 
         uint256 j = 0;
-        while (j < arr2.length) {
+        uint256 arr2_length = arr2.length;
+        while (j < arr2_length) {
             out[i] = arr2[j];
-            i++;
-            j++;
+            unchecked {
+                i++;
+                j++;
+            }
+        }
+    }
+
+    /// @notice compute the keccak256 hash of two nodes
+    function _optimizedHash(
+        bytes32 node1,
+        bytes32 node2
+    ) internal pure returns(bytes32 hash) {
+        assembly {
+            // use EVM scratch space, its memory safe
+            mstore(0x0, node1)
+            mstore(0x20, node2)
+            hash := keccak256(0x0, 0x40)
         }
     }
 }
