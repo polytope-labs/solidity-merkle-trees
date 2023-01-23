@@ -8,7 +8,7 @@ struct Node {
 
 library MerkleMultiProof {
     function verifyProof(bytes32 root, Node[][] memory proof, Node[] memory leaves)
-        external
+        public
         pure
         returns (bool)
     {
