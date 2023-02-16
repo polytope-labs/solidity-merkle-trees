@@ -6,4 +6,5 @@ import "./NodeCodec.sol";
 
 interface HashDB {
     function get(bytes32 hash) public returns (Node memory);
+    function length() public returns (uint256);
 }

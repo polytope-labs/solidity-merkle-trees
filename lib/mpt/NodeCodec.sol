@@ -51,12 +51,12 @@ library NodeCodec {
     }
 
     function asInline(NodeHandle node) public view returns (bytes) {
-        return node.inline;
+        return node.inLine;
     }
 
     function loadValue(NodeHandle node, HashDB hashDB) public view returns (bytes) {
         if (node.isInline) {
-            return node.inline;
+            return node.inLine;
         } else if (node.isHash) {
             return hashDB.get(node.hash).opaqueBytes;
         }

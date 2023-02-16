@@ -7,11 +7,13 @@ import "./Node.sol";
 
 contract SubstrateHashDB is HashDB {
     mapping(bytes32 => Node) internal db;
+    uint256 internal len;
 
     constructor(bytes[] proof) {
         for (uint256 i = 0; i < proof.length; i++) {
             db[keccak256(proof[i])] = decode(proof[i]);
         }
+        len = proof.length;
     }
 
     function decode(bytes encoded) internal pure returns (Node) {
@@ -23,5 +25,9 @@ contract SubstrateHashDB is HashDB {
 
     function get(bytes32 hash) public pure returns (Node) {
         return this.db[hash];
+    }
+
+    function length() public returns (uint256) {
+        return len;
     }
 }

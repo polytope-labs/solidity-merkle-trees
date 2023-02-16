@@ -28,11 +28,11 @@ struct NodeHandle {
     bytes32 hash;
 
     bool isInline;
-    Node inline;
+    Node inLine;
 }
 
 struct Extension {
-    NibbleSlice partial;
+    NibbleSlice key;
     NodeHandle node;
 }
 
@@ -42,7 +42,7 @@ struct Branch {
 }
 
 struct NibbledBranch {
-    NibbleSlice partial;
+    NibbleSlice key;
     NodeHandleOption value;
     NodeHandleOption[16] children;
 }
@@ -58,6 +58,6 @@ struct NodeHandleOption {
 }
 
 struct Leaf {
-    NibbleSlice partial;
+    NibbleSlice key;
     NodeHandle value;
 }
