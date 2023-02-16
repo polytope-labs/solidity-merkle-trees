@@ -26,8 +26,8 @@ library MerklePatricia {
 
                     if (NodeCodec.isLeaf(node)) {
                          Leaf leaf = NodeCodec.asLeaf(node);
-                         if (leaf.partial == partial) {
-                              values[i] = leaf.value;
+                         if (NodeSliceOps.eq(leaf.partial, partial)) {
+                              values[i] = NodeCodec.loadValue(leaf.value, hashDB);
                          }
                          break;
                     } else if (NodeCodec.isExtension(node)) {
@@ -44,7 +44,7 @@ library MerklePatricia {
                          Branch branch = NodeCodec.asBranch(node);
                          if (NibbleSliceOps.isEmpty(partial)) {
                               if (Option.isSome(branch.value)) {
-                                   values[i] = branch.value;
+                                   values[i] = NodeCodec.loadValue(branch.value, hashDB);
                               }
                               break;
                          } else {
@@ -64,7 +64,7 @@ library MerklePatricia {
 
                          if (NibbleSliceOps.len(partial) == NibbleSliceOps.len(nibbled.partial)) {
                               if (Option.isSome(nibbled.value)) {
-                                   values[i] = nibbled.value;
+                                   values[i] = NodeCodec.loadValue(nibbled.value, hashDB);
                               }
                               break;
                          } else {

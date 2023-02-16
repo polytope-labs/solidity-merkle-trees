@@ -18,6 +18,9 @@ struct Node {
 
     bool isNibbledBranch;
     NibbledBranch nibbledBranch;
+
+    bool isOpaqueBytes;
+    bytes opaqueBytes;
 }
 
 struct NodeHandle {
@@ -34,13 +37,13 @@ struct Extension {
 }
 
 struct Branch {
-    ValueOption value;
+    NodeHandleOption value;
     NodeHandleOption[16] children;
 }
 
 struct NibbledBranch {
     NibbleSlice partial;
-    ValueOption value;
+    NodeHandleOption value;
     NodeHandleOption[16] children;
 }
 
@@ -56,5 +59,5 @@ struct NodeHandleOption {
 
 struct Leaf {
     NibbleSlice partial;
-    bytes value;
+    NodeHandle value;
 }

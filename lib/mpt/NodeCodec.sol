@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 // SPDX-License-Identifier: Apache2
 
 import "./Node.sol";
-
+import "./HashDB.sol";
 
 library NodeCodec {
     function isNibbledBranch(Node node) public view returns (bool) {
@@ -52,5 +52,15 @@ library NodeCodec {
 
     function asInline(NodeHandle node) public view returns (bytes) {
         return node.inline;
+    }
+
+    function loadValue(NodeHandle node, HashDB hashDB) public view returns (bytes) {
+        if (node.isInline) {
+            return node.inline;
+        } else if (node.isHash) {
+            return hashDB.get(node.hash).opaqueBytes;
+        }
+
+        return bytes(0);
     }
 }
