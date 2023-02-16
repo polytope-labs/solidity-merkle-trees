@@ -24,7 +24,7 @@ library TrieDB {
 
                     if (NodeCodec.isLeaf(node)) {
                          Leaf leaf = NodeCodec.asLeaf(node);
-                         if (NodeSliceOps.eq(leaf.partial, partial)) {
+                         if (NibbleSliceOps.eq(leaf.partial, partial)) {
                               values[i] = NodeCodec.loadValue(leaf.value, hashDB);
                          }
                          break;
@@ -33,7 +33,6 @@ library TrieDB {
                          if (NibbleSliceOps.startWith(partial, extension.partial)) {
                               uint256 len = NibbleSliceOps.len(extension.partial);
                               partial = NibbleSliceOps.mid(partial, len);
-                              key_nibbles += len;
                               nextNode = extension.node;
                          } else {
                               break;
@@ -56,19 +55,21 @@ library TrieDB {
                          }
                     }  else if (NodeCodec.isNibbledBranch(node)) {
                          NibbledBranch nibbled = NodeCodec.asNibbledBranch(nextNode);
+                         uint256 nibbledBranchKeyLength = NibbleSliceOps.len(nibbled.partial);
                          if (!NibbleSliceOps.startsWith(partial, nibbled.partial)) {
                               break;
                          }
 
-                         if (NibbleSliceOps.len(partial) == NibbleSliceOps.len(nibbled.partial)) {
+                         if (NibbleSliceOps.len(partial) == nibbledBranchKeyLength) {
                               if (Option.isSome(nibbled.value)) {
                                    values[i] = NodeCodec.loadValue(nibbled.value, hashDB);
                               }
                               break;
                          } else {
-                              NodeHandleOption handle = nibbled.children[NibbleSliceOps.len(nibbled.partial)];
+                              uint256 i = NibbleSliceOps.at(partial, nibbledBranchKeyLength);
+                              NodeHandleOption handle = nibbled.children[i];
                               if (Option.isSome(handle)) {
-                                   partial = NibbleSliceOps.mid(partial, NibbleSliceOps.len(nibbled.partial) + 1);
+                                   partial = NibbleSliceOps.mid(partial, nibbledBranchKeyLength + 1);
                                    nextNode = handle.value;
                               } else {
                                    break;
@@ -95,8 +96,8 @@ library TrieDB {
      returns (bytes[] memory)
      {
           // fetch the child trie root hash;
-          bytes key = ChildRootKey(childInfo);
-          bytes[] values  = ReadProofCheck(root, hashDB, key);
+          bytes keys = ChildRootKey(childInfo);
+          bytes[] values  = ReadProofCheck(root, hashDB, [key]);
           require(values.length == 1, "Invalid child trie proof");
           bytes32 childRoot = values[0]; // todo: needs to be converted to bytes32
           return ReadProofCheck(childRoot, hashDB, keys);

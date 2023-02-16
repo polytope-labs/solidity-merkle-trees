@@ -5,7 +5,7 @@ import "./Node.sol";
 
 // SPDX-License-Identifier: Apache2
 
-contract ParachainHashDB is HashDB {
+contract SubstrateHashDB is HashDB {
     mapping(bytes32 => Node) internal db;
 
     constructor(bytes[] proof) {
@@ -16,7 +16,7 @@ contract ParachainHashDB is HashDB {
 
     function decode(bytes encoded) internal pure returns (Node) {
         Node node;
-        // oof.
+        // todo: https://github.com/paritytech/substrate/blob/7732f88c117ceb41b57a51402abd64f888acd013/primitives/trie/src/node_codec.rs#L95
 
         return node;
     }
