@@ -6,61 +6,61 @@ import "./Node.sol";
 import "./HashDB.sol";
 
 library NodeCodec {
-    function isNibbledBranch(Node node) public view returns (bool) {
+    function isNibbledBranch(Node memory node) external pure returns (bool) {
         return node.isNibbledBranch == true;
     }
 
-    function isExtension(Node node) public view returns (bool) {
+    function isExtension(Node memory node) external pure returns (bool) {
         return node.isExtension == true;
     }
 
-    function isBranch(Node node) public view returns (bool) {
+    function isBranch(Node memory node) external pure returns (bool) {
         return node.isBranch == true;
     }
 
-    function isLeaf(Node node) public view returns (bool) {
+    function isLeaf(Node memory node) external pure returns (bool) {
         return node.isLeaf == true;
     }
 
-    function isHash(NodeHandle node) public view returns (bool) {
+    function isEmpty(Node memory node) external pure returns (bool) {
+        return node.isEmpty == true;
+    }
+
+    function isHash(NodeHandle memory node) external pure returns (bool) {
         return node.isHash == true;
     }
 
-    function isInline(NodeHandle node) public view returns (bool) {
+    function isInline(NodeHandle memory node) external pure returns (bool) {
         return node.isInline == true;
     }
 
-    function asNibbledBranch(Node node) public view returns (NibbledBranch) {
-        return node.nibbledBranch;
+    function decodeNibbledBranch(Node memory node) external pure returns (NibbledBranch memory) {
+        NibbledBranch memory nibbledBranch;
+        return nibbledBranch;
     }
 
-    function asExtension(Node node) public view returns (Extension) {
-        return node.extension;
+    function decodeExtension(Node memory node) external pure returns (Extension memory) {
+        Extension memory extension;
+        return extension;
     }
 
-    function asBranch(Node node) public view returns (Branch) {
-        return node.branch;
+    function decodeBranch(Node memory node) external pure returns (Branch memory) {
+        Branch memory branch;
+        return branch;
     }
 
-    function asLeaf(Node node) public view returns (Leaf) {
-        return node.leaf;
+    function decodeLeaf(Node memory node) external pure returns (Leaf memory) {
+        Leaf memory leaf;
+        return leaf;
     }
 
-    function asHash(NodeHandle node) public view returns (bytes32) {
-        return node.hash;
-    }
-
-    function asInline(NodeHandle node) public view returns (bytes) {
-        return node.inLine;
-    }
-
-    function loadValue(NodeHandle node, HashDB hashDB) public view returns (bytes) {
+    function loadValue(NodeHandle memory node, HashDB hashDB) external returns (bytes memory) {
         if (node.isInline) {
-            return node.inLine;
+            return node.inLine.data;
         } else if (node.isHash) {
-            return hashDB.get(node.hash).opaqueBytes;
+            return hashDB.get(node.hash).data;
         }
 
-        return bytes(0);
+        return bytes("");
     }
 }

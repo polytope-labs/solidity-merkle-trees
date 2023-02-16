@@ -7,20 +7,14 @@ import "./NibbleSlice.sol";
 
 /// This is an enum for the different node types.
 struct Node {
+    bool isEmpty;
     bool isLeaf;
-    Leaf leaf;
-
     bool isExtension;
-    Extension extension;
-
     bool isBranch;
-    Branch branch;
-
     bool isNibbledBranch;
-    NibbledBranch nibbledBranch;
-
     bool isOpaqueBytes;
-    bytes opaqueBytes;
+
+    bytes data;
 }
 
 struct NodeHandle {

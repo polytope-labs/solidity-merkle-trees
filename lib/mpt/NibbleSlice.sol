@@ -8,30 +8,30 @@ struct NibbleSlice {
 }
 
 library NibbleSliceOps {
-    function len(NibbleSlice nibble) public pure returns (uint256) {
+    function len(NibbleSlice memory nibble) public pure returns (uint256) {
         return nibble.data.length * 2 - nibble.offset;
     }
 
-    function mid(NibbleSlice self, uint256 i) public pure returns (NibbleSlice) {
-        return NibbleSlice(self, self.offset + i);
+    function mid(NibbleSlice memory self, uint256 i) public pure returns (NibbleSlice memory) {
+        return NibbleSlice(self.data, self.offset + i);
     }
 
-    function isEmpty(NibbleSlice self) public pure returns (bool) {
-        return NibbleSliceOps.len(self) == 0;
+    function isEmpty(NibbleSlice memory self) public pure returns (bool) {
+        return len(self) == 0;
     }
 
-    function eq(NibbleSlice self, NibbleSlice other) public pure returns (bool) {
-        return NibbleSliceOps.len(self) == NibbleSliceOps.len(other) && NibbleSliceOps.startsWith(self, other);
+    function eq(NibbleSlice memory self, NibbleSlice memory other) public pure returns (bool) {
+        return len(self) == len(other) && startsWith(self, other);
     }
 
-    function at(NibbleSlice self, uint256 i) public pure returns (uint256) {
+    function at(NibbleSlice memory self, uint256 i) public pure returns (uint256) {
         //todo: https://github.com/paritytech/trie/blob/0b5b7a54bda23c815c130310a513bdb38251ed12/trie-db/src/nibble/nibbleslice.rs#L109
         return 0;
     }
 
-    function startsWith(NibbleSlice self, NibbleSlice other) public pure returns (bool) {
+    function startsWith(NibbleSlice memory self, NibbleSlice memory other) public pure returns (bool) {
         // todo: https://github.com/paritytech/trie/blob/master/trie-db/src/nibble/nibbleslice.rs#L130
-        return self;
+        return false;
     }
 }
 

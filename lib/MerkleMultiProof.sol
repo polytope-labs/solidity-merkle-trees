@@ -40,7 +40,6 @@ library MerkleMultiProof {
                     proof[height].length + next_layer.length
                 );
                 mergeArrays(current_layer, proof[height], next_layer);
-                // todo: insertion sort isn't possible with solidity, sigh.
                 quickSort(current_layer, 0, current_layer.length - 1);
                 delete next_layer;
             }
