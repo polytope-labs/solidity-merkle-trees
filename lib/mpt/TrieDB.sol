@@ -1,15 +1,13 @@
 pragma solidity ^0.8.17;
 
-import "./ParachainHashDB.sol";
 import "./NodeCodec.sol";
-import "./NibbleSliceOps.sol";
 import "./HashDB.sol";
 import "./NibbleSlice.sol";
 
 // SPDX-License-Identifier: Apache2
 
-library MerklePatricia {
-     function Verify(bytes32 root, HashDB hashDB, bytes[] keys)
+library TrieDB {
+     function ReadProofCheck(bytes32 root, HashDB hashDB, bytes[] keys)
      public
      pure
      returns (bytes[] memory)
@@ -89,5 +87,25 @@ library MerklePatricia {
           }
 
           return values;
+     }
+
+     function ReadChildProofCheck(bytes32 root, HashDB hashDB, bytes childInfo, bytes[] keys)
+     public
+     pure
+     returns (bytes[] memory)
+     {
+          // fetch the child trie root hash;
+          bytes key = ChildRootKey(childInfo);
+          bytes[] values  = ReadProofCheck(root, hashDB, key);
+          require(values.length == 1, "Invalid child trie proof");
+          bytes32 childRoot = values[0]; // todo: needs to be converted to bytes32
+          return ReadProofCheck(childRoot, hashDB, keys);
+     }
+
+     function ChildRootKey(bytes info) public pure returns (bytes memory)  {
+          bytes prefix = bytes(":child_storage:default:");
+          bytes childRootKey = new bytes[](prefix.length + info.length);
+          // todo: add prefix & info to childRootKey
+          return childRootKey;
      }
 }
