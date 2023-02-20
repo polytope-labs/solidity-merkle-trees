@@ -34,26 +34,6 @@ library NodeCodec {
         return node.isInline == true;
     }
 
-    function decodeNibbledBranch(Node memory node) external pure returns (NibbledBranch memory) {
-        NibbledBranch memory nibbledBranch;
-        return nibbledBranch;
-    }
-
-    function decodeExtension(Node memory node) external pure returns (Extension memory) {
-        Extension memory extension;
-        return extension;
-    }
-
-    function decodeBranch(Node memory node) external pure returns (Branch memory) {
-        Branch memory branch;
-        return branch;
-    }
-
-    function decodeLeaf(Node memory node) external pure returns (Leaf memory) {
-        Leaf memory leaf;
-        return leaf;
-    }
-
     function loadValue(NodeHandle memory node, HashDB hashDB) external returns (bytes memory) {
         if (node.isInline) {
             return node.inLine.data;
