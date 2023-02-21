@@ -84,18 +84,21 @@ contract SubstrateHashDB is HashDB {
         nibbledBranch.key = NibbleSlice(nibbleBytes, 0);
 
         bytes memory bitmapBytes = Bytes.substr(input.data, input.offset, BITMAP_LENGTH);
+        input.offset += BITMAP_LENGTH;
         uint16 bitmap = uint16(ScaleCodec.decodeUint256(bitmapBytes));
 
         NodeHandleOption handle;
         if (node.isNibbledHashedValueBranch) {
             handle.isSome = true;
             handle.value.isHash = true;
-            handle.value.hash = Bytes.substr(input.data, input.offset, 32); // todo: convert to bytes32
+            handle.value.hash = Bytes.toBytes32(Bytes.substr(input.data, input.offset, 32));
+            input.offset += 32;
         } else if (node.isNibbledValueBranch) {
             uint256 len = ScaleCodec.decodeUintCompact(input);
             handle.isSome = true;
             handle.value.isInline = true;
             handle.value.inLine = Bytes.substr(input.data, input.offset, len);
+            input.offset += len;
         }
 
         for (uint256 i = 0; i < 16; i ++) {
@@ -105,10 +108,12 @@ contract SubstrateHashDB is HashDB {
                 uint256 len = ScaleCodec.decodeUintCompact(input);
                 if (len == 32) {
                     handle.value.isHash = true;
-                    handle.value.hash = Bytes.substr(input.data, input.offset, 32);
+                    handle.value.hash = Bytes.toBytes32(Bytes.substr(input.data, input.offset, 32));
+                    input.offset += 32;
                 } else {
                     handle.value.isInline = true;
                     handle.value.inLine = Bytes.substr(input.data, input.offset, len);
+                    input.offset += len;
                 }
             }
             nibbledBranch.children[i] = handle;
@@ -133,7 +138,7 @@ contract SubstrateHashDB is HashDB {
         NodeHandle handle;
         if (node.isHashedLeaf) {
             handle.isHash = true;
-            handle.hash = Bytes.substr(input.data, input.offset, 32); // todo: convert to bytes32
+            handle.hash = Bytes.toBytes32(Bytes.substr(input.data, input.offset, 32));
         } else {
             uint256 len = ScaleCodec.decodeUintCompact(input);
             handle.isInline = true;
@@ -177,7 +182,7 @@ contract SubstrateHashDB is HashDB {
         return this.db.length;
     }
 
-    function padLeft(uint8 b) internal pure returns (uint8)  {
+    function padLeft(uint8 b) internal pure returns (uint8) {
         return b & !PADDING_BITMASK;
     }
 
