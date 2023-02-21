@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 // SPDX-License-Identifier: Apache2
 
 import "./Node.sol";
-import "./HashDB.sol";
+import "./NodeDB.sol";
 
 library NodeCodec {
     function isNibbledBranch(NodeKind memory node) external pure returns (bool) {

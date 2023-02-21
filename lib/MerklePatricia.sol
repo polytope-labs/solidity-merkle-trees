@@ -1,9 +1,9 @@
 pragma solidity ^0.8.17;
 
 import "./trie/NodeCodec.sol";
-import "./trie/HashDB.sol";
 import "./trie/Option.sol";
 import "./trie/NibbleSlice.sol";
+import "./trie/NodeDB.sol";
 
 // SPDX-License-Identifier: Apache2
 
@@ -11,7 +11,7 @@ library MerklePatricia {
      // so we don't explore deeply nested trie keys.
      uint256 internal constant MAX_TRIE_DEPTH = 50;
 
-     function VerifyKeys(bytes32 root, HashDB hashDb, bytes[] memory keys)
+     function VerifyKeys(bytes32 root, NodeDB hashDb, bytes[] memory keys)
      public
      pure
      returns (bytes[] memory)
@@ -20,7 +20,7 @@ library MerklePatricia {
 
           for (uint256 i = 0; i < keys.length; i++) {
                NibbleSlice memory keyNibbles = NibbleSlice(keys[i], 0);
-               NodeKind memory node = hashDb.decode(hashDb.get(root));
+               NodeKind memory node = hashDb.decodeNodeKind(hashDb.get(root));
 
                // worst case scenario, so we avoid unbounded loops
                for (uint256 j = 0; j < MAX_TRIE_DEPTH; j++) {

@@ -1,14 +1,15 @@
 pragma solidity ^0.8.17;
 
-import "./HashDB.sol";
-import "./Node.sol";
-import "./Bytes.sol";
+import "../Node.sol";
+import "../Bytes.sol";
+import "../NodeDB.sol";
 import { NibbleSliceOps } from "../NibbleSlice";
+
 import { ScaleCodec } from "./ScaleCodec.sol";
 
 // SPDX-License-Identifier: Apache2
 
-contract SubstrateHashDB is HashDB {
+contract SubstrateHashDB is NodeDB {
     uint8 public constant FIRST_PREFIX = 0x00 << 6;
     uint8 public constant PADDING_BITMASK = 0x0F;
     uint8 public constant EMPTY_TRIE = FIRST_PREFIX | (0x00 << 4);
@@ -28,7 +29,7 @@ contract SubstrateHashDB is HashDB {
         }
     }
 
-    function decode(bytes memory encoded) internal pure returns (NodeKind memory) {
+    function decodeNodeKind(bytes memory encoded) internal pure returns (NodeKind memory) {
         NodeKind memory node;
         ByteSlice input = ByteSlice(encoded, 0);
         uint8 i = Bytes.readByte(input);
