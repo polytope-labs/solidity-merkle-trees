@@ -19,7 +19,7 @@ library NodeCodec {
     }
 
     function isLeaf(NodeKind memory node) external pure returns (bool) {
-        return node.isLeaf;
+        return (node.isLeaf || node.isHashedLeaf);
     }
 
     function isEmpty(NodeKind memory node) external pure returns (bool) {
