@@ -79,26 +79,21 @@ contract SubstrateHashDB is HashDB {
             revert("Bad Format!");
         }
         uint256 nibbleLen = (nibbleSize + (NibbleSliceOps.NIBBLE_PER_BYTE - 1)) / NibbleSliceOps.NIBBLE_PER_BYTE;
-        bytes memory nibbleBytes = Bytes.substr(input.data, input.offset, nibbleLen);
-        input.offset += nibbleLen;
-        nibbledBranch.key = NibbleSlice(nibbleBytes, 0);
+        nibbledBranch.key = NibbleSlice(Bytes.read(input, nibbleLen), 0);
 
-        bytes memory bitmapBytes = Bytes.substr(input.data, input.offset, BITMAP_LENGTH);
-        input.offset += BITMAP_LENGTH;
+        bytes memory bitmapBytes = Bytes.read(input, BITMAP_LENGTH);
         uint16 bitmap = uint16(ScaleCodec.decodeUint256(bitmapBytes));
 
         NodeHandleOption handle;
         if (node.isNibbledHashedValueBranch) {
             handle.isSome = true;
             handle.value.isHash = true;
-            handle.value.hash = Bytes.toBytes32(Bytes.substr(input.data, input.offset, 32));
-            input.offset += 32;
+            handle.value.hash = Bytes.toBytes32(Bytes.read(input, 32));
         } else if (node.isNibbledValueBranch) {
             uint256 len = ScaleCodec.decodeUintCompact(input);
             handle.isSome = true;
             handle.value.isInline = true;
-            handle.value.inLine = Bytes.substr(input.data, input.offset, len);
-            input.offset += len;
+            handle.value.inLine = Bytes.read(input, len);
         }
 
         for (uint256 i = 0; i < 16; i ++) {
@@ -108,12 +103,10 @@ contract SubstrateHashDB is HashDB {
                 uint256 len = ScaleCodec.decodeUintCompact(input);
                 if (len == 32) {
                     handle.value.isHash = true;
-                    handle.value.hash = Bytes.toBytes32(Bytes.substr(input.data, input.offset, 32));
-                    input.offset += 32;
+                    handle.value.hash = Bytes.toBytes32(Bytes.read(input, 32));
                 } else {
                     handle.value.isInline = true;
-                    handle.value.inLine = Bytes.substr(input.data, input.offset, len);
-                    input.offset += len;
+                    handle.value.inLine = Bytes.read(input, len);
                 }
             }
             nibbledBranch.children[i] = handle;
@@ -131,18 +124,17 @@ contract SubstrateHashDB is HashDB {
             revert("Bad Format!");
         }
         uint256 nibbleLen = (nibbleSize + (NibbleSliceOps.NIBBLE_PER_BYTE - 1)) / NibbleSliceOps.NIBBLE_PER_BYTE;
-        bytes memory nibbleBytes = Bytes.substr(input.data, input.offset, nibbleLen);
-        input.offset += nibbleLen;
+        bytes memory nibbleBytes = Bytes.read(input, nibbleLen);
         leaf.key = NibbleSlice(nibbleBytes, 0);
 
         NodeHandle handle;
         if (node.isHashedLeaf) {
             handle.isHash = true;
-            handle.hash = Bytes.toBytes32(Bytes.substr(input.data, input.offset, 32));
+            handle.hash = Bytes.toBytes32(Bytes.read(input, 32));
         } else {
             uint256 len = ScaleCodec.decodeUintCompact(input);
             handle.isInline = true;
-            handle.inLine = Bytes.substr(input.data, input.offset, len);
+            handle.inLine = Bytes.read(input, len);
         }
         leaf.value = handle;
 

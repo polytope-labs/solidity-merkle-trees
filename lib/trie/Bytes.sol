@@ -41,6 +41,24 @@ library Bytes {
         return b;
     }
 
+    // Copies 'len' bytes from 'self' into a new array, starting at the provided 'startIndex'.
+    // Returns the new copy.
+    // Requires that:
+    //  - 'startIndex + len <= self.length'
+    // The length of the substring is: 'len'
+    function read(
+        ByteSlice memory self,
+        uint256 len
+    ) internal pure returns (bytes memory) {
+        require(self.offset + len <= self.length);
+        if (len == 0) {
+            return "";
+        }
+        self.offset += len;
+        uint256 addr = Memory.dataPtr(self.data);
+        return Memory.toBytes(addr + self.offset, len);
+    }
+
     // Copies a section of 'self' into a new array, starting at the provided 'startIndex'.
     // Returns the new copy.
     // Requires that 'startIndex <= self.length'
