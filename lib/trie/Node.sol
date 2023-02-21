@@ -4,17 +4,24 @@ pragma solidity ^0.8.17;
 
 import "./NodeCodec.sol";
 import "./NibbleSlice.sol";
+import "./Bytes.sol";
 
 /// This is an enum for the different node types.
-struct Node {
+struct NodeKind {
     bool isEmpty;
+
     bool isLeaf;
+    bool isHashedLeaf;
+
+    bool isNibbledValueBranch;
+    bool isNibbledHashedValueBranch;
+    bool isNibbledBranch;
+
     bool isExtension;
     bool isBranch;
-    bool isNibbledBranch;
-    bool isOpaqueBytes;
 
-    bytes data;
+    uint256 nibbleSize;
+    ByteSlice data;
 }
 
 struct NodeHandle {
@@ -22,7 +29,7 @@ struct NodeHandle {
     bytes32 hash;
 
     bool isInline;
-    Node inLine;
+    bytes inLine;
 }
 
 struct Extension {

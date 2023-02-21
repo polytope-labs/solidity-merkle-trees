@@ -4,6 +4,11 @@ pragma solidity ^0.8.17;
 
 import { Memory } from "./Memory.sol";
 
+struct ByteSlice {
+    bytes data;
+    uint256 offset;
+}
+
 library Bytes {
     uint256 internal constant BYTES_HEADER_SIZE = 32;
 
@@ -23,6 +28,17 @@ library Bytes {
             addr2 := add(other, /*BYTES_HEADER_SIZE*/32)
         }
         equal = Memory.equals(addr, addr2, self.length);
+    }
+
+    function readByte(ByteSlice memory self) internal pure returns (uint8) {
+        if (self.offset + 1 > self.data.length) {
+            revert("Out of range");
+        }
+
+        uint8 b = uint8(self.data[self.offset]);
+        self.offset += 1;
+
+        return b;
     }
 
     // Copies a section of 'self' into a new array, starting at the provided 'startIndex'.

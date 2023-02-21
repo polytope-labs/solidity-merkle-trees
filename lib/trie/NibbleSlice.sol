@@ -8,9 +8,8 @@ struct NibbleSlice {
 }
 
 library NibbleSliceOps {
-
-    uint256 constant NIBBLE_PER_BYTE = 2;
-    uint256 constant BITS_PER_NIBBLE = 4;
+    uint256 public constant NIBBLE_PER_BYTE = 2;
+    uint256 public constant BITS_PER_NIBBLE = 4;
 
     function len(NibbleSlice memory nibble) public pure returns (uint256) {
         return nibble.data.length * NIBBLE_PER_BYTE - nibble.offset;
