@@ -4,7 +4,7 @@ import "./Node.sol";
 
 // SPDX-License-Identifier: Apache2
 
-interface NodeDB {
+interface TrieDB {
     function get(bytes32 hash) external returns (bytes memory);
     function length() external returns (uint256);
 

@@ -2,14 +2,14 @@ pragma solidity ^0.8.17;
 
 import "../Node.sol";
 import "../Bytes.sol";
-import "../NodeDB.sol";
+import "../TrieDB.sol";
 import { NibbleSliceOps } from "../NibbleSlice";
 
 import { ScaleCodec } from "./ScaleCodec.sol";
 
 // SPDX-License-Identifier: Apache2
 
-contract SubstrateHashDB is NodeDB {
+contract SubstrateHashDB is TrieDB {
     uint8 public constant FIRST_PREFIX = 0x00 << 6;
     uint8 public constant PADDING_BITMASK = 0x0F;
     uint8 public constant EMPTY_TRIE = FIRST_PREFIX | (0x00 << 4);
