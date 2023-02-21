@@ -13,4 +13,14 @@ interface HashDB {
     function decodeExtension(NodeKind memory node) external pure returns (Extension memory);
     function decodeBranch(NodeKind memory node) external pure returns (Branch memory);
     function decodeLeaf(NodeKind memory node) external pure returns (Leaf memory);
+
+    function load(NodeHandle memory node) external returns (bytes memory) {
+        if (node.isInline) {
+            return node.inLine.data;
+        } else if (node.isHash) {
+            return get(node.hash);
+        }
+
+        return bytes("");
+    }
 }

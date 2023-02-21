@@ -8,6 +8,9 @@ import "./trie/NibbleSlice.sol";
 // SPDX-License-Identifier: Apache2
 
 library MerklePatricia {
+     // so we don't explore deeply nested trie keys.
+     uint256 internal constant MAX_TRIE_DEPTH = 50;
+
      function VerifyKeys(bytes32 root, HashDB hashDb, bytes[] memory keys)
      public
      pure
@@ -20,13 +23,13 @@ library MerklePatricia {
                NodeKind memory node = hashDb.decode(hashDb.get(root));
 
                // worst case scenario, so we avoid unbounded loops
-               for (uint256 j = 0; j < hashDb.length(); j++) {
+               for (uint256 j = 0; j < MAX_TRIE_DEPTH; j++) {
                     NodeHandle memory nextNode;
 
                     if (NodeCodec.isLeaf(node)) {
                          Leaf memory leaf = hashDb.decodeLeaf(node);
                          if (NibbleSliceOps.eq(leaf.key, keyNibbles)) {
-                              values[i] = NodeCodec.loadValue(leaf.value, hashDb);
+                              values[i] = hashDb.load(leaf.value);
                          }
                          break;
                     } else if (NodeCodec.isExtension(node)) {
@@ -42,7 +45,7 @@ library MerklePatricia {
                          Branch memory branch = hashDb.decodeBranch(node);
                          if (NibbleSliceOps.isEmpty(keyNibbles)) {
                               if (Option.isSome(branch.value)) {
-                                   values[i] = NodeCodec.loadValue(branch.value.value, hashDb);
+                                   values[i] = hashDb.load(branch.value.value);
                               }
                               break;
                          } else {
@@ -63,7 +66,7 @@ library MerklePatricia {
 
                          if (NibbleSliceOps.len(keyNibbles) == nibbledBranchKeyLength) {
                               if (Option.isSome(nibbled.value)) {
-                                   values[i] = NodeCodec.loadValue(nibbled.value.value, hashDb);
+                                   values[i] = hashDb.load(nibbled.value.value);
                               }
                               break;
                          } else {
@@ -80,11 +83,7 @@ library MerklePatricia {
                          break;
                     }
 
-                    if (NodeCodec.isHash(nextNode)) {
-                         node = hashDb.get(nextNode.hash);
-                    } else if (NodeCodec.isInline(nextNode)) {
-                         node = nextNode.inLine;
-                    }
+                    node = hashDb.load(nextNode);
                }
           }
 
