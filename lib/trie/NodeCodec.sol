@@ -33,14 +33,4 @@ library NodeCodec {
     function isInline(NodeHandle memory node) external pure returns (bool) {
         return node.isInline;
     }
-
-    function loadValue(NodeHandle memory node, TrieDB trieDB) external returns (bytes memory) {
-        if (node.isInline) {
-            return node.inLine;
-        } else if (node.isHash) {
-            return trieDB.get(node.hash);
-        }
-
-        return bytes("");
-    }
 }

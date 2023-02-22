@@ -23,7 +23,6 @@ contract SubstrateTrieDB is TrieDB {
     uint256 public constant BITMAP_LENGTH = 2;
     uint256 public constant HASH_lENGTH = 32;
 
-    // mapping(bytes32 => NodeKind) internal db;
     mapping(bytes32 => bytes) internal db;
 
     constructor(bytes[] memory proof) {
@@ -101,19 +100,19 @@ contract SubstrateTrieDB is TrieDB {
         }
 
         for (uint256 i = 0; i < 16; i ++) {
-            // NodeHandleOption handle;     // shadows existing `handle` variable
+            NodeHandleOption memory childHandle;
             if (valueAt(bitmap, i)) {
-                handle.isSome = true;
+                childHandle.isSome = true;
                 uint256 len = ScaleCodec.decodeUintCompact(input);
                 if (len == HASH_lENGTH) {
-                    handle.value.isHash = true;
-                    handle.value.hash = Bytes.toBytes32(Bytes.read(input, HASH_lENGTH));
+                    childHandle.value.isHash = true;
+                    childHandle.value.hash = Bytes.toBytes32(Bytes.read(input, HASH_lENGTH));
                 } else {
-                    handle.value.isInline = true;
-                    handle.value.inLine = Bytes.read(input, len);
+                    childHandle.value.isInline = true;
+                    childHandle.value.inLine = Bytes.read(input, len);
                 }
             }
-            nibbledBranch.children[i] = handle;
+            nibbledBranch.children[i] = childHandle;
         }
 
         return nibbledBranch;
@@ -172,16 +171,6 @@ contract SubstrateTrieDB is TrieDB {
         }
 
         return NIBBLE_SIZE_BOUND;
-    }
-
-    function load(NodeHandle memory node) external view returns (bytes memory) {
-        if (node.isInline) {
-            return node.inLine;
-        } else if (node.isHash) {
-            return get(node.hash);
-        }
-
-        return bytes("");
     }
 
     function padLeft(uint8 b) internal pure returns (uint8) {
