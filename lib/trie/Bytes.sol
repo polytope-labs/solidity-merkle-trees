@@ -54,9 +54,10 @@ library Bytes {
         if (len == 0) {
             return "";
         }
-        self.offset += len;
         uint256 addr = Memory.dataPtr(self.data);
-        return Memory.toBytes(addr + self.offset, len);
+        bytes memory slice = Memory.toBytes(addr + self.offset, len);
+        self.offset += len;
+        return slice;
     }
 
     // Copies a section of 'self' into a new array, starting at the provided 'startIndex'.

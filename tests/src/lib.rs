@@ -2,6 +2,7 @@
 #![allow(unused_parens)]
 
 mod forge;
+mod merkle_patricia;
 
 use crate::forge::{execute, runner};
 use ckb_merkle_mountain_range::{

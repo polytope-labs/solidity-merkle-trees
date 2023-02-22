@@ -4,6 +4,8 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "./MerkleMultiProof.sol";
 import "./MerkleMountainRange.sol";
+import "./MerklePatricia.sol";
+import "./trie/substrate/SubstrateTrieDB.sol";
 
 contract MerkleTests is Test {
     function testCalculateRoot(Node[][] memory proof, Node[] memory leaves)
@@ -12,6 +14,28 @@ contract MerkleTests is Test {
     returns (bytes32)
     {
         return MerkleMultiProof.calculateRoot(proof, leaves);
+    }
+
+    function testMerklePatricia(bytes32 root, bytes[] memory proof, bytes[] memory keys)
+    public
+    returns (bytes[] memory)
+    {
+        SubstrateTrieDB trieDb = new SubstrateTrieDB(proof);
+        return MerklePatricia.VerifyKeys(root, trieDb, keys);
+//        bytes[] memory lol = new bytes[](keys.length);
+//        return lol;
+    }
+
+    function decodeNodeKind(bytes memory node) public returns (NodeKind memory) {
+        bytes[] memory nodes = new bytes[](1);
+        SubstrateTrieDB trieDb = new SubstrateTrieDB(nodes);
+        return trieDb.decodeNodeKind(node);
+    }
+
+    function decodeNibbledBranch(bytes memory node) external returns (NibbledBranch memory) {
+        bytes[] memory nodes = new bytes[](1);
+        SubstrateTrieDB trieDb = new SubstrateTrieDB(nodes);
+        return trieDb.decodeNibbledBranch(trieDb.decodeNodeKind(node));
     }
 
     function countZeroes(uint64 num) public pure returns (uint256) {

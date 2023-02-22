@@ -17,3 +17,10 @@ hex-literal = "0.3.4"
 rs_merkle = { git = "https://github.com/polytope-labs/rs-merkle", branch = "seun/2d-merkle-proofs" }
 hex = "0.4.3"
 ckb-merkle-mountain-range = { git = "https://github.com/polytope-labs/merkle-mountain-range", branch = "seun/simplified-mmr" }
+
+trie-db = "0.24.0"
+patricia-merkle-trie = { git = "https://github.com/polytope-labs/patricia-merkle-trie", branch = "main" }
+primitive-types = "0.12.1"
+codec = { package = "parity-scale-codec", version = "3.4.0" }
+sp-core = "17.0.0"
+sp-trie = "17.0.0"
