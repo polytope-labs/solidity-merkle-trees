@@ -50,7 +50,7 @@ library Bytes {
         ByteSlice memory self,
         uint256 len
     ) internal pure returns (bytes memory) {
-        require(self.offset + len <= self.length);
+        require(self.offset + len <= self.data.length);
         if (len == 0) {
             return "";
         }
