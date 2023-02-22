@@ -9,7 +9,7 @@ import { ScaleCodec } from "./ScaleCodec.sol";
 
 // SPDX-License-Identifier: Apache2
 
-contract SubstrateHashDB is TrieDB {
+contract SubstrateTrieDB is TrieDB {
     uint8 public constant FIRST_PREFIX = 0x00 << 6;
     uint8 public constant PADDING_BITMASK = 0x0F;
     uint8 public constant EMPTY_TRIE = FIRST_PREFIX | (0x00 << 4);
@@ -20,7 +20,8 @@ contract SubstrateHashDB is TrieDB {
     uint8 public constant ALT_HASHING_BRANCH_WITH_MASK = FIRST_PREFIX | (0x01 << 4);
     uint256 public constant NIBBLE_SIZE_BOUND = uint256(type(uint16).max);
     uint256 public constant BITMAP_LENGTH = 2;
-    
+    uint256 public constant HASH_lENGTH = 32;
+
     mapping(bytes32 => NodeKind) internal db;
 
     constructor(bytes[] memory proof) {
@@ -89,7 +90,7 @@ contract SubstrateHashDB is TrieDB {
         if (node.isNibbledHashedValueBranch) {
             handle.isSome = true;
             handle.value.isHash = true;
-            handle.value.hash = Bytes.toBytes32(Bytes.read(input, 32));
+            handle.value.hash = Bytes.toBytes32(Bytes.read(input, HASH_lENGTH));
         } else if (node.isNibbledValueBranch) {
             uint256 len = ScaleCodec.decodeUintCompact(input);
             handle.isSome = true;
@@ -102,9 +103,9 @@ contract SubstrateHashDB is TrieDB {
             if (valueAt(bitmap, i)) {
                 handle.isSome = true;
                 uint256 len = ScaleCodec.decodeUintCompact(input);
-                if (len == 32) {
+                if (len == HASH_lENGTH) {
                     handle.value.isHash = true;
-                    handle.value.hash = Bytes.toBytes32(Bytes.read(input, 32));
+                    handle.value.hash = Bytes.toBytes32(Bytes.read(input, HASH_lENGTH));
                 } else {
                     handle.value.isInline = true;
                     handle.value.inLine = Bytes.read(input, len);
@@ -131,7 +132,7 @@ contract SubstrateHashDB is TrieDB {
         NodeHandle handle;
         if (node.isHashedLeaf) {
             handle.isHash = true;
-            handle.hash = Bytes.toBytes32(Bytes.read(input, 32));
+            handle.hash = Bytes.toBytes32(Bytes.read(input, HASH_lENGTH));
         } else {
             uint256 len = ScaleCodec.decodeUintCompact(input);
             handle.isInline = true;
@@ -169,10 +170,6 @@ contract SubstrateHashDB is TrieDB {
         }
 
         return NIBBLE_SIZE_BOUND;
-    }
-
-    function length() public returns (uint256) {
-        return this.db.length;
     }
 
     function padLeft(uint8 b) internal pure returns (uint8) {
