@@ -51,7 +51,7 @@ contract SubstrateTrieDB is TrieDB {
             node.isNibbledValueBranch = true;
         } else if (mask == BRANCH_WITHOUT_MASK) {
             node.nibbleSize = decodeSize(i, input, 2);
-            node.isBranch = true;
+            node.isNibbledBranch = true;
         } else if (mask == EMPTY_TRIE) {
             if (i & (0x07 << 5) == ALT_HASHING_LEAF_PREFIX_MASK) {
                 node.nibbleSize = decodeSize(i, input, 3);
@@ -87,17 +87,18 @@ contract SubstrateTrieDB is TrieDB {
         bytes memory bitmapBytes = Bytes.read(input, BITMAP_LENGTH);
         uint16 bitmap = uint16(ScaleCodec.decodeUint256(bitmapBytes));
 
-        NodeHandleOption memory handle;
+        NodeHandleOption memory valueHandle;
         if (node.isNibbledHashedValueBranch) {
-            handle.isSome = true;
-            handle.value.isHash = true;
-            handle.value.hash = Bytes.toBytes32(Bytes.read(input, HASH_lENGTH));
+            valueHandle.isSome = true;
+            valueHandle.value.isHash = true;
+            valueHandle.value.hash = Bytes.toBytes32(Bytes.read(input, HASH_lENGTH));
         } else if (node.isNibbledValueBranch) {
             uint256 len = ScaleCodec.decodeUintCompact(input);
-            handle.isSome = true;
-            handle.value.isInline = true;
-            handle.value.inLine = Bytes.read(input, len);
+            valueHandle.isSome = true;
+            valueHandle.value.isInline = true;
+            valueHandle.value.inLine = Bytes.read(input, len);
         }
+        nibbledBranch.value = valueHandle;
 
         for (uint256 i = 0; i < 16; i ++) {
             NodeHandleOption memory childHandle;
