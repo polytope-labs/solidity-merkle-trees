@@ -34,11 +34,11 @@ library NodeCodec {
         return node.isInline;
     }
 
-    function loadValue(NodeHandle memory node, HashDB hashDB) external returns (bytes memory) {
+    function loadValue(NodeHandle memory node, TrieDB trieDB) external returns (bytes memory) {
         if (node.isInline) {
-            return node.inLine.data;
+            return node.inLine;
         } else if (node.isHash) {
-            return hashDB.get(node.hash);
+            return trieDB.get(node.hash);
         }
 
         return bytes("");

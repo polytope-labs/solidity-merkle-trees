@@ -13,7 +13,6 @@ library MerklePatricia {
 
      function VerifyKeys(bytes32 root, TrieDB trieDb, bytes[] memory keys)
      public
-     pure
      returns (bytes[] memory)
      {
           bytes[] memory values = new bytes[](keys.length);
@@ -83,7 +82,7 @@ library MerklePatricia {
                          break;
                     }
 
-                    node = trieDb.load(nextNode);
+                    node = trieDb.decodeNodeKind(trieDb.load(nextNode));
                }
           }
 
@@ -93,13 +92,14 @@ library MerklePatricia {
      // substrate specific method in order to verify keys in the child trie.
      function ReadChildProofCheck(bytes32 root, TrieDB trieDB, bytes memory childInfo, bytes[] memory keys)
      public
-     pure
      returns (bytes[] memory)
      {
           // fetch the child trie root hash;
           bytes memory prefix = bytes(":child_storage:default:");
           bytes memory key = bytes.concat(prefix, childInfo);
-          bytes[] memory values  = VerifyKeys(root, trieDB, [key]);
+          bytes[] memory _keys = new bytes[](1);
+          _keys[0] = key;
+          bytes[] memory values  = VerifyKeys(root, trieDB, _keys);
 
           bytes32 childRoot = bytes32(values[0]);
           require(childRoot != bytes32(0), "Invalid child trie proof");

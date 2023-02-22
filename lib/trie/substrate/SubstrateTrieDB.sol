@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 import "../Node.sol";
 import "../Bytes.sol";
 import "../TrieDB.sol";
-import { NibbleSliceOps } from "../NibbleSlice";
+import { NibbleSliceOps } from "../NibbleSlice.sol";
 
 import { ScaleCodec } from "./ScaleCodec.sol";
 
@@ -18,11 +18,13 @@ contract SubstrateTrieDB is TrieDB {
     uint8 public constant BRANCH_WITHOUT_MASK = 0x02 << 6;
     uint8 public constant ALT_HASHING_LEAF_PREFIX_MASK = FIRST_PREFIX | (0x01 << 5);
     uint8 public constant ALT_HASHING_BRANCH_WITH_MASK = FIRST_PREFIX | (0x01 << 4);
+    uint8 public constant NIBBLE_PER_BYTE = 2;
     uint256 public constant NIBBLE_SIZE_BOUND = uint256(type(uint16).max);
     uint256 public constant BITMAP_LENGTH = 2;
     uint256 public constant HASH_lENGTH = 32;
 
-    mapping(bytes32 => NodeKind) internal db;
+    // mapping(bytes32 => NodeKind) internal db;
+    mapping(bytes32 => bytes) internal db;
 
     constructor(bytes[] memory proof) {
         for (uint256 i = 0; i < proof.length; i++) {
@@ -30,9 +32,9 @@ contract SubstrateTrieDB is TrieDB {
         }
     }
 
-    function decodeNodeKind(bytes memory encoded) internal pure returns (NodeKind memory) {
+    function decodeNodeKind(bytes memory encoded) external pure returns (NodeKind memory) {
         NodeKind memory node;
-        ByteSlice input = ByteSlice(encoded, 0);
+        ByteSlice memory input = ByteSlice(encoded, 0);
         uint8 i = Bytes.readByte(input);
 
         if (i == EMPTY_TRIE) {
@@ -47,7 +49,7 @@ contract SubstrateTrieDB is TrieDB {
             node.isLeaf = true;
         } else if (mask == BRANCH_WITH_MASK) {
             node.nibbleSize = decodeSize(i, input, 2);
-            node.isValueBranch = true;
+            node.isNibbledValueBranch = true;
         } else if (mask == BRANCH_WITHOUT_MASK) {
             node.nibbleSize = decodeSize(i, input, 2);
             node.isBranch = true;
@@ -57,7 +59,7 @@ contract SubstrateTrieDB is TrieDB {
                 node.isHashedLeaf = true;
             }  else if (i & (0x0F << 4) == ALT_HASHING_BRANCH_WITH_MASK) {
                 node.nibbleSize = decodeSize(i, input, 4);
-                node.isHashedValueBranch = true;
+                node.isNibbledHashedValueBranch = true;
             } else {
                 // do not allow any special encoding
                 revert("Unallowed encoding");
@@ -68,25 +70,25 @@ contract SubstrateTrieDB is TrieDB {
         return node;
     }
 
-    function get(bytes32 hash) public pure returns (NodeKind memory) {
-        return this.db[hash];
+    function get(bytes32 hash) public view returns (bytes memory) {
+        return db[hash];
     }
 
     function decodeNibbledBranch(NodeKind memory node) external pure returns (NibbledBranch memory) {
         NibbledBranch memory nibbledBranch;
-        ByteSlice input = node.data;
+        ByteSlice memory input = node.data;
 
         bool padding = node.nibbleSize % NIBBLE_PER_BYTE != 0;
-        if (padding & padLeft(input.data[input.offset])) {
+        if (padding && (padLeft(uint8(input.data[input.offset]))==0)) {
             revert("Bad Format!");
         }
-        uint256 nibbleLen = (nibbleSize + (NibbleSliceOps.NIBBLE_PER_BYTE - 1)) / NibbleSliceOps.NIBBLE_PER_BYTE;
+        uint256 nibbleLen = (node.nibbleSize + (NibbleSliceOps.NIBBLE_PER_BYTE - 1)) / NibbleSliceOps.NIBBLE_PER_BYTE;
         nibbledBranch.key = NibbleSlice(Bytes.read(input, nibbleLen), 0);
 
         bytes memory bitmapBytes = Bytes.read(input, BITMAP_LENGTH);
         uint16 bitmap = uint16(ScaleCodec.decodeUint256(bitmapBytes));
 
-        NodeHandleOption handle;
+        NodeHandleOption memory handle;
         if (node.isNibbledHashedValueBranch) {
             handle.isSome = true;
             handle.value.isHash = true;
@@ -99,7 +101,7 @@ contract SubstrateTrieDB is TrieDB {
         }
 
         for (uint256 i = 0; i < 16; i ++) {
-            NodeHandleOption handle;
+            // NodeHandleOption handle;     // shadows existing `handle` variable
             if (valueAt(bitmap, i)) {
                 handle.isSome = true;
                 uint256 len = ScaleCodec.decodeUintCompact(input);
@@ -119,17 +121,17 @@ contract SubstrateTrieDB is TrieDB {
 
     function decodeLeaf(NodeKind memory node) external pure returns (Leaf memory) {
         Leaf memory leaf;
-        ByteSlice input = node.data;
+        ByteSlice memory input = node.data;
 
         bool padding = node.nibbleSize % NIBBLE_PER_BYTE != 0;
-        if (padding & padLeft(input.data[input.offset])) {
+        if (padding && padLeft(uint8(input.data[input.offset]))==0) {
             revert("Bad Format!");
         }
-        uint256 nibbleLen = (nibbleSize + (NibbleSliceOps.NIBBLE_PER_BYTE - 1)) / NibbleSliceOps.NIBBLE_PER_BYTE;
+        uint256 nibbleLen = (node.nibbleSize + (NibbleSliceOps.NIBBLE_PER_BYTE - 1)) / NibbleSliceOps.NIBBLE_PER_BYTE;
         bytes memory nibbleBytes = Bytes.read(input, nibbleLen);
         leaf.key = NibbleSlice(nibbleBytes, 0);
 
-        NodeHandle handle;
+        NodeHandle memory handle;
         if (node.isHashedLeaf) {
             handle.isHash = true;
             handle.hash = Bytes.toBytes32(Bytes.read(input, HASH_lENGTH));
@@ -152,7 +154,7 @@ contract SubstrateTrieDB is TrieDB {
     }
 
     function decodeSize(uint8 first, ByteSlice memory encoded, uint8 prefixMask) internal pure returns (uint256) {
-        uint8 maxValue = 255 >> prefixMask;
+        uint8 maxValue = uint8(255 >> prefixMask);
         uint256 result = uint256(first & maxValue);
 
         if (result < maxValue) {
@@ -172,8 +174,18 @@ contract SubstrateTrieDB is TrieDB {
         return NIBBLE_SIZE_BOUND;
     }
 
+    function load(NodeHandle memory node) external view returns (bytes memory) {
+        if (node.isInline) {
+            return node.inLine;
+        } else if (node.isHash) {
+            return get(node.hash);
+        }
+
+        return bytes("");
+    }
+
     function padLeft(uint8 b) internal pure returns (uint8) {
-        return b & !PADDING_BITMASK;
+        return b & ~PADDING_BITMASK;
     }
 
     function valueAt(uint16 bitmap, uint256 i) internal pure returns (bool) {

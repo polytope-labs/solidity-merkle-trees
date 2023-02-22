@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "./MerkleMultiProof.sol";
 import "./MerkleMountainRange.sol";
-import { TrieDB } from "./mpt/TrieDB.sol";
+// import { TrieDB } from "./mpt/TrieDB.sol";
 
 contract MerkleTests is Test {
     function testCalculateRoot(Node[][] memory proof, Node[] memory leaves)
