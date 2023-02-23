@@ -87,7 +87,7 @@ contract SubstrateTrieDB is TrieDB {
         ByteSlice memory input = node.data;
 
         bool padding = node.nibbleSize % NIBBLE_PER_BYTE != 0;
-        if (padding && (padLeft(uint8(input.data[input.offset])) == 0 )) {
+        if (padding && (padLeft(uint8(input.data[input.offset])) != 0 )) {
             revert("Bad Format!");
         }
         uint256 nibbleLen = ((node.nibbleSize + (NibbleSliceOps.NIBBLE_PER_BYTE - 1)) / NibbleSliceOps.NIBBLE_PER_BYTE);
@@ -133,7 +133,7 @@ contract SubstrateTrieDB is TrieDB {
         ByteSlice memory input = node.data;
 
         bool padding = node.nibbleSize % NIBBLE_PER_BYTE != 0;
-        if (padding && padLeft(uint8(input.data[input.offset])) == 0) {
+        if (padding && padLeft(uint8(input.data[input.offset])) != 0) {
             revert("Bad Format!");
         }
         uint256 nibbleLen = (node.nibbleSize + (NibbleSliceOps.NIBBLE_PER_BYTE - 1)) / NibbleSliceOps.NIBBLE_PER_BYTE;

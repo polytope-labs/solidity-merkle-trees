@@ -12,6 +12,7 @@ interface ITrieDB {
     function decodeBranch(NodeKind memory node) external pure returns (Branch memory);
     function decodeLeaf(NodeKind memory node) external pure returns (Leaf memory);
 }
+
 abstract contract TrieDB is ITrieDB {
     function load(NodeHandle memory node) external returns (bytes memory) {
         if (node.isInline) {

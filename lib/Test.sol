@@ -22,8 +22,6 @@ contract MerkleTests is Test {
     {
         SubstrateTrieDB trieDb = new SubstrateTrieDB(proof);
         return MerklePatricia.VerifyKeys(root, trieDb, keys);
-//        bytes[] memory lol = new bytes[](keys.length);
-//        return lol;
     }
 
     function decodeNodeKind(bytes memory node) public returns (NodeKind memory) {
@@ -36,6 +34,12 @@ contract MerkleTests is Test {
         bytes[] memory nodes = new bytes[](1);
         SubstrateTrieDB trieDb = new SubstrateTrieDB(nodes);
         return trieDb.decodeNibbledBranch(trieDb.decodeNodeKind(node));
+    }
+
+    function decodeLeaf(bytes memory node) external returns (Leaf memory) {
+        bytes[] memory nodes = new bytes[](1);
+        SubstrateTrieDB trieDb = new SubstrateTrieDB(nodes);
+        return trieDb.decodeLeaf(trieDb.decodeNodeKind(node));
     }
 
     function countZeroes(uint64 num) public pure returns (uint256) {
