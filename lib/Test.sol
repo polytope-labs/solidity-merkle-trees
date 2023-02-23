@@ -6,6 +6,7 @@ import "./MerkleMultiProof.sol";
 import "./MerkleMountainRange.sol";
 import "./MerklePatricia.sol";
 import "./trie/substrate/SubstrateTrieDB.sol";
+import "./trie/NibbleSlice.sol";
 
 contract MerkleTests is Test {
     function testCalculateRoot(Node[][] memory proof, Node[] memory leaves)
@@ -40,6 +41,34 @@ contract MerkleTests is Test {
         bytes[] memory nodes = new bytes[](1);
         SubstrateTrieDB trieDb = new SubstrateTrieDB(nodes);
         return trieDb.decodeLeaf(trieDb.decodeNodeKind(node));
+    }
+
+    function nibbleLen(NibbleSlice memory nibble) public pure returns (uint256) {
+        return NibbleSliceOps.len(nibble);
+    }
+
+    function mid(NibbleSlice memory self, uint256 i) public pure returns (NibbleSlice memory) {
+        return NibbleSliceOps.mid(self, i);
+    }
+
+    function isNibbleEmpty(NibbleSlice memory self) public pure returns (bool) {
+        return NibbleSliceOps.isEmpty(self);
+    }
+
+    function eq(NibbleSlice memory self, NibbleSlice memory other) public pure returns (bool) {
+        return NibbleSliceOps.eq(self, other);
+    }
+
+    function nibbleAt(NibbleSlice memory self, uint256 i) public pure returns (uint256) {
+        return NibbleSliceOps.at(self, i);
+    }
+
+    function startsWith(NibbleSlice memory self, NibbleSlice memory other) public pure returns (bool) {
+        return NibbleSliceOps.startsWith(self, other);
+    }
+
+    function commonPrefix(NibbleSlice memory self, NibbleSlice memory other) public pure returns (uint256) {
+        return NibbleSliceOps.commonPrefix(self, other);
     }
 
     function countZeroes(uint64 num) public pure returns (uint256) {
