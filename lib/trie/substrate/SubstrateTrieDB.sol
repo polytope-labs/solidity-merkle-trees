@@ -6,7 +6,6 @@ import "../TrieDB.sol";
 import { NibbleSliceOps } from "../NibbleSlice.sol";
 
 import { ScaleCodec } from "./ScaleCodec.sol";
-import { Blake2b } from "./Blake2b.sol";
 
 // SPDX-License-Identifier: Apache2
 
@@ -24,25 +23,7 @@ contract SubstrateTrieDB is TrieDB {
     uint256 public constant BITMAP_LENGTH = 2;
     uint256 public constant HASH_lENGTH = 32;
 
-    struct TrieNode {
-        bool exists;
-        bytes node;
-    }
-
-    mapping(bytes32 => TrieNode) internal db;
-
-    constructor(bytes[] memory proof) {
-        for (uint256 i = 0; i < proof.length; i++) {
-            Blake2b blake2b = new Blake2b();
-            db[blake2b.blake2b_256(proof[i])] = TrieNode(true, proof[i]);
-        }
-    }
-
-    function get(bytes32 hash) public view returns (bytes memory) {
-        TrieNode memory node = db[hash];
-        require(node.exists, "Incomplete Proof!");
-        return node.node;
-    }
+    constructor(bytes[] memory proof) TrieDB(proof) {}
 
     function decodeNodeKind(bytes memory encoded) external pure returns (NodeKind memory) {
         NodeKind memory node;
@@ -154,11 +135,11 @@ contract SubstrateTrieDB is TrieDB {
         return leaf;
     }
 
-    function decodeExtension(NodeKind memory node) external pure returns (Extension memory) {
+    function decodeExtension(NodeKind memory _node) external pure returns (Extension memory) {
         revert("Substrate doesn't support extension nodes");
     }
 
-    function decodeBranch(NodeKind memory node) external pure returns (Branch memory) {
+    function decodeBranch(NodeKind memory _node) external pure returns (Branch memory) {
         revert("Substrate doesn't support non-nibbled branch nodes");
     }
 

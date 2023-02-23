@@ -262,7 +262,7 @@ fn multi_merkle_proof() {
     let calculated = execute::<_, [u8; 32]>(
         &mut runner,
         "MerkleTests",
-        "testCalculateRoot",
+        "CalculateRoot",
         (args, leaves_with_indices),
     );
 
