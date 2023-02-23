@@ -22,8 +22,7 @@ abstract contract TrieDB is ITrieDB {
 
     constructor(bytes[] memory proof) {
         for (uint256 i = 0; i < proof.length; i++) {
-            bytes32 hash = keccak256(proof[i]);
-            db[hash] = TrieNode(true, proof[i]);
+            db[keccak256(proof[i])] = TrieNode(true, proof[i]);
         }
     }
 
@@ -33,7 +32,7 @@ abstract contract TrieDB is ITrieDB {
         return node.node;
     }
 
-    function load(NodeHandle memory node) external returns (bytes memory) {
+    function load(NodeHandle memory node) external view returns (bytes memory) {
         if (node.isInline) {
             return node.inLine;
         } else if (node.isHash) {

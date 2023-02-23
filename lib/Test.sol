@@ -33,7 +33,7 @@ contract MerkleTests is Test {
         bytes32 root = hex"6b5710000eccbd59b6351fc2eb53ff2c1df8e0f816f7186ddd309ca85e8798dd";
         SubstrateTrieDB trieDb = new SubstrateTrieDB(proof);
         bytes memory value = MerklePatricia.VerifyKeys(root, trieDb, keys)[0];
-        console.logBytes(value);
+        // assert(string(value) == "35e90c7f86010000");
     }
 
     function VerifyKeys(bytes32 root, bytes[] memory proof, bytes[] memory keys)
