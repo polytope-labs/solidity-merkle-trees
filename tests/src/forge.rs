@@ -146,6 +146,5 @@ where
     println!("Gas used {fn_name}: {:#?}", result.gas_used);
     println!("Logs {fn_name}: {:#?}", result.logs);
 
-
     result.result
 }

@@ -135,9 +135,7 @@ fn test_nibble_slice_ops_basics() {
         &mut runner,
         "MerkleTests",
         "nibbleLen",
-        (
-            Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::zero())]),
-        ),
+        (Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::zero())]),),
     )
     .as_u32();
 
@@ -147,8 +145,7 @@ fn test_nibble_slice_ops_basics() {
         &mut runner,
         "MerkleTests",
         "isNibbleEmpty",
-        (
-            Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::zero())]),),
+        (Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::zero())]),),
     );
 
     assert!(!result);
@@ -157,9 +154,7 @@ fn test_nibble_slice_ops_basics() {
         &mut runner,
         "MerkleTests",
         "isNibbleEmpty",
-        (
-            Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::from(6))]),
-        ),
+        (Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::from(6))]),),
     );
     assert!(result);
 
@@ -167,9 +162,7 @@ fn test_nibble_slice_ops_basics() {
         &mut runner,
         "MerkleTests",
         "nibbleLen",
-        (
-            Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::from(3))]),
-        ),
+        (Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::from(3))]),),
     )
     .as_u32();
     assert_eq!(result, 3);
@@ -206,11 +199,9 @@ fn test_nibble_slice_ops_mid() {
             &mut runner,
             "MerkleTests",
             "nibbleAt",
-            (
-                nibble.clone(),
-                Token::Uint(Uint::from(i)),
-            ),
-        ).as_u32();
+            (nibble.clone(), Token::Uint(Uint::from(i))),
+        )
+        .as_u32();
         assert_eq!(result, i as u32 + 2);
     }
 
@@ -229,11 +220,9 @@ fn test_nibble_slice_ops_mid() {
             &mut runner,
             "MerkleTests",
             "nibbleAt",
-            (
-                nibble.clone(),
-                Token::Uint(Uint::from(i)),
-            ),
-        ).as_u32();
+            (nibble.clone(), Token::Uint(Uint::from(i))),
+        )
+        .as_u32();
         assert_eq!(result, i as u32 + 3);
     }
 }
@@ -246,59 +235,28 @@ fn test_nibble_slice_ops_shared() {
     let other = &[0x01u8, 0x23, 0x01, 0x23, 0x45, 0x67];
     let m = Token::Tuple(vec![Token::Bytes(other.to_vec()), Token::Uint(Uint::zero())]);
 
-    let result = execute::<_, Uint>(
-        &mut runner,
-        "MerkleTests",
-        "commonPrefix",
-        (
-            n.clone(),
-            m.clone(),
-        ),
-    );
+    let result =
+        execute::<_, Uint>(&mut runner, "MerkleTests", "commonPrefix", (n.clone(), m.clone()));
     assert_eq!(result, Uint::from(4));
 
-    let result = execute::<_, Uint>(
-        &mut runner,
-        "MerkleTests",
-        "commonPrefix",
-        (
-            m.clone(),
-            n.clone(),
-        ),
-    );
+    let result =
+        execute::<_, Uint>(&mut runner, "MerkleTests", "commonPrefix", (m.clone(), n.clone()));
     assert_eq!(result, Uint::from(4));
 
     let m_mid_4 = execute::<_, Token>(
         &mut runner,
         "MerkleTests",
         "mid",
-        (
-            m.clone(),
-            Token::Uint(Uint::from(4)),
-        ),
+        (m.clone(), Token::Uint(Uint::from(4))),
     );
 
-    let result = execute::<_, bool>(
-        &mut runner,
-        "MerkleTests",
-        "startsWith",
-        (
-            m_mid_4.clone(),
-            n.clone(),
-        ),
-    );
+    let result =
+        execute::<_, bool>(&mut runner, "MerkleTests", "startsWith", (m_mid_4.clone(), n.clone()));
 
     assert!(result);
 
-    let result = execute::<_, bool>(
-        &mut runner,
-        "MerkleTests",
-        "startsWith",
-        (
-            n.clone(),
-            m_mid_4.clone(),
-        ),
-    );
+    let result =
+        execute::<_, bool>(&mut runner, "MerkleTests", "startsWith", (n.clone(), m_mid_4.clone()));
 
     assert!(!result);
 
@@ -306,10 +264,7 @@ fn test_nibble_slice_ops_shared() {
         &mut runner,
         "MerkleTests",
         "commonPrefix",
-        (
-            n.clone(),
-            m_mid_4.clone(),
-        ),
+        (n.clone(), m_mid_4.clone()),
     );
 
     assert_eq!(result, Uint::from(6));
@@ -318,40 +273,28 @@ fn test_nibble_slice_ops_shared() {
         &mut runner,
         "MerkleTests",
         "mid",
-        (
-            n.clone(),
-            Token::Uint(Uint::from(1)),
-        ),
+        (n.clone(), Token::Uint(Uint::from(1))),
     );
 
     let m_mid_1 = execute::<_, Token>(
         &mut runner,
         "MerkleTests",
         "mid",
-        (
-            m.clone(),
-            Token::Uint(Uint::from(1)),
-        ),
+        (m.clone(), Token::Uint(Uint::from(1))),
     );
 
     let m_mid_2 = execute::<_, Token>(
         &mut runner,
         "MerkleTests",
         "mid",
-        (
-            m.clone(),
-            Token::Uint(Uint::from(2)),
-        ),
+        (m.clone(), Token::Uint(Uint::from(2))),
     );
 
     let result = execute::<_, Uint>(
         &mut runner,
         "MerkleTests",
         "commonPrefix",
-        (
-            n_mid_1.clone(),
-            m_mid_1.clone(),
-        ),
+        (n_mid_1.clone(), m_mid_1.clone()),
     );
 
     assert_eq!(result, Uint::from(3));
@@ -360,10 +303,7 @@ fn test_nibble_slice_ops_shared() {
         &mut runner,
         "MerkleTests",
         "commonPrefix",
-        (
-            n_mid_1.clone(),
-            m_mid_2.clone(),
-        ),
+        (n_mid_1.clone(), m_mid_2.clone()),
     );
 
     assert_eq!(result, Uint::from(0));
