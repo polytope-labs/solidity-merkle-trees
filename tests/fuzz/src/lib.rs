@@ -1,11 +1,13 @@
 #![allow(dead_code, unused_imports)]
 
-use std::collections::HashSet;
 use patricia_merkle_trie::{MemoryDB, StorageProof};
 use solidity_merkle_trees_test::{execute, runner, Token};
 use sp_core::KeccakHasher;
 use sp_trie::LayoutV0;
-use trie_db::{DBValue, Hasher, Recorder, Trie, TrieDBBuilder, TrieDBMutBuilder, TrieLayout, TrieMut};
+use std::collections::HashSet;
+use trie_db::{
+    DBValue, Hasher, Recorder, Trie, TrieDBBuilder, TrieDBMutBuilder, TrieLayout, TrieMut,
+};
 
 fn data_sorted_unique(input: Vec<(Vec<u8>, Vec<u8>)>) -> Vec<(Vec<u8>, Vec<u8>)> {
     let mut m = std::collections::BTreeMap::new();
@@ -136,7 +138,7 @@ pub fn fuzz_that_verify_rejects_invalid_proofs(input: &[u8]) {
     let (root, proof, mut items) = test_generate_proof::<LayoutV0<KeccakHasher>>(data, keys);
 
     if proof.len() == 0 {
-        return;
+        return
     }
 
     // Make all items incorrect.
@@ -159,12 +161,9 @@ pub fn fuzz_that_verify_rejects_invalid_proofs(input: &[u8]) {
                 Token::Array(proof.clone().into_iter().map(Token::Bytes).collect()),
                 Token::Array(vec![Token::Bytes(key.to_vec())]),
             ),
-        ).unwrap();
-        let result = if result[0].len() == 0 {
-            None
-        } else {
-            Some(result[0].clone())
-        };
+        )
+        .unwrap();
+        let result = if result[0].len() == 0 { None } else { Some(result[0].clone()) };
 
         assert_ne!(result, value);
     }
@@ -186,7 +185,7 @@ pub fn fuzz_that_verify_accepts_valid_proofs(input: &[u8]) {
     let (root, proof, items) = test_generate_proof::<LayoutV0<KeccakHasher>>(data, keys);
 
     if proof.len() == 0 {
-        return;
+        return
     }
 
     let mut runner = runner();
@@ -200,12 +199,9 @@ pub fn fuzz_that_verify_accepts_valid_proofs(input: &[u8]) {
                 Token::Array(proof.clone().into_iter().map(Token::Bytes).collect()),
                 Token::Array(vec![Token::Bytes(key.to_vec())]),
             ),
-        ).unwrap();
-        let result = if result[0].len() == 0 {
-            None
-        } else {
-            Some(result[0].clone())
-        };
+        )
+        .unwrap();
+        let result = if result[0].len() == 0 { None } else { Some(result[0].clone()) };
         assert_eq!(result, value)
     }
 }

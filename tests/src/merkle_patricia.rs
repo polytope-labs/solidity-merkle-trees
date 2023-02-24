@@ -72,7 +72,8 @@ fn test_decode_nibbled_branch() {
             "MerkleTests",
             "decodeNodeKind",
             (Token::Bytes(item.clone())),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert!(result.5); // isNibbledBranch
 
@@ -81,7 +82,8 @@ fn test_decode_nibbled_branch() {
             "MerkleTests",
             "decodeNibbledBranch",
             (Token::Bytes(item.clone())),
-        ).unwrap();
+        )
+        .unwrap();
 
         println!("decodeNibbledBranch: {:?}", &result);
 
@@ -110,7 +112,8 @@ fn test_decode_leaf() {
             "MerkleTests",
             "decodeNodeKind",
             (Token::Bytes(leaf.clone())),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert!(result.1); // isLeaf
 
@@ -119,7 +122,8 @@ fn test_decode_leaf() {
             "MerkleTests",
             "decodeLeaf",
             (Token::Bytes(leaf.clone())),
-        ).unwrap();
+        )
+        .unwrap();
 
         println!("decodeLeaf: {:?}", &result);
     }
@@ -136,7 +140,8 @@ fn test_nibble_slice_ops_basics() {
         "MerkleTests",
         "nibbleLen",
         (Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::zero())]),),
-    ).unwrap()
+    )
+    .unwrap()
     .as_u32();
 
     assert_eq!(result, 6);
@@ -146,7 +151,8 @@ fn test_nibble_slice_ops_basics() {
         "MerkleTests",
         "isNibbleEmpty",
         (Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::zero())]),),
-    ).unwrap();
+    )
+    .unwrap();
 
     assert!(!result);
 
@@ -155,7 +161,8 @@ fn test_nibble_slice_ops_basics() {
         "MerkleTests",
         "isNibbleEmpty",
         (Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::from(6))]),),
-    ).unwrap();
+    )
+    .unwrap();
     assert!(result);
 
     let result = execute::<_, Uint>(
@@ -163,7 +170,8 @@ fn test_nibble_slice_ops_basics() {
         "MerkleTests",
         "nibbleLen",
         (Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::from(3))]),),
-    ).unwrap()
+    )
+    .unwrap()
     .as_u32();
     assert_eq!(result, 3);
 
@@ -176,7 +184,8 @@ fn test_nibble_slice_ops_basics() {
                 Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::from(3))]),
                 Token::Uint(Uint::from(i)),
             ),
-        ).unwrap()
+        )
+        .unwrap()
         .as_usize();
         assert_eq!(result, i + 3);
     }
@@ -193,14 +202,16 @@ fn test_nibble_slice_ops_mid() {
             Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::zero())]),
             Token::Uint(Uint::from(2)),
         ),
-    ).unwrap();
+    )
+    .unwrap();
     for i in 0..4 {
         let result = execute::<_, Uint>(
             &mut runner,
             "MerkleTests",
             "nibbleAt",
             (nibble.clone(), Token::Uint(Uint::from(i))),
-        ).unwrap()
+        )
+        .unwrap()
         .as_u32();
         assert_eq!(result, i as u32 + 2);
     }
@@ -213,7 +224,8 @@ fn test_nibble_slice_ops_mid() {
             Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::zero())]),
             Token::Uint(Uint::from(3)),
         ),
-    ).unwrap();
+    )
+    .unwrap();
 
     for i in 0..3 {
         let result = execute::<_, Uint>(
@@ -221,7 +233,8 @@ fn test_nibble_slice_ops_mid() {
             "MerkleTests",
             "nibbleAt",
             (nibble.clone(), Token::Uint(Uint::from(i))),
-        ).unwrap()
+        )
+        .unwrap()
         .as_u32();
         assert_eq!(result, i as u32 + 3);
     }
@@ -236,11 +249,13 @@ fn test_nibble_slice_ops_shared() {
     let m = Token::Tuple(vec![Token::Bytes(other.to_vec()), Token::Uint(Uint::zero())]);
 
     let result =
-        execute::<_, Uint>(&mut runner, "MerkleTests", "commonPrefix", (n.clone(), m.clone())).unwrap();
+        execute::<_, Uint>(&mut runner, "MerkleTests", "commonPrefix", (n.clone(), m.clone()))
+            .unwrap();
     assert_eq!(result, Uint::from(4));
 
     let result =
-        execute::<_, Uint>(&mut runner, "MerkleTests", "commonPrefix", (m.clone(), n.clone())).unwrap();
+        execute::<_, Uint>(&mut runner, "MerkleTests", "commonPrefix", (m.clone(), n.clone()))
+            .unwrap();
     assert_eq!(result, Uint::from(4));
 
     let m_mid_4 = execute::<_, Token>(
@@ -248,15 +263,18 @@ fn test_nibble_slice_ops_shared() {
         "MerkleTests",
         "mid",
         (m.clone(), Token::Uint(Uint::from(4))),
-    ).unwrap();
+    )
+    .unwrap();
 
     let result =
-        execute::<_, bool>(&mut runner, "MerkleTests", "startsWith", (m_mid_4.clone(), n.clone())).unwrap();
+        execute::<_, bool>(&mut runner, "MerkleTests", "startsWith", (m_mid_4.clone(), n.clone()))
+            .unwrap();
 
     assert!(result);
 
     let result =
-        execute::<_, bool>(&mut runner, "MerkleTests", "startsWith", (n.clone(), m_mid_4.clone())).unwrap();
+        execute::<_, bool>(&mut runner, "MerkleTests", "startsWith", (n.clone(), m_mid_4.clone()))
+            .unwrap();
 
     assert!(!result);
 
@@ -265,7 +283,8 @@ fn test_nibble_slice_ops_shared() {
         "MerkleTests",
         "commonPrefix",
         (n.clone(), m_mid_4.clone()),
-    ).unwrap();
+    )
+    .unwrap();
 
     assert_eq!(result, Uint::from(6));
 
@@ -274,28 +293,32 @@ fn test_nibble_slice_ops_shared() {
         "MerkleTests",
         "mid",
         (n.clone(), Token::Uint(Uint::from(1))),
-    ).unwrap();
+    )
+    .unwrap();
 
     let m_mid_1 = execute::<_, Token>(
         &mut runner,
         "MerkleTests",
         "mid",
         (m.clone(), Token::Uint(Uint::from(1))),
-    ).unwrap();
+    )
+    .unwrap();
 
     let m_mid_2 = execute::<_, Token>(
         &mut runner,
         "MerkleTests",
         "mid",
         (m.clone(), Token::Uint(Uint::from(2))),
-    ).unwrap();
+    )
+    .unwrap();
 
     let result = execute::<_, Uint>(
         &mut runner,
         "MerkleTests",
         "commonPrefix",
         (n_mid_1.clone(), m_mid_1.clone()),
-    ).unwrap();
+    )
+    .unwrap();
 
     assert_eq!(result, Uint::from(3));
 
@@ -304,7 +327,8 @@ fn test_nibble_slice_ops_shared() {
         "MerkleTests",
         "commonPrefix",
         (n_mid_1.clone(), m_mid_2.clone()),
-    ).unwrap();
+    )
+    .unwrap();
 
     assert_eq!(result, Uint::from(0));
 }
@@ -324,7 +348,8 @@ fn test_merkle_patricia_trie() {
             Token::Array(proof.clone().into_iter().map(Token::Bytes).collect()),
             Token::Array(vec![Token::Bytes(key.to_vec())]),
         ),
-    ).unwrap();
+    )
+    .unwrap();
 
     let timestamp = <u64>::decode(&mut &result[0][..]).unwrap();
     assert_eq!(timestamp, 1_677_168_798_005)

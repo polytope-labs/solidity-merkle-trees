@@ -131,16 +131,14 @@ where
     let setup = single_runner.setup(false).unwrap();
     let TestSetup { address, .. } = setup;
 
-    let result = single_runner
-        .executor
-        .execute_test::<R, _, _>(
-            single_runner.sender,
-            address,
-            function,
-            args,
-            0.into(),
-            single_runner.errors,
-        )?;
+    let result = single_runner.executor.execute_test::<R, _, _>(
+        single_runner.sender,
+        address,
+        function,
+        args,
+        0.into(),
+        single_runner.errors,
+    )?;
 
     println!("Gas used {fn_name}: {:#?}", result.gas_used);
     println!("Logs {fn_name}: {:#?}", result.logs);

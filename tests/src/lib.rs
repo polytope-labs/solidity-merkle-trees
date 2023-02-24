@@ -48,7 +48,6 @@ impl From<u32> for NumberHash {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -268,7 +267,8 @@ mod tests {
             "MerkleTests",
             "CalculateRoot",
             (args, leaves_with_indices),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(tree.root().unwrap(), calculated)
     }
@@ -282,7 +282,8 @@ mod tests {
             "MerkleTests",
             "countLeadingZeros",
             (Token::Uint(U256::from(17))),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(leading_zeros.as_u32(), 17u64.leading_zeros());
 
@@ -291,7 +292,8 @@ mod tests {
             "MerkleTests",
             "countZeroes",
             (Token::Uint(U256::from(17))),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(count_zeros.as_u32(), 17u64.count_zeros());
 
@@ -300,7 +302,8 @@ mod tests {
             "MerkleTests",
             "countOnes",
             (Token::Uint(U256::from(17))),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(count_ones.as_u32(), 17u64.count_ones());
 
@@ -311,7 +314,8 @@ mod tests {
                     "MerkleTests",
                     "posToHeight",
                     (Token::Uint(U256::from(pos))),
-                ).unwrap();
+                )
+                .unwrap();
 
                 assert_eq!(height.as_u32(), pos_height_in_tree(pos));
             }
@@ -326,7 +330,8 @@ mod tests {
                 "MerkleTests",
                 "difference",
                 (Token::Array(left), Token::Array(right)),
-            ).unwrap();
+            )
+            .unwrap();
 
             assert_eq!(height, vec![3, 4]);
         }
@@ -335,7 +340,8 @@ mod tests {
             let indices =
                 vec![2, 5].into_iter().map(|i| Token::Uint(U256::from(i))).collect::<Vec<_>>();
             let siblings =
-                execute::<_, Vec<u64>>(&mut runner, "MerkleTests", "siblingIndices", (indices)).unwrap();
+                execute::<_, Vec<u64>>(&mut runner, "MerkleTests", "siblingIndices", (indices))
+                    .unwrap();
 
             assert_eq!(siblings, vec![3, 4]);
         }
@@ -364,7 +370,8 @@ mod tests {
                 "MerkleTests",
                 "mmrLeafToNode",
                 (leaves.clone()),
-            ).unwrap();
+            )
+            .unwrap();
 
             assert_eq!(result.0.len(), 6);
             assert_eq!(result.1.len(), 6);
@@ -374,7 +381,8 @@ mod tests {
                 "MerkleTests",
                 "leavesForPeak",
                 (leaves, Token::Uint(U256::from(15))),
-            ).unwrap();
+            )
+            .unwrap();
 
             assert_eq!(result.0.len(), 3);
             assert_eq!(result.1.len(), 3);
@@ -387,7 +395,8 @@ mod tests {
                     "MerkleTests",
                     "getPeaks",
                     (Token::Uint(U256::from(pos))),
-                ).unwrap();
+                )
+                .unwrap();
 
                 assert_eq!(peaks, get_peaks(pos));
             }
@@ -454,7 +463,8 @@ mod tests {
             "MerkleTests",
             "calculateRoot",
             (nodes, token_leaves, Token::Uint(mmr.mmr_size().into())),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(root.to_vec(), mmr.get_root().unwrap().0);
     }
