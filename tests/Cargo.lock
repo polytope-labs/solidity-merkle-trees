@@ -107,6 +107,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2cb2f989d18dd141ab8ae82f64d1a8cdd37e0840f73a406896cf5e99502fab61"
 
 [[package]]
+name = "arbitrary"
+version = "1.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3e90af4de65aa7b293ef2d09daff88501eb254f58edde2e1ac02c82d873eadad"
+
+[[package]]
 name = "array-bytes"
 version = "4.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2508,6 +2514,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "201de327520df007757c1f0adce6e827fe8562fbc28bfd9c15571c66ca1f5f79"
 
 [[package]]
+name = "libfuzzer-sys"
+version = "0.4.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "beb09950ae85a0a94b27676cccf37da5ff13f27076aa1adbc6545dd0d0e1bd4e"
+dependencies = [
+ "arbitrary",
+ "cc",
+ "once_cell",
+]
+
+[[package]]
 name = "libm"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4192,6 +4209,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "solidity-merkle-trees-fuzz"
+version = "0.1.0"
+dependencies = [
+ "libfuzzer-sys",
+ "patricia-merkle-trie",
+ "solidity-merkle-trees-test",
+ "sp-core",
+ "sp-trie",
+ "trie-db",
+]
+
+[[package]]
 name = "solidity-merkle-trees-test"
 version = "0.1.0"
 dependencies = [
@@ -4203,6 +4232,7 @@ dependencies = [
  "foundry-evm",
  "hex",
  "hex-literal",
+ "libfuzzer-sys",
  "once_cell",
  "parity-scale-codec",
  "patricia-merkle-trie",

@@ -13,3 +13,6 @@ out/
 target/
 .cargo/
 
+artifacts/
+corpus/
+

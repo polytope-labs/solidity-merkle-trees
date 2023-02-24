@@ -12,7 +12,7 @@ use forge::{
     ContractRunner, MultiContractRunner, MultiContractRunnerBuilder,
 };
 use foundry_config::{fs_permissions::PathPermission, Config, FsPermissions};
-use foundry_evm::executor::{Backend, ExecutorBuilder};
+use foundry_evm::executor::{Backend, EvmError, ExecutorBuilder};
 use once_cell::sync::Lazy;
 use std::{
     fmt::Debug,
@@ -94,7 +94,7 @@ pub fn execute<T, R>(
     contract_name: &'static str,
     fn_name: &'static str,
     args: T,
-) -> R
+) -> Result<R, EvmError>
 where
     T: Tokenize,
     R: Detokenize + Debug,
@@ -140,11 +140,10 @@ where
             args,
             0.into(),
             single_runner.errors,
-        )
-        .unwrap();
+        )?;
 
     println!("Gas used {fn_name}: {:#?}", result.gas_used);
     println!("Logs {fn_name}: {:#?}", result.logs);
 
-    result.result
+    Ok(result.result)
 }

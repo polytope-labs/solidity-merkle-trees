@@ -24,3 +24,8 @@ primitive-types = "0.12.1"
 codec = { package = "parity-scale-codec", version = "3.4.0" }
 sp-core = "17.0.0"
 sp-trie = "17.0.0"
+libfuzzer-sys = "0.4.6"
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = [".", "fuzz"]

@@ -1,0 +1,23 @@
+[package]
+name = "solidity-merkle-trees-fuzz"
+version = "0.1.0"
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+trie-db = "0.24.0"
+sp-trie = "17.0.0"
+sp-core = "17.0.0"
+solidity-merkle-trees-test = { path = "../" }
+patricia-merkle-trie = { git = "https://github.com/polytope-labs/patricia-merkle-trie", branch = "main" }
+libfuzzer-sys = "0.4.6"
+
+[[bin]]
+name = "trie_proof_invalid"
+path = "fuzz_targets/trie_proof_invalid.rs"
+
+[[bin]]
+name = "trie_proof_valid"
+path = "fuzz_targets/trie_proof_valid.rs"
