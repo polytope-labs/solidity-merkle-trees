@@ -7,7 +7,7 @@ This library contains the implementations of various merkle tree verification al
 <br />
  - [x] Merkle Trees (supports unbalanced trees).
  - [x] Merkle Mountain Ranges.
- - [ ] Merkle-Patricia Trie (Soon™).
+ - [x] Merkle-Patricia Trie.
 
 ## Installation
 
@@ -63,6 +63,35 @@ contract YourContract {
 ```
 
 You can derive the k-indices for the mmr leaves using this rust lib [polytope-labs/merkle-mountain-range](https://github.com/polytope-labs/merkle-mountain-range).
+
+## Merkle Patricia Trie
+
+This library also supports the verification of the different styles of merkle patricia tries:
+
+ - [x] Substrate
+ - [ ] Ethereum
+ - [ ] NEAR
+   <br />
+
+```solidity
+pragma solidity ^0.8.0;
+
+import "@polytope-labs/solidity-merkle-trees/lib/MerklePatricia.sol";
+import "@polytope-labs/solidity-merkle-trees/lib/trie/substrate/SubstrateTrieDB.sol";
+
+contract YourContract {
+    function verify(
+        bytes32 root,
+        bytes[] memory proof,
+        bytes[] memory leaves,
+    ) public {
+        // EthereumTrieDb trieDb = new EthereumTrieDb(proof); for EIP-1186 style proofs.
+        SubstrateTrieDb trieDb = new SubstrateTrieDb(proof); // for proofs from state.readProofCheck
+        bytes[] values = MerklePatricia.VerifyKeys(root, trieDb, keys);
+        // do something with the verified values.
+    }
+}
+```
 
 ## License
 
