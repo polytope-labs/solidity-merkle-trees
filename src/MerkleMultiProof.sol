@@ -14,11 +14,13 @@ struct Node {
  * @dev refer to research for more info. https://research.polytope.technology/merkle-multi-proofs
  */
 library MerkleMultiProof {
-    /// @title Verify a proof using Merkle Multi Proof
-    /// @param root hash of the root node of the merkle tree
-    /// @param proof A list of the merkle nodes that are needed to traverse to reach the root node.
-    /// @param leaves A list of the merkle nodes to provide proof for
-    /// @return boolean matching alculated root against provides root node 
+    /**
+     * @notice Verify a proof using Merkle Multi Proof
+     * @param root hash of the root node of the merkle tree
+     * @param proof A list of the merkle nodes that are needed to traverse to reach the root node.
+     * @param leaves A list of the merkle nodes to provide proof for
+     * @return boolean matching alculated root against provides root node
+     */
     function VerifyProof(bytes32 root, Node[][] memory proof, Node[] memory leaves)
         public
         pure
@@ -27,7 +29,7 @@ library MerkleMultiProof {
         return root == CalculateRoot(proof, leaves);
     }
 
-    /// @title Calculate the hash of the root node
+    /// @notice Calculate the hash of the root node
     /// @dev Use this function to calculate the hash of the root node
     /// @param proof A list of the merkle nodes that are needed to traverse to reach the root node
     /// @param leaves A list of the merkle nodes to provide proof for

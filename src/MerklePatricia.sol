@@ -20,7 +20,7 @@ library MerklePatricia {
      uint256 internal constant MAX_TRIE_DEPTH = 50;
 
      /**
-      * @title Verify child trie keys
+      * @notice Verify child trie keys
       * @dev substrate specific method in order to verify keys in the child trie.
       * @param root hash of the merkle root
       * @param trieDB an instance of a TrieDB contract, refer to ./trie/trieDB.sol
@@ -46,13 +46,13 @@ library MerklePatricia {
      }
 
      /**
-      * @title Verify Keys
+      * @notice Verify Keys
       * @param root hash of the merkle root
       * @param trieDb an instance of a TrieDB, refer to ./trie/TrieDB.sol
       * @param keys a list of keys to verify
       * @return bytes[] a list of verified keys
       */
-     function VerifyKeys(bytes32 root, TrieDB trieDb, bytes[] memory keys)
+     function VerifySubstrateProof(bytes32 root, TrieDB trieDb, bytes[] memory keys)
      public
      returns (bytes[] memory)
      {

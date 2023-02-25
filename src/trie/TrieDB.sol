@@ -1,8 +1,8 @@
+// SPDX-License-Identifier: Apache2
 pragma solidity ^0.8.17;
 
 import "./Node.sol";
 
-// SPDX-License-Identifier: Apache2
 
 library TrieDB {
     function get(TrieNode[] memory nodes, bytes32 hash) public pure returns (bytes memory) {

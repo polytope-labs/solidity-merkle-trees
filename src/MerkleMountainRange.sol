@@ -17,7 +17,7 @@ struct MmrLeaf {
  * @dev read the Merkle mountain research https://research.polytope.technology/merkle-mountain-range-multi-proofs
  */
 library MerkleMountainRange {
-    /// @title Verify that merkle proof is accurate
+    /// @notice Verify that merkle proof is accurate
     /// @notice This calls calculateRoot(...) under the hood
     /// @param root hash of the Merkle's root node
     /// @param proof a list of nodes required for the proof to be verified, proof nodes
@@ -32,11 +32,11 @@ library MerkleMountainRange {
         return root == CalculateRoot(proof, leaves, mmrSize);
     }
 
-    /// @title Calculate merkle root 
+    /// @notice Calculate merkle root 
     /// @notice this method allows computing the root hash of a merkle tree using Merkle Mountain Range
     /// @param proof a list of nodes that must be traversed to reach the root node, called proof nodes
     /// @param leaves a list of merkle nodes to provide proof for
-    /// @param mmrSize 
+    /// @param mmrSize the size of the merkle tree
     /// @return bytes32 hash of the computed root node
     function CalculateRoot(
         bytes32[] memory proof,
@@ -83,13 +83,12 @@ library MerkleMountainRange {
         return peakRoots[0];
     }
 
-    /// @title calculate root hash of a sub peak of the merkle mountain
+    /// @notice calculate root hash of a sub peak of the merkle mountain
     /// @param peakLeaves  a list of nodes to provide proof for 
     /// @param proof   a list of node hashes to traverse to compute the peak root hash
-    /// @param peak
-    /// @param pc
+    /// @param peak    index of the peak node
     /// @return peakRoot a tuple containing the peak root hash, and the peak root position in the merkle
-    function calculatePeakRoot(
+    function CalculatePeakRoot(
         MmrLeaf[] memory peakLeaves,
         bytes32[] memory proof,
         uint256 peak,
@@ -179,7 +178,7 @@ library MerkleMountainRange {
     }
 
     /**
-     * @title Compute Parent Indices
+     * @notice Compute Parent Indices
      * @dev Used internally to calculate the indices of the parent nodes of the provided proof nodes
      * @param indices a list of indices of proof nodes in a merkle mountain 
      * @return uint256[] a list of parent indices for each index provided
@@ -195,7 +194,7 @@ library MerkleMountainRange {
     }
 
     /**
-     * @title Convert Merkle mountain Leaf to a Merkle Node
+     * @notice Convert Merkle mountain Leaf to a Merkle Node
      * @param leaves list of merkle mountain range leaf
      * @return A tuple with the list of merkle nodes and the list of nodes at 0 and 1 respectively
      */
@@ -213,7 +212,7 @@ library MerkleMountainRange {
     }
 
     /**
-     * @title Get a meountain peak's leaves
+     * @notice Get a meountain peak's leaves
      * @notice this splits the leaves into either side of the peak [left & right]
      * @param leaves a list of mountain merkle leaves, for a subtree
      * @param peak the peak index of the root of the subtree
@@ -251,7 +250,7 @@ library MerkleMountainRange {
     }
 
     /**
-     * @title Merkle mountain peaks computer
+     * @notice Merkle mountain peaks computer
      * @notice Used internally to calculate a list of subtrees from the merkle mountain range
      * @param mmrSize the size of the merkle mountain range, or the height of the tree
      * @return uint265[] a list of the peak positions
@@ -380,8 +379,7 @@ library MerkleMountainRange {
         return count;
     }
 
-    /// Merge a list of nodes into one node. The result will need to be sorted aftewards
-    /// @dev 
+    /// @dev Merge a list of nodes into one node. The result will need to be sorted aftewards
     /// @param out the array to merge the nodes into
     /// @param arr1 one of the list of nodes to merge
     /// @param arr2 the other of the list of nodes to merge
@@ -406,7 +404,7 @@ library MerkleMountainRange {
     }
 
     /**
-     * @title Sort a list of data using quick sort algorithm 
+     * @notice Sort a list of data using quick sort algorithm 
      * @notice this is an overloaded function, but they all do the same thing 
      * @param arr list of data to sort. In this case, it's a merkle node 
      * @param left leftmost position on the list, or lowest point 
@@ -438,7 +436,7 @@ library MerkleMountainRange {
     }
 
   /**
-     * @title Sort a list of data using quick sort algorithm
+     * @notice Sort a list of data using quick sort algorithm
      * @notice this is an overloaded function, but they all do the same thing
      * @param arr list of data to sort. In this case, it's a list of node hashes
      * @param left leftmost position on the list, or lowest point
@@ -470,7 +468,7 @@ library MerkleMountainRange {
     }
 
   /**
-     * @title Sort a list of data using quick sort algorithm
+     * @notice Sort a list of data using quick sort algorithm
      * @notice this is an overloaded function, but they all do the same thing
      * @param arr list of data to sort. In this case, it's a merkle mountain node
      * @param left leftmost position on the list, or lowest point
@@ -501,7 +499,7 @@ library MerkleMountainRange {
         if (i < right) quickSort(arr, i, right);
     }
 
-    /// @title Integer log2
+    /// @notice Integer log2
     /// @param x Integer value, calculate the log2 and floor it
     /// @return uint the floored result
     /// @notice if x is nonzero floored value is returned, otherwise 0. 
