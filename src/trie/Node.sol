@@ -62,3 +62,8 @@ struct Leaf {
     NibbleSlice key;
     NodeHandle value;
 }
+
+struct TrieNode {
+    bytes32 hash;
+    bytes node;
+}

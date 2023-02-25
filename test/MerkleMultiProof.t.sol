@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import "../contracts/MerkleMultiProof.sol";
+import "../src/MerkleMultiProof.sol";
 
 contract MerkleMultiProofTest is Test {
     // needs a test method so that forge can detect it

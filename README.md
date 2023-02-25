@@ -77,7 +77,6 @@ This library also supports the verification of the different styles of merkle pa
 pragma solidity ^0.8.0;
 
 import "@polytope-labs/solidity-merkle-trees/MerklePatricia.sol";
-import "@polytope-labs/solidity-merkle-trees/trie/substrate/SubstrateTrieDB.sol";
 
 contract YourContract {
     function verify(
@@ -85,9 +84,7 @@ contract YourContract {
         bytes[] memory proof,
         bytes[] memory keys,
     ) public {
-        // EthereumTrieDb trieDb = new EthereumTrieDb(proof); for EIP-1186 style proofs.
-        SubstrateTrieDb trieDb = new SubstrateTrieDb(proof); // verifies proofs from state.getReadProof
-        bytes[] values = MerklePatricia.VerifyKeys(root, trieDb, keys);
+        bytes[] values = MerklePatricia.VerifySubstrateProof(root, trieDb, keys); // verifies proofs from state.getReadProof
         // do something with the verified values.
     }
 }

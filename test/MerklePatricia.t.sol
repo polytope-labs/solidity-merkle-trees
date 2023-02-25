@@ -3,13 +3,13 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import "../contracts/MerklePatricia.sol";
-import "../contracts/trie/substrate/SubstrateTrieDB.sol";
-import "../contracts/trie/substrate/ScaleCodec.sol";
-import "../contracts/trie/NibbleSlice.sol";
+import "../src/MerklePatricia.sol";
+import "../src/trie/substrate/SubstrateTrieDB.sol";
+import "../src/trie/substrate/ScaleCodec.sol";
+import "../src/trie/NibbleSlice.sol";
 
 contract MerklePatriciaTest is Test {
-    function testSubstrateMerklePatricia() public {
+    function testSubstrateMerklePatricia() public pure {
         bytes[] memory keys = new bytes[](1);
         keys[0] = hex"f0c365c3cf59d671eb72da0e7a4113c49f1f0515f462cdcf84e0f1d6045dfcbb";
 
@@ -20,33 +20,25 @@ contract MerklePatriciaTest is Test {
             hex"9f00c365c3cf59d671eb72da0e7a4113c41002505f0e7b9012096b41c4eb3aaf947f6ea429080000685f0f1f0515f462cdcf84e0f1d6045dfcbb2035e90c7f86010000";
 
         bytes32 root = hex"6b5710000eccbd59b6351fc2eb53ff2c1df8e0f816f7186ddd309ca85e8798dd";
-        SubstrateTrieDB trieDb = new SubstrateTrieDB(proof);
-        bytes memory value = MerklePatricia.VerifyKeys(root, trieDb, keys)[0];
+        bytes memory value = MerklePatricia.VerifySubstrateProof(root, proof, keys)[0];
         uint256 timestamp = ScaleCodec.decodeUint256(value);
         assert(timestamp == 1677168798005);
     }
 
-    function VerifyKeys(bytes32 root, bytes[] memory proof, bytes[] memory keys) public returns (bytes[] memory) {
-        SubstrateTrieDB trieDb = new SubstrateTrieDB(proof);
-        return MerklePatricia.VerifyKeys(root, trieDb, keys);
+    function VerifyKeys(bytes32 root, bytes[] memory proof, bytes[] memory keys) public pure returns (bytes[] memory) {
+        return MerklePatricia.VerifySubstrateProof(root, proof, keys);
     }
 
-    function decodeNodeKind(bytes memory node) public returns (NodeKind memory) {
-        bytes[] memory nodes = new bytes[](1);
-        SubstrateTrieDB trieDb = new SubstrateTrieDB(nodes);
-        return trieDb.decodeNodeKind(node);
+    function decodeNodeKind(bytes memory node) public pure returns (NodeKind memory) {
+        return SubstrateTrieDB.decodeNodeKind(node);
     }
 
-    function decodeNibbledBranch(bytes memory node) external returns (NibbledBranch memory) {
-        bytes[] memory nodes = new bytes[](1);
-        SubstrateTrieDB trieDb = new SubstrateTrieDB(nodes);
-        return trieDb.decodeNibbledBranch(trieDb.decodeNodeKind(node));
+    function decodeNibbledBranch(bytes memory node) external pure returns (NibbledBranch memory) {
+        return SubstrateTrieDB.decodeNibbledBranch(SubstrateTrieDB.decodeNodeKind(node));
     }
 
-    function decodeLeaf(bytes memory node) external returns (Leaf memory) {
-        bytes[] memory nodes = new bytes[](1);
-        SubstrateTrieDB trieDb = new SubstrateTrieDB(nodes);
-        return trieDb.decodeLeaf(trieDb.decodeNodeKind(node));
+    function decodeLeaf(bytes memory node) external pure returns (Leaf memory) {
+        return SubstrateTrieDB.decodeLeaf(SubstrateTrieDB.decodeNodeKind(node));
     }
 
     function nibbleLen(NibbleSlice memory nibble) public pure returns (uint256) {

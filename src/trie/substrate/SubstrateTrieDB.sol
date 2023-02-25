@@ -2,14 +2,13 @@ pragma solidity ^0.8.17;
 
 import "../Node.sol";
 import "../Bytes.sol";
-import "../TrieDB.sol";
 import { NibbleSliceOps } from "../NibbleSlice.sol";
 
 import { ScaleCodec } from "./ScaleCodec.sol";
 
 // SPDX-License-Identifier: Apache2
 
-contract SubstrateTrieDB is TrieDB {
+library SubstrateTrieDB {
     uint8 public constant FIRST_PREFIX = 0x00 << 6;
     uint8 public constant PADDING_BITMASK = 0x0F;
     uint8 public constant EMPTY_TRIE = FIRST_PREFIX | (0x00 << 4);
@@ -22,8 +21,6 @@ contract SubstrateTrieDB is TrieDB {
     uint256 public constant NIBBLE_SIZE_BOUND = uint256(type(uint16).max);
     uint256 public constant BITMAP_LENGTH = 2;
     uint256 public constant HASH_lENGTH = 32;
-
-    constructor(bytes[] memory proof) TrieDB(proof) {}
 
     function decodeNodeKind(bytes memory encoded) external pure returns (NodeKind memory) {
         NodeKind memory node;
@@ -141,6 +138,25 @@ contract SubstrateTrieDB is TrieDB {
 
     function decodeBranch(NodeKind memory _node) external pure returns (Branch memory) {
         revert("Substrate doesn't support non-nibbled branch nodes");
+    }
+
+    function get(TrieNode[] memory nodes, bytes32 hash) public pure returns (bytes memory) {
+        for (uint256 i = 0; i < nodes.length; i++) {
+            if (nodes[i].hash == hash) {
+                return nodes[i].node;
+            }
+        }
+        revert("Incomplete Proof!");
+    }
+
+    function load(TrieNode[] memory nodes, NodeHandle memory node) external pure returns (bytes memory) {
+        if (node.isInline) {
+            return node.inLine;
+        } else if (node.isHash) {
+            return get(nodes, node.hash);
+        }
+
+        return bytes("");
     }
 
     function decodeSize(uint8 first, ByteSlice memory encoded, uint8 prefixMask) internal pure returns (uint256) {
