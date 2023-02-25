@@ -140,25 +140,6 @@ library SubstrateTrieDB {
         revert("Substrate doesn't support non-nibbled branch nodes");
     }
 
-    function get(TrieNode[] memory nodes, bytes32 hash) public pure returns (bytes memory) {
-        for (uint256 i = 0; i < nodes.length; i++) {
-            if (nodes[i].hash == hash) {
-                return nodes[i].node;
-            }
-        }
-        revert("Incomplete Proof!");
-    }
-
-    function load(TrieNode[] memory nodes, NodeHandle memory node) external pure returns (bytes memory) {
-        if (node.isInline) {
-            return node.inLine;
-        } else if (node.isHash) {
-            return get(nodes, node.hash);
-        }
-
-        return bytes("");
-    }
-
     function decodeSize(uint8 first, ByteSlice memory encoded, uint8 prefixMask) internal pure returns (uint256) {
         uint8 maxValue = uint8(255 >> prefixMask);
         uint256 result = uint256(first & maxValue);

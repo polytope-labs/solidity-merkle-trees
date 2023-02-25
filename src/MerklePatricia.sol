@@ -4,6 +4,7 @@ import "./trie/NodeCodec.sol";
 import "./trie/Node.sol";
 import "./trie/Option.sol";
 import "./trie/NibbleSlice.sol";
+import "./trie/TrieDB.sol";
 import "./trie/substrate/SubstrateTrieDB.sol";
 
 // SPDX-License-Identifier: Apache2
@@ -26,7 +27,7 @@ library MerklePatricia {
 
           for (uint256 i = 0; i < keys.length; i++) {
                NibbleSlice memory keyNibbles = NibbleSlice(keys[i], 0);
-               NodeKind memory node = SubstrateTrieDB.decodeNodeKind(SubstrateTrieDB.get(nodes, root));
+               NodeKind memory node = SubstrateTrieDB.decodeNodeKind(TrieDB.get(nodes, root));
 
                // worst case scenario, so we avoid unbounded loops
                for (uint256 j = 0; j < MAX_TRIE_DEPTH; j++) {
@@ -35,7 +36,7 @@ library MerklePatricia {
                     if (NodeCodec.isLeaf(node)) {
                          Leaf memory leaf = SubstrateTrieDB.decodeLeaf(node);
                          if (NibbleSliceOps.eq(leaf.key, keyNibbles)) {
-                              values[i] = SubstrateTrieDB.load(nodes, leaf.value);
+                              values[i] = TrieDB.load(nodes, leaf.value);
                          }
                          break;
                     } else if (NodeCodec.isExtension(node)) {
@@ -51,7 +52,7 @@ library MerklePatricia {
                          Branch memory branch = SubstrateTrieDB.decodeBranch(node);
                          if (NibbleSliceOps.isEmpty(keyNibbles)) {
                               if (Option.isSome(branch.value)) {
-                                   values[i] = SubstrateTrieDB.load(nodes, branch.value.value);
+                                   values[i] = TrieDB.load(nodes, branch.value.value);
                               }
                               break;
                          } else {
@@ -72,7 +73,7 @@ library MerklePatricia {
 
                          if (NibbleSliceOps.len(keyNibbles) == nibbledBranchKeyLength) {
                               if (Option.isSome(nibbled.value)) {
-                                   values[i] = SubstrateTrieDB.load(nodes, nibbled.value.value);
+                                   values[i] = TrieDB.load(nodes, nibbled.value.value);
                               }
                               break;
                          } else {
@@ -89,7 +90,7 @@ library MerklePatricia {
                          break;
                     }
 
-                    node = SubstrateTrieDB.decodeNodeKind(SubstrateTrieDB.load(nodes, nextNode));
+                    node = SubstrateTrieDB.decodeNodeKind(TrieDB.load(nodes, nextNode));
                }
           }
 
