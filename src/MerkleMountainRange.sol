@@ -120,6 +120,13 @@ library MerkleMountainRange {
         return (MerkleMultiProof.CalculateRoot(layers, leaves), pc);
     }
 
+    /**
+     * @notice difference ensures all nodes have a sibling.
+     * @dev left and right are designed to be equal length array
+     * @param left a list of hashes
+     * @param right a list of hashes to compare
+     * @return uint256[] a new array with difference 
+     */
     function difference(uint256[] memory left, uint256[] memory right) internal pure returns (uint256[] memory) {
         uint256[] memory diff = new uint256[](left.length);
         uint256 d = 0;
@@ -148,6 +155,12 @@ library MerkleMountainRange {
         return out;
     }
 
+    /**
+     * @dev calculates the index of each sibling index of the proof nodes
+     * @dev proof nodes are the nodes that will be traversed to estimate the root hash
+     * @param indices a list of proof nodes indices
+     * @return uint256[] a list of sibling indices
+     */
     function siblingIndices(uint256[] memory indices) internal pure returns (uint256[] memory) {
         uint256[] memory siblings = new uint256[](indices.length);
 
@@ -165,7 +178,13 @@ library MerkleMountainRange {
         return siblings;
     }
 
-    function parentIndices(uint256[] memory indices) public pure returns (uint256[] memory) {
+    /**
+     * @title Compute Parent Indices
+     * @dev Used internally to calculate the indices of the parent nodes of the provided proof nodes
+     * @param indices a list of indices of proof nodes in a merkle mountain 
+     * @return uint256[] a list of parent indices for each index provided
+     */
+    function parentIndices(uint256[] memory indices) internal pure returns (uint256[] memory) {
         uint256[] memory  parents = new uint256[](indices.length);
 
         for (uint256 i = 0; i < indices.length; i++) {
@@ -175,7 +194,12 @@ library MerkleMountainRange {
         return parents;
     }
 
-    function mmrLeafToNode(MmrLeaf[] memory leaves) public pure returns (Node[] memory, uint256[] memory) {
+    /**
+     * @title Convert Merkle mountain Leaf to a Merkle Node
+     * @param leaves list of merkle mountain range leaf
+     * @return A tuple with the list of merkle nodes and the list of nodes at 0 and 1 respectively
+     */
+    function mmrLeafToNode(MmrLeaf[] memory leaves) internal pure returns (Node[] memory, uint256[] memory) {
         uint256 i = 0;
         Node[] memory nodes = new Node[](leaves.length);
         uint256[] memory indices = new uint256[](leaves.length);
@@ -188,10 +212,17 @@ library MerkleMountainRange {
         return (nodes, indices);
     }
 
+    /**
+     * @title Get a meountain peak's leaves
+     * @notice this splits the leaves into either side of the peak [left & right]
+     * @param leaves a list of mountain merkle leaves, for a subtree
+     * @param peak the peak index of the root of the subtree
+     * @return A tuple of 2 arrays of mountain merkle leaves. Index 1 and 2 represent left and right of the peak respectively
+     */
     function leavesForPeak(
         MmrLeaf[] memory leaves,
         uint256 peak
-    ) public pure returns (MmrLeaf[] memory, MmrLeaf[] memory) {
+    ) internal pure returns (MmrLeaf[] memory, MmrLeaf[] memory) {
         uint256 p = 0;
         for (;p < leaves.length; p++) {
             if (peak < leaves[p].mmr_pos) {
@@ -259,7 +290,7 @@ library MerkleMountainRange {
         return out;
     }
 
-    function getRightPeak(uint256 height, uint256 pos, uint256 mmrSize) public pure returns (uint256, uint256) {
+    function getRightPeak(uint256 height, uint256 pos, uint256 mmrSize) internal pure returns (uint256, uint256) {
         pos += siblingOffset(height);
 
         while (pos > (mmrSize - 1)) {
@@ -273,15 +304,7 @@ library MerkleMountainRange {
         return (height, pos);
     }
 
-    function siblingOffset(uint256 height) public pure returns (uint256) {
-        return (2 << height) - 1;
-    }
-
-    function parentOffset(uint256 height) public pure returns (uint256) {
-        return 2 << height;
-    }
-
-    function leftPeakHeightPos(uint256 mmrSize) public pure returns (uint256, uint256) {
+    function leftPeakHeightPos(uint256 mmrSize) internal pure returns (uint256, uint256) {
         uint256 height = 1;
         uint256 prevPos = 0;
         uint256 pos = getPeakPosByHeight(height);
@@ -294,11 +317,11 @@ library MerkleMountainRange {
         return (height - 1, prevPos);
     }
 
-    function getPeakPosByHeight(uint256 height) public pure returns (uint256) {
+    function getPeakPosByHeight(uint256 height) internal pure returns (uint256) {
         return (1 << (height + 1)) - 2;
     }
 
-    function posToHeight(uint64 pos)  public pure returns (uint64) {
+    function posToHeight(uint64 pos) internal pure returns (uint64) {
         pos += 1;
 
         while (!allOnes(pos)) {
@@ -309,17 +332,25 @@ library MerkleMountainRange {
 
     }
 
-    function allOnes(uint64 pos) public pure returns (bool) {
+    function siblingOffset(uint256 height) internal pure returns (uint256) {
+        return (2 << height) - 1;
+    }
+
+    function parentOffset(uint256 height) internal pure returns (uint256) {
+        return 2 << height;
+    }
+
+    function allOnes(uint64 pos) internal pure returns (bool) {
         return pos != 0 && countZeroes(pos) == countLeadingZeros(pos);
     }
 
-    function jumpLeft(uint64 pos) public pure returns (uint64) {
+    function jumpLeft(uint64 pos) internal pure returns (uint64) {
         uint64 len = 64 - countLeadingZeros(pos);
         uint64 msb = uint64(1 << (len - 1));
         return (pos - (msb - 1));
     }
 
-    function countLeadingZeros(uint64 num) public pure returns (uint64) {
+    function countLeadingZeros(uint64 num) internal pure returns (uint64) {
         uint64 size = 64;
         uint64 count = 0;
         uint64  msb = uint64(1 << (size - 1));
@@ -334,11 +365,11 @@ library MerkleMountainRange {
         return count;
     }
 
-    function countZeroes(uint64 num) public pure returns (uint256) {
+    function countZeroes(uint64 num) internal pure returns (uint256) {
         return 64 - countOnes(num);
     }
 
-    function countOnes(uint64 num) public pure returns (uint64) {
+    function countOnes(uint64 num) internal pure returns (uint64) {
         uint64 count = 0;
 
         while (num !=  0) {
@@ -349,6 +380,11 @@ library MerkleMountainRange {
         return count;
     }
 
+    /// Merge a list of nodes into one node. The result will need to be sorted aftewards
+    /// @dev 
+    /// @param out the array to merge the nodes into
+    /// @param arr1 one of the list of nodes to merge
+    /// @param arr2 the other of the list of nodes to merge
     function mergeArrays(
         Node[] memory out,
         Node[] memory arr1,
@@ -465,10 +501,12 @@ library MerkleMountainRange {
         if (i < right) quickSort(arr, i, right);
     }
 
-    // Integer log2
-    // @returns floor(log2(x)) if x is nonzero, otherwise 0. This is the same
-    //          as the location of the highest set bit.
-    // Consumes 232 gas. This could have been an 3 gas EVM opcode though.
+    /// @title Integer log2
+    /// @param x Integer value, calculate the log2 and floor it
+    /// @return uint the floored result
+    /// @notice if x is nonzero floored value is returned, otherwise 0. 
+    /// @notice This is the same as the location of the highest set bit.
+    /// @dev Consumes 232 gas. This could have been an 3 gas EVM opcode though.
     function floorLog2(uint256 x) internal pure returns (uint256 r) {
         assembly {
             r := shl(7, lt(0xffffffffffffffffffffffffffffffff, x))

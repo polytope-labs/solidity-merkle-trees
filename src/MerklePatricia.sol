@@ -15,13 +15,46 @@ import "./trie/substrate/SubstrateTrieDB.sol";
  * @dev 
  */
 library MerklePatricia {
-     // so we don't explore deeply nested trie keys.
+     /// @notice libraries in solidity can only have constant variables
+     /// @dev MAX_TRIE_DEPTH, we don't explore deeply nested trie keys.
      uint256 internal constant MAX_TRIE_DEPTH = 50;
 
-     function VerifySubstrateProof(bytes32 root, bytes[] memory proof,  bytes[] memory keys)
-          public
-          pure
-          returns (bytes[] memory)
+     /**
+      * @title Verify child trie keys
+      * @dev substrate specific method in order to verify keys in the child trie.
+      * @param root hash of the merkle root
+      * @param trieDB an instance of a TrieDB contract, refer to ./trie/trieDB.sol
+      * @param childInfo data that can be used to compute the root of the child trie
+      * @param keys a list of keys to verify
+      * @return bytes[], a list of verified keys
+      */
+     function ReadChildProofCheck(bytes32 root, TrieDB trieDB, bytes memory childInfo, bytes[] memory keys)
+     public
+     returns (bytes[] memory)
+     {
+          // fetch the child trie root hash;
+          bytes memory prefix = bytes(":child_storage:default:");
+          bytes memory key = bytes.concat(prefix, childInfo);
+          bytes[] memory _keys = new bytes[](1);
+          _keys[0] = key;
+          bytes[] memory values  = VerifyKeys(root, trieDB, _keys);
+
+          bytes32 childRoot = bytes32(values[0]);
+          require(childRoot != bytes32(0), "Invalid child trie proof");
+          
+          return VerifyKeys(childRoot, trieDB, keys);
+     }
+
+     /**
+      * @title Verify Keys
+      * @param root hash of the merkle root
+      * @param trieDb an instance of a TrieDB, refer to ./trie/TrieDB.sol
+      * @param keys a list of keys to verify
+      * @return bytes[] a list of verified keys
+      */
+     function VerifyKeys(bytes32 root, TrieDB trieDb, bytes[] memory keys)
+     public
+     returns (bytes[] memory)
      {
           bytes[] memory values = new bytes[](keys.length);
           TrieNode[] memory nodes = new TrieNode[](proof.length);
@@ -100,25 +133,5 @@ library MerklePatricia {
           }
 
           return values;
-     }
-
-     // todo:
-     // substrate specific method in order to verify keys in the child trie.
-     function ReadChildProofCheck(bytes32 root, bytes[] memory proof, bytes[] memory keys, bytes memory childInfo)
-          public
-          pure
-          returns (bytes[] memory)
-     {
-          // fetch the child trie root hash;
-          bytes memory prefix = bytes(":child_storage:default:");
-          bytes memory key = bytes.concat(prefix, childInfo);
-          bytes[] memory _keys = new bytes[](1);
-          _keys[0] = key;
-          bytes[] memory values  = VerifySubstrateProof(root, proof, _keys);
-
-          bytes32 childRoot = bytes32(values[0]);
-          require(childRoot != bytes32(0), "Invalid child trie proof");
-          
-          return VerifySubstrateProof(childRoot, proof, keys);
      }
 }
