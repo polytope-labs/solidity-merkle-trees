@@ -500,11 +500,11 @@ library MerkleMountainRange {
     }
 
     /// @notice Integer log2
-    /// @param x Integer value, calculate the log2 and floor it
-    /// @return uint the floored result
     /// @notice if x is nonzero floored value is returned, otherwise 0. 
     /// @notice This is the same as the location of the highest set bit.
     /// @dev Consumes 232 gas. This could have been an 3 gas EVM opcode though.
+    /// @param x Integer value, calculate the log2 and floor it
+    /// @return r the floored result
     function floorLog2(uint256 x) internal pure returns (uint256 r) {
         assembly {
             r := shl(7, lt(0xffffffffffffffffffffffffffffffff, x))
