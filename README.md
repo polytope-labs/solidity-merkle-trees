@@ -83,10 +83,10 @@ contract YourContract {
     function verify(
         bytes32 root,
         bytes[] memory proof,
-        bytes[] memory leaves,
+        bytes[] memory keys,
     ) public {
         // EthereumTrieDb trieDb = new EthereumTrieDb(proof); for EIP-1186 style proofs.
-        SubstrateTrieDb trieDb = new SubstrateTrieDb(proof); // for proofs from state.readProofCheck
+        SubstrateTrieDb trieDb = new SubstrateTrieDb(proof); // verifies proofs from state.getReadProof
         bytes[] values = MerklePatricia.VerifyKeys(root, trieDb, keys);
         // do something with the verified values.
     }
