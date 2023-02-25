@@ -19,7 +19,7 @@ library MerkleMultiProof {
     /// @param proof A list of the merkle nodes that are needed to traverse to reach the root node.
     /// @param leaves A list of the merkle nodes to provide proof for
     /// @return boolean matching alculated root against provides root node 
-    function verifyProof(bytes32 root, Node[][] memory proof, Node[] memory leaves)
+    function VerifyProof(bytes32 root, Node[][] memory proof, Node[] memory leaves)
         public
         pure
         returns (bool)
@@ -32,7 +32,7 @@ library MerkleMultiProof {
     /// @param proof A list of the merkle nodes that are needed to traverse to reach the root node
     /// @param leaves A list of the merkle nodes to provide proof for
     /// @return Hash of root node, value is a bytes32 type
-    function calculateRoot(Node[][] memory proof, Node[] memory leaves)
+    function CalculateRoot(Node[][] memory proof, Node[] memory leaves)
         public
         pure
         returns (bytes32)

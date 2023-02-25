@@ -23,7 +23,7 @@ library MerkleMountainRange {
     /// @param proof a list of nodes required for the proof to be verified, proof nodes
     /// @param leaves a list of merkle nodes to provide proof for
     /// @return boolean representing a match between calculated root and provided root
-    function verifyProof(
+    function VerifyProof(
         bytes32 root,
         bytes32[] memory proof,
         MmrLeaf[] memory leaves,
@@ -38,7 +38,7 @@ library MerkleMountainRange {
     /// @param leaves a list of merkle nodes to provide proof for
     /// @param mmrSize 
     /// @return bytes32 hash of the computed root node
-    function calculateRoot(
+    function CalculateRoot(
         bytes32[] memory proof,
         MmrLeaf[] memory leaves,
         uint256 mmrSize
