@@ -29,7 +29,11 @@ contract MerkleMountainRangeTest is Test {
         return MerkleMountainRange.getPeaks(num);
     }
 
-    function leavesForPeak(MmrLeaf[] memory leaves, uint64 peak) public pure returns (MmrLeaf[] memory, MmrLeaf[] memory) {
+    function leavesForPeak(MmrLeaf[] memory leaves, uint64 peak)
+        public
+        pure
+        returns (MmrLeaf[] memory, MmrLeaf[] memory)
+    {
         return MerkleMountainRange.leavesForPeak(leaves, peak);
     }
 
@@ -45,11 +49,11 @@ contract MerkleMountainRangeTest is Test {
         return MerkleMountainRange.mmrLeafToNode(leaves);
     }
 
-    function CalculateRoot(
-        bytes32[] memory proof,
-        MmrLeaf[] memory leaves,
-        uint256 mmrSize
-    ) public pure returns (bytes32) {
+    function CalculateRoot(bytes32[] memory proof, MmrLeaf[] memory leaves, uint256 mmrSize)
+        public
+        pure
+        returns (bytes32)
+    {
         return MerkleMountainRange.CalculateRoot(proof, leaves, mmrSize);
     }
 }

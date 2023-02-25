@@ -9,11 +9,7 @@ contract MerkleMultiProofTest is Test {
     // needs a test method so that forge can detect it
     function testMerkleMultiProof() public {}
 
-    function CalculateRoot(Node[][] memory proof, Node[] memory leaves)
-    public
-    pure
-    returns (bytes32)
-    {
+    function CalculateRoot(Node[][] memory proof, Node[] memory leaves) public pure returns (bytes32) {
         return MerkleMultiProof.CalculateRoot(proof, leaves);
     }
 }
