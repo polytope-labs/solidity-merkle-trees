@@ -1,25 +1,27 @@
 // SPDX-License-Identifier: Apache2
 pragma solidity ^0.8.17;
 
-/// @title A representation of a Merkle node
+/// @title A representation of a Merkle tree node
 struct Node {
-    uint256 k_index;        // Distance of the node to the leftmost node
-    bytes32 node;           // A hash of the node itself
+    // Distance of the node to the leftmost node
+    uint256 k_index;
+    // A hash of the node itself
+    bytes32 node;
 }
 
 /**
- * @title A library to implement Merkle Multi proofs
+ * @title A Merkle Multi proof library
  * @author Polytope Labs
- * @dev This library can be used to verify merkle trees usinng Multi proofs
+ * @dev Use this library to verify merkle tree leaves using merkle multi proofs
  * @dev refer to research for more info. https://research.polytope.technology/merkle-multi-proofs
  */
 library MerkleMultiProof {
     /**
-     * @notice Verify a proof using Merkle Multi Proof
+     * @notice Verify a Merkle Multi Proof
      * @param root hash of the root node of the merkle tree
-     * @param proof A list of the merkle nodes that are needed to traverse to reach the root node.
-     * @param leaves A list of the merkle nodes to provide proof for
-     * @return boolean matching alculated root against provides root node
+     * @param proof A list of the merkle nodes along with their k-indices that are needed to re-calculate root node.
+     * @param leaves A list of the leaves along with their k-indices to prove
+     * @return boolean if the calculated root matches the provides root node
      */
     function VerifyProof(bytes32 root, Node[][] memory proof, Node[] memory leaves)
         public
@@ -31,8 +33,8 @@ library MerkleMultiProof {
 
     /// @notice Calculate the hash of the root node
     /// @dev Use this function to calculate the hash of the root node
-    /// @param proof A list of the merkle nodes that are needed to traverse to reach the root node
-    /// @param leaves A list of the merkle nodes to provide proof for
+    /// @param proof A list of the merkle nodes along with their k-indices that are needed to re-calculate root node.
+    /// @param leaves A list of the leaves along with their k-indices to prove
     /// @return Hash of root node, value is a bytes32 type
     function CalculateRoot(Node[][] memory proof, Node[] memory leaves)
         public
@@ -108,7 +110,7 @@ library MerkleMultiProof {
     }
 
     /// @notice an internal function to sort a list of Merkle nodes
-    /// @dev compare the k_index of each node and sort in increasing order
+    /// @dev compare the k-index of each node and sort in increasing order
     /// @param arr A list of merkle nodes to sort
     /// @param left leftmost index in arr
     /// @param right highest index in arr

@@ -3,26 +3,29 @@ pragma solidity ^0.8.17;
 
 import "./MerkleMultiProof.sol";
 
-/// @title A representation of a MerkleMountainRange tree
+/// @title A representation of a MerkleMountainRange leaf
 struct MmrLeaf {
-    uint256 k_index;            // the leftmost index of a node
-    uint256 mmr_pos;            // The position in the tree
-    bytes32 hash;               // The hash of the position in the tree
+    // the leftmost index of a node
+    uint256 k_index;
+    // The position in the tree
+    uint256 mmr_pos;
+    // The hash of the position in the tree
+    bytes32 hash;
 }
 
 /**
  * @title A Merkle Mountain Range proof library
  * @author Polytope Labs
- * @notice Use this library to verify the node(s) of a merkle tree
- * @dev read the Merkle mountain research https://research.polytope.technology/merkle-mountain-range-multi-proofs
+ * @notice Use this library to verify the leaves of a merkle mountain range tree
+ * @dev refer to research for more info. https://research.polytope.technology/merkle-mountain-range-multi-proofs
  */
 library MerkleMountainRange {
     /// @notice Verify that merkle proof is accurate
     /// @notice This calls calculateRoot(...) under the hood
     /// @param root hash of the Merkle's root node
-    /// @param proof a list of nodes required for the proof to be verified, proof nodes
-    /// @param leaves a list of merkle nodes to provide proof for
-    /// @return boolean representing a match between calculated root and provided root
+    /// @param proof a list of nodes required for the proof to be verified
+    /// @param leaves a list of mmr leaves to prove
+    /// @return boolean if the calculated root matches the provides root node
     function VerifyProof(
         bytes32 root,
         bytes32[] memory proof,
@@ -34,8 +37,8 @@ library MerkleMountainRange {
 
     /// @notice Calculate merkle root 
     /// @notice this method allows computing the root hash of a merkle tree using Merkle Mountain Range
-    /// @param proof a list of nodes that must be traversed to reach the root node, called proof nodes
-    /// @param leaves a list of merkle nodes to provide proof for
+    /// @param proof A list of the merkle nodes that are needed to re-calculate root node.
+    /// @param leaves a list of mmr leaves to prove
     /// @param mmrSize the size of the merkle tree
     /// @return bytes32 hash of the computed root node
     function CalculateRoot(

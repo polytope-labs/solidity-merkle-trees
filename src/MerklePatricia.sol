@@ -9,17 +9,23 @@ import "./trie/substrate/SubstrateTrieDB.sol";
 
 // SPDX-License-Identifier: Apache2
 
+/**
+ * @title A Merkle Patricia library
+ * @author Polytope Labs
+ * @dev Use this library to verify merkle patricia proofs
+ * @dev refer to research for more info. https://research.polytope.technology/state-(machine)-proofs
+ */
 library MerklePatricia {
      /// @notice libraries in solidity can only have constant variables
      /// @dev MAX_TRIE_DEPTH, we don't explore deeply nested trie keys.
      uint256 internal constant MAX_TRIE_DEPTH = 50;
 
      /**
-      * @notice Verify Keys
-      * @param root hash of the merkle root
+      * @notice Verifies substrate specific merkle patricia proofs.
+      * @param root hash of the merkle patricia trie
       * @param proof a list of proof nodes
       * @param keys a list of keys to verify
-      * @return bytes[] a list of verified keys
+      * @return bytes[] a list of values corresponding to the supplied keys.
       */
      function VerifySubstrateProof(bytes32 root, bytes[] memory proof,  bytes[] memory keys)
           public
@@ -112,7 +118,7 @@ library MerklePatricia {
       * @param proof a list of proof nodes
       * @param keys a list of keys to verify
       * @param childInfo data that can be used to compute the root of the child trie
-      * @return bytes[], a list of verified keys
+      * @return bytes[], a list of values corresponding to the supplied keys.
       */
      function ReadChildProofCheck(bytes32 root, bytes[] memory proof, bytes[] memory keys, bytes memory childInfo)
           public
