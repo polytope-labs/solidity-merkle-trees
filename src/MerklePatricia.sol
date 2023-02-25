@@ -10,9 +10,17 @@ import "./trie/substrate/SubstrateTrieDB.sol";
 // SPDX-License-Identifier: Apache2
 
 library MerklePatricia {
-     // so we don't explore deeply nested trie keys.
+     /// @notice libraries in solidity can only have constant variables
+     /// @dev MAX_TRIE_DEPTH, we don't explore deeply nested trie keys.
      uint256 internal constant MAX_TRIE_DEPTH = 50;
 
+     /**
+      * @notice Verify Keys
+      * @param root hash of the merkle root
+      * @param proof a list of proof nodes
+      * @param keys a list of keys to verify
+      * @return bytes[] a list of verified keys
+      */
      function VerifySubstrateProof(bytes32 root, bytes[] memory proof,  bytes[] memory keys)
           public
           pure
@@ -97,7 +105,15 @@ library MerklePatricia {
           return values;
      }
 
-     // substrate specific method in order to verify keys in the child trie.
+     /**
+      * @notice Verify child trie keys
+      * @dev substrate specific method in order to verify keys in the child trie.
+      * @param root hash of the merkle root
+      * @param proof a list of proof nodes
+      * @param keys a list of keys to verify
+      * @param childInfo data that can be used to compute the root of the child trie
+      * @return bytes[], a list of verified keys
+      */
      function ReadChildProofCheck(bytes32 root, bytes[] memory proof, bytes[] memory keys, bytes memory childInfo)
           public
           pure

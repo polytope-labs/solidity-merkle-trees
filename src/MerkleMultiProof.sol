@@ -1,12 +1,26 @@
+// SPDX-License-Identifier: Apache2
 pragma solidity ^0.8.17;
 
-// SPDX-License-Identifier: Apache2
+/// @title A representation of a Merkle node
 struct Node {
-    uint256 k_index;
-    bytes32 node;
+    uint256 k_index;        // Distance of the node to the leftmost node
+    bytes32 node;           // A hash of the node itself
 }
 
+/**
+ * @title A library to implement Merkle Multi proofs
+ * @author Polytope Labs
+ * @dev This library can be used to verify merkle trees usinng Multi proofs
+ * @dev refer to research for more info. https://research.polytope.technology/merkle-multi-proofs
+ */
 library MerkleMultiProof {
+    /**
+     * @notice Verify a proof using Merkle Multi Proof
+     * @param root hash of the root node of the merkle tree
+     * @param proof A list of the merkle nodes that are needed to traverse to reach the root node.
+     * @param leaves A list of the merkle nodes to provide proof for
+     * @return boolean matching alculated root against provides root node
+     */
     function VerifyProof(bytes32 root, Node[][] memory proof, Node[] memory leaves)
         public
         pure
@@ -15,6 +29,11 @@ library MerkleMultiProof {
         return root == CalculateRoot(proof, leaves);
     }
 
+    /// @notice Calculate the hash of the root node
+    /// @dev Use this function to calculate the hash of the root node
+    /// @param proof A list of the merkle nodes that are needed to traverse to reach the root node
+    /// @param leaves A list of the merkle nodes to provide proof for
+    /// @return Hash of root node, value is a bytes32 type
     function CalculateRoot(Node[][] memory proof, Node[] memory leaves)
         public
         pure
@@ -88,6 +107,11 @@ library MerkleMultiProof {
         return result;
     }
 
+    /// @notice an internal function to sort a list of Merkle nodes
+    /// @dev compare the k_index of each node and sort in increasing order
+    /// @param arr A list of merkle nodes to sort
+    /// @param left leftmost index in arr
+    /// @param right highest index in arr
     function quickSort(
         Node[] memory arr,
         uint256 left,
@@ -140,6 +164,8 @@ library MerkleMultiProof {
     }
 
     /// @notice compute the keccak256 hash of two nodes
+    /// @param node1 hash of one of the two nodes
+    /// @param node2 hash of the other of the two nodes
     function _optimizedHash(
         bytes32 node1,
         bytes32 node2
