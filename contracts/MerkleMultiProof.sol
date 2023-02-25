@@ -7,15 +7,15 @@ struct Node {
 }
 
 library MerkleMultiProof {
-    function verifyProof(bytes32 root, Node[][] memory proof, Node[] memory leaves)
+    function VerifyProof(bytes32 root, Node[][] memory proof, Node[] memory leaves)
         public
         pure
         returns (bool)
     {
-        return root == calculateRoot(proof, leaves);
+        return root == CalculateRoot(proof, leaves);
     }
 
-    function calculateRoot(Node[][] memory proof, Node[] memory leaves)
+    function CalculateRoot(Node[][] memory proof, Node[] memory leaves)
         public
         pure
         returns (bytes32)

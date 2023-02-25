@@ -24,7 +24,7 @@ You can use it to verify proofs like so:
 ```solidity
 pragma solidity ^0.8.0;
 
-import "@polytope-labs/solidity-merkle-trees/lib/MerkleMultiProof.sol";
+import "@polytope-labs/solidity-merkle-trees/MerkleMultiProof.sol";
 
 contract YourContract {
     function verify(
@@ -32,7 +32,7 @@ contract YourContract {
         Node[][] memory proof,
         Node[] leaves
     ) public {
-        require(MerkleMultiProof.verifyProof(root, proof, leaves), "Invalid proof");
+        require(MerkleMultiProof.VerifyProof(root, proof, leaves), "Invalid proof");
     }
 }
 ```
@@ -48,7 +48,7 @@ You can use it to verify proofs like so:
 ```solidity
 pragma solidity ^0.8.0;
 
-import "@polytope-labs/solidity-merkle-trees/lib/MerkleMountainRange.sol";
+import "@polytope-labs/solidity-merkle-trees/MerkleMountainRange.sol";
 
 contract YourContract {
     function verify(
@@ -57,7 +57,7 @@ contract YourContract {
         MmrLeaf[] memory leaves,
         uint256 mmrSize
     ) public {
-        require(MerkleMountainRange.verifyProof(root, proof, leaves, mmrSize), "Invalid proof");
+        require(MerkleMountainRange.VerifyProof(root, proof, leaves, mmrSize), "Invalid proof");
     }
 }
 ```
@@ -76,8 +76,8 @@ This library also supports the verification of the different styles of merkle pa
 ```solidity
 pragma solidity ^0.8.0;
 
-import "@polytope-labs/solidity-merkle-trees/lib/MerklePatricia.sol";
-import "@polytope-labs/solidity-merkle-trees/lib/trie/substrate/SubstrateTrieDB.sol";
+import "@polytope-labs/solidity-merkle-trees/MerklePatricia.sol";
+import "@polytope-labs/solidity-merkle-trees/trie/substrate/SubstrateTrieDB.sol";
 
 contract YourContract {
     function verify(

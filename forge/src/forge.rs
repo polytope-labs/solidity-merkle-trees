@@ -60,7 +60,7 @@ fn manifest_root() -> PathBuf {
     let mut root = Path::new(env!("CARGO_MANIFEST_DIR"));
     // need to check here where we're executing the test from, if in `forge` we need to also allow
     // `testdata`
-    if root.ends_with("test") {
+    if root.ends_with("forge") {
         root = root.parent().unwrap();
     }
     root.to_path_buf()
@@ -100,6 +100,10 @@ where
     R: Detokenize + Debug,
 {
     let db = Backend::spawn(runner.fork.take());
+
+    let names = runner.contracts.iter().map(|(id, _)| id.name.clone()).collect::<Vec<_>>();
+
+    println!("names: {:?}", names);
 
     let (_, (abi, deploy_code, libs)) = runner
         .contracts

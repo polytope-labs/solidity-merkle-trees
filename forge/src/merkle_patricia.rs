@@ -69,7 +69,7 @@ fn test_decode_nibbled_branch() {
 
         let result = execute::<_, NodeKind>(
             &mut runner,
-            "MerkleTests",
+            "MerklePatriciaTest",
             "decodeNodeKind",
             (Token::Bytes(item.clone())),
         )
@@ -79,7 +79,7 @@ fn test_decode_nibbled_branch() {
 
         let result = execute::<_, Token>(
             &mut runner,
-            "MerkleTests",
+            "MerklePatriciaTest",
             "decodeNibbledBranch",
             (Token::Bytes(item.clone())),
         )
@@ -109,7 +109,7 @@ fn test_decode_leaf() {
 
         let result = execute::<_, NodeKind>(
             &mut runner,
-            "MerkleTests",
+            "MerklePatriciaTest",
             "decodeNodeKind",
             (Token::Bytes(leaf.clone())),
         )
@@ -119,7 +119,7 @@ fn test_decode_leaf() {
 
         let result = execute::<_, Token>(
             &mut runner,
-            "MerkleTests",
+            "MerklePatriciaTest",
             "decodeLeaf",
             (Token::Bytes(leaf.clone())),
         )
@@ -137,7 +137,7 @@ fn test_nibble_slice_ops_basics() {
 
     let result = execute::<_, Uint>(
         &mut runner,
-        "MerkleTests",
+        "MerklePatriciaTest",
         "nibbleLen",
         (Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::zero())]),),
     )
@@ -148,7 +148,7 @@ fn test_nibble_slice_ops_basics() {
 
     let result = execute::<_, bool>(
         &mut runner,
-        "MerkleTests",
+        "MerklePatriciaTest",
         "isNibbleEmpty",
         (Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::zero())]),),
     )
@@ -158,7 +158,7 @@ fn test_nibble_slice_ops_basics() {
 
     let result = execute::<_, bool>(
         &mut runner,
-        "MerkleTests",
+        "MerklePatriciaTest",
         "isNibbleEmpty",
         (Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::from(6))]),),
     )
@@ -167,7 +167,7 @@ fn test_nibble_slice_ops_basics() {
 
     let result = execute::<_, Uint>(
         &mut runner,
-        "MerkleTests",
+        "MerklePatriciaTest",
         "nibbleLen",
         (Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::from(3))]),),
     )
@@ -178,7 +178,7 @@ fn test_nibble_slice_ops_basics() {
     for i in 0..3 {
         let result = execute::<_, Uint>(
             &mut runner,
-            "MerkleTests",
+            "MerklePatriciaTest",
             "nibbleAt",
             (
                 Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::from(3))]),
@@ -196,7 +196,7 @@ fn test_nibble_slice_ops_mid() {
     let mut runner = runner();
     let nibble = execute::<_, Token>(
         &mut runner,
-        "MerkleTests",
+        "MerklePatriciaTest",
         "mid",
         (
             Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::zero())]),
@@ -207,7 +207,7 @@ fn test_nibble_slice_ops_mid() {
     for i in 0..4 {
         let result = execute::<_, Uint>(
             &mut runner,
-            "MerkleTests",
+            "MerklePatriciaTest",
             "nibbleAt",
             (nibble.clone(), Token::Uint(Uint::from(i))),
         )
@@ -218,7 +218,7 @@ fn test_nibble_slice_ops_mid() {
 
     let nibble = execute::<_, Token>(
         &mut runner,
-        "MerkleTests",
+        "MerklePatriciaTest",
         "mid",
         (
             Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::zero())]),
@@ -230,7 +230,7 @@ fn test_nibble_slice_ops_mid() {
     for i in 0..3 {
         let result = execute::<_, Uint>(
             &mut runner,
-            "MerkleTests",
+            "MerklePatriciaTest",
             "nibbleAt",
             (nibble.clone(), Token::Uint(Uint::from(i))),
         )
@@ -248,39 +248,55 @@ fn test_nibble_slice_ops_shared() {
     let other = &[0x01u8, 0x23, 0x01, 0x23, 0x45, 0x67];
     let m = Token::Tuple(vec![Token::Bytes(other.to_vec()), Token::Uint(Uint::zero())]);
 
-    let result =
-        execute::<_, Uint>(&mut runner, "MerkleTests", "commonPrefix", (n.clone(), m.clone()))
-            .unwrap();
+    let result = execute::<_, Uint>(
+        &mut runner,
+        "MerklePatriciaTest",
+        "commonPrefix",
+        (n.clone(), m.clone()),
+    )
+    .unwrap();
     assert_eq!(result, Uint::from(4));
 
-    let result =
-        execute::<_, Uint>(&mut runner, "MerkleTests", "commonPrefix", (m.clone(), n.clone()))
-            .unwrap();
+    let result = execute::<_, Uint>(
+        &mut runner,
+        "MerklePatriciaTest",
+        "commonPrefix",
+        (m.clone(), n.clone()),
+    )
+    .unwrap();
     assert_eq!(result, Uint::from(4));
 
     let m_mid_4 = execute::<_, Token>(
         &mut runner,
-        "MerkleTests",
+        "MerklePatriciaTest",
         "mid",
         (m.clone(), Token::Uint(Uint::from(4))),
     )
     .unwrap();
 
-    let result =
-        execute::<_, bool>(&mut runner, "MerkleTests", "startsWith", (m_mid_4.clone(), n.clone()))
-            .unwrap();
+    let result = execute::<_, bool>(
+        &mut runner,
+        "MerklePatriciaTest",
+        "startsWith",
+        (m_mid_4.clone(), n.clone()),
+    )
+    .unwrap();
 
     assert!(result);
 
-    let result =
-        execute::<_, bool>(&mut runner, "MerkleTests", "startsWith", (n.clone(), m_mid_4.clone()))
-            .unwrap();
+    let result = execute::<_, bool>(
+        &mut runner,
+        "MerklePatriciaTest",
+        "startsWith",
+        (n.clone(), m_mid_4.clone()),
+    )
+    .unwrap();
 
     assert!(!result);
 
     let result = execute::<_, Uint>(
         &mut runner,
-        "MerkleTests",
+        "MerklePatriciaTest",
         "commonPrefix",
         (n.clone(), m_mid_4.clone()),
     )
@@ -290,7 +306,7 @@ fn test_nibble_slice_ops_shared() {
 
     let n_mid_1 = execute::<_, Token>(
         &mut runner,
-        "MerkleTests",
+        "MerklePatriciaTest",
         "mid",
         (n.clone(), Token::Uint(Uint::from(1))),
     )
@@ -298,7 +314,7 @@ fn test_nibble_slice_ops_shared() {
 
     let m_mid_1 = execute::<_, Token>(
         &mut runner,
-        "MerkleTests",
+        "MerklePatriciaTest",
         "mid",
         (m.clone(), Token::Uint(Uint::from(1))),
     )
@@ -306,7 +322,7 @@ fn test_nibble_slice_ops_shared() {
 
     let m_mid_2 = execute::<_, Token>(
         &mut runner,
-        "MerkleTests",
+        "MerklePatriciaTest",
         "mid",
         (m.clone(), Token::Uint(Uint::from(2))),
     )
@@ -314,7 +330,7 @@ fn test_nibble_slice_ops_shared() {
 
     let result = execute::<_, Uint>(
         &mut runner,
-        "MerkleTests",
+        "MerklePatriciaTest",
         "commonPrefix",
         (n_mid_1.clone(), m_mid_1.clone()),
     )
@@ -324,7 +340,7 @@ fn test_nibble_slice_ops_shared() {
 
     let result = execute::<_, Uint>(
         &mut runner,
-        "MerkleTests",
+        "MerklePatriciaTest",
         "commonPrefix",
         (n_mid_1.clone(), m_mid_2.clone()),
     )
@@ -341,7 +357,7 @@ fn test_merkle_patricia_trie() {
 
     let result = execute::<_, Vec<Vec<u8>>>(
         &mut runner,
-        "MerkleTests",
+        "MerklePatriciaTest",
         "VerifyKeys",
         (
             Token::FixedBytes(root.to_vec()),

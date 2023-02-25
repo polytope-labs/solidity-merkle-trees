@@ -11,16 +11,16 @@ struct MmrLeaf {
 }
 
 library MerkleMountainRange {
-    function verifyProof(
+    function VerifyProof(
         bytes32 root,
         bytes32[] memory proof,
         MmrLeaf[] memory leaves,
         uint256 mmrSize
     ) public pure returns (bool) {
-        return root == calculateRoot(proof, leaves, mmrSize);
+        return root == CalculateRoot(proof, leaves, mmrSize);
     }
 
-    function calculateRoot(
+    function CalculateRoot(
         bytes32[] memory proof,
         MmrLeaf[] memory leaves,
         uint256 mmrSize
@@ -49,7 +49,7 @@ library MerkleMountainRange {
                 peakRoots[prc] = peakLeaves[0].hash;
                 prc++;
             } else {
-                (peakRoots[prc], pc) = calculatePeakRoot(peakLeaves, proof, peak, pc);
+                (peakRoots[prc], pc) = CalculatePeakRoot(peakLeaves, proof, peak, pc);
                 prc++;
             }
         }
@@ -65,7 +65,7 @@ library MerkleMountainRange {
         return peakRoots[0];
     }
 
-    function calculatePeakRoot(
+    function CalculatePeakRoot(
         MmrLeaf[] memory peakLeaves,
         bytes32[] memory proof,
         uint256 peak,
@@ -93,7 +93,7 @@ library MerkleMountainRange {
             current_layer = parentIndices(siblings);
         }
 
-        return (MerkleMultiProof.calculateRoot(layers, leaves), pc);
+        return (MerkleMultiProof.CalculateRoot(layers, leaves), pc);
     }
 
     function difference(uint256[] memory left, uint256[] memory right) public pure returns (uint256[] memory) {

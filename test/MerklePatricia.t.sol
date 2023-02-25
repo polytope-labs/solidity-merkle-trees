@@ -2,27 +2,14 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import "forge-std/console.sol";
 
-import "./MerkleMultiProof.sol";
-import "./MerkleMountainRange.sol";
-import "./MerklePatricia.sol";
-import "./trie/substrate/SubstrateTrieDB.sol";
-import "./trie/NibbleSlice.sol";
+import "../contracts/MerklePatricia.sol";
+import "../contracts/trie/substrate/SubstrateTrieDB.sol";
+import "../contracts/trie/substrate/ScaleCodec.sol";
+import "../contracts/trie/NibbleSlice.sol";
 
-contract MerkleTests is Test {
-    function CalculateRoot(Node[][] memory proof, Node[] memory leaves)
-    public
-    pure
-    returns (bytes32)
-    {
-        return MerkleMultiProof.calculateRoot(proof, leaves);
-    }
-
-    function testMerklePatricia()
-    public
-    {
-
+contract MerklePatriciaTest is Test {
+    function testSubstrateMerklePatricia() public {
         bytes[] memory keys = new bytes[](1);
         keys[0] = hex"f0c365c3cf59d671eb72da0e7a4113c49f1f0515f462cdcf84e0f1d6045dfcbb";
 
@@ -33,7 +20,8 @@ contract MerkleTests is Test {
         bytes32 root = hex"6b5710000eccbd59b6351fc2eb53ff2c1df8e0f816f7186ddd309ca85e8798dd";
         SubstrateTrieDB trieDb = new SubstrateTrieDB(proof);
         bytes memory value = MerklePatricia.VerifyKeys(root, trieDb, keys)[0];
-        // assert(string(value) == "35e90c7f86010000");
+        uint256 timestamp = ScaleCodec.decodeUint256(value);
+        assert(timestamp == 1677168798005);
     }
 
     function VerifyKeys(bytes32 root, bytes[] memory proof, bytes[] memory keys)
@@ -88,49 +76,5 @@ contract MerkleTests is Test {
 
     function commonPrefix(NibbleSlice memory self, NibbleSlice memory other) public pure returns (uint256) {
         return NibbleSliceOps.commonPrefix(self, other);
-    }
-
-    function countZeroes(uint64 num) public pure returns (uint256) {
-        return MerkleMountainRange.countZeroes(num);
-    }
-
-    function countLeadingZeros(uint64 num) public pure returns (uint256) {
-        return MerkleMountainRange.countLeadingZeros(num);
-    }
-
-    function countOnes(uint64 num) public pure returns (uint256) {
-        return MerkleMountainRange.countOnes(num);
-    }
-
-    function posToHeight(uint64 num) public pure returns (uint256) {
-        return MerkleMountainRange.posToHeight(num);
-    }
-
-    function getPeaks(uint64 num) public pure returns (uint256[] memory) {
-        return MerkleMountainRange.getPeaks(num);
-    }
-
-    function leavesForPeak(MmrLeaf[] memory leaves, uint64 peak) public pure returns (MmrLeaf[] memory, MmrLeaf[] memory) {
-        return MerkleMountainRange.leavesForPeak(leaves, peak);
-    }
-
-    function difference(uint256[] memory left, uint256[] memory right) public pure returns (uint256[] memory) {
-        return MerkleMountainRange.difference(left, right);
-    }
-
-    function siblingIndices(uint256[] memory indices) public pure returns (uint256[] memory) {
-        return MerkleMountainRange.siblingIndices(indices);
-    }
-
-    function mmrLeafToNode(MmrLeaf[] memory leaves) public pure returns (Node[] memory, uint256[] memory) {
-        return MerkleMountainRange.mmrLeafToNode(leaves);
-    }
-
-    function calculateRoot(
-        bytes32[] memory proof,
-        MmrLeaf[] memory leaves,
-        uint256 mmrSize
-    ) public pure returns (bytes32) {
-        return MerkleMountainRange.calculateRoot(proof, leaves, mmrSize);
     }
 }

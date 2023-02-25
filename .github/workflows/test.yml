@@ -27,7 +27,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --release --manifest-path ./tests/Cargo.toml
+          args: --release --manifest-path ./forge/Cargo.toml
 
   fmt:
     name: Rustfmt
@@ -42,4 +42,4 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: fmt
-          args: --manifest-path ./tests/Cargo.toml --all -- --check
+          args: --manifest-path ./forge/Cargo.toml --all -- --check
