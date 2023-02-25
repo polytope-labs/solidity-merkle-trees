@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache2
 pragma solidity ^0.8.17;
 
 import "./trie/NodeCodec.sol";
@@ -7,8 +8,12 @@ import "./trie/NibbleSlice.sol";
 import "./trie/TrieDB.sol";
 import "./trie/substrate/SubstrateTrieDB.sol";
 
-// SPDX-License-Identifier: Apache2
-
+/**
+ * @title Merkle Patricia Proof Library
+ * @author Polytope Labs
+ * @notice Use this library to verify merkle nodes using the Merkle Patricia proof
+ * @dev 
+ */
 library MerklePatricia {
      // so we don't explore deeply nested trie keys.
      uint256 internal constant MAX_TRIE_DEPTH = 50;
