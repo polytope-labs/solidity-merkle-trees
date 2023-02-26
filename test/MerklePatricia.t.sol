@@ -11,6 +11,7 @@ import "../src/trie/NibbleSlice.sol";
 contract MerklePatriciaTest is Test {
     function testSubstrateMerklePatricia() public pure {
         bytes[] memory keys = new bytes[](1);
+        // trie key for pallet_timestamp::Now
         keys[0] = hex"f0c365c3cf59d671eb72da0e7a4113c49f1f0515f462cdcf84e0f1d6045dfcbb";
 
         bytes[] memory proof = new bytes[](2);

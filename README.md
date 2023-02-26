@@ -84,7 +84,7 @@ contract YourContract {
         bytes[] memory proof,
         bytes[] memory keys,
     ) public {
-        bytes[] values = MerklePatricia.VerifySubstrateProof(root, trieDb, keys); // verifies proofs from state.getReadProof
+        bytes[] values = MerklePatricia.VerifySubstrateProof(root, proof, keys); // verifies proofs from state.getReadProof
         // do something with the verified values.
     }
 }

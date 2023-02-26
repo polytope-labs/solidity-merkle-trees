@@ -21,7 +21,7 @@ struct MmrLeaf {
  */
 library MerkleMountainRange {
     /// @notice Verify that merkle proof is accurate
-    /// @notice This calls calculateRoot(...) under the hood
+    /// @notice This calls CalculateRoot(...) under the hood
     /// @param root hash of the Merkle's root node
     /// @param proof a list of nodes required for the proof to be verified
     /// @param leaves a list of mmr leaves to prove

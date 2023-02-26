@@ -2,6 +2,12 @@
   "name": "@polytope-labs/solidity-merkle-trees",
   "version": "0.2.0",
   "description": "The most advanced solidity library for merkle (multi) proof verification of different kinds of merkle trees",
+  "author": "Polytope Labs <hello@polytope.technology>",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/polytope-labs/solidity-merkle-trees/issues"
+  },
+  "homepage": "https://github.com/polytope-labs/solidity-merkle-trees#readme",
   "files": [
     "**/*.sol",
     "!/forge-std/**/*"
@@ -17,12 +23,9 @@
     "smart",
     "contracts",
     "merkle-trees",
+    "merkle-multi-proofs",
+    "merkle-mountain-range",
+    "merkle-patricia-trie",
     "algorithms"
-  ],
-  "author": "Polytope Labs <hello@polytope.technology>",
-  "license": "Apache-2.0",
-  "bugs": {
-    "url": "https://github.com/polytope-labs/solidity-merkle-trees/issues"
-  },
-  "homepage": "https://github.com/polytope-labs/solidity-merkle-trees#readme"
+  ]
 }
