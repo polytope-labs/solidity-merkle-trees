@@ -1,11 +1,12 @@
 pragma solidity ^0.8.17;
 
-import "./trie/NodeCodec.sol";
 import "./trie/Node.sol";
 import "./trie/Option.sol";
 import "./trie/NibbleSlice.sol";
 import "./trie/TrieDB.sol";
+
 import "./trie/substrate/SubstrateTrieDB.sol";
+import "./trie/ethereum/EthereumTrieDB.sol";
 
 // SPDX-License-Identifier: Apache2
 
@@ -47,38 +48,13 @@ library MerklePatricia {
                for (uint256 j = 0; j < MAX_TRIE_DEPTH; j++) {
                     NodeHandle memory nextNode;
 
-                    if (NodeCodec.isLeaf(node)) {
+                    if (TrieDB.isLeaf(node)) {
                          Leaf memory leaf = SubstrateTrieDB.decodeLeaf(node);
                          if (NibbleSliceOps.eq(leaf.key, keyNibbles)) {
                               values[i] = TrieDB.load(nodes, leaf.value);
                          }
                          break;
-                    } else if (NodeCodec.isExtension(node)) {
-                         Extension memory extension = SubstrateTrieDB.decodeExtension(node);
-                         if (NibbleSliceOps.startsWith(keyNibbles, extension.key)) {
-                              uint256 len = NibbleSliceOps.len(extension.key);
-                              keyNibbles = NibbleSliceOps.mid(keyNibbles, len);
-                              nextNode = extension.node;
-                         } else {
-                              break;
-                         }
-                    } else if (NodeCodec.isBranch(node)) {
-                         Branch memory branch = SubstrateTrieDB.decodeBranch(node);
-                         if (NibbleSliceOps.isEmpty(keyNibbles)) {
-                              if (Option.isSome(branch.value)) {
-                                   values[i] = TrieDB.load(nodes, branch.value.value);
-                              }
-                              break;
-                         } else {
-                              NodeHandleOption memory handle = branch.children[NibbleSliceOps.at(keyNibbles, 0)];
-                              if (Option.isSome(handle)) {
-                                   keyNibbles = NibbleSliceOps.mid(keyNibbles, 1);
-                                   nextNode = handle.value;
-                              } else {
-                                   break;
-                              }
-                         }
-                    }  else if (NodeCodec.isNibbledBranch(node)) {
+                    }  else if (TrieDB.isNibbledBranch(node)) {
                          NibbledBranch memory nibbled = SubstrateTrieDB.decodeNibbledBranch(node);
                          uint256 nibbledBranchKeyLength = NibbleSliceOps.len(nibbled.key);
                          if (!NibbleSliceOps.startsWith(keyNibbles, nibbled.key)) {
@@ -100,7 +76,7 @@ library MerklePatricia {
                                    break;
                               }
                          }
-                    }  else if (NodeCodec.isEmpty(node)) {
+                    }  else if (TrieDB.isEmpty(node)) {
                          break;
                     }
 
@@ -136,5 +112,74 @@ library MerklePatricia {
           require(childRoot != bytes32(0), "Invalid child trie proof");
           
           return VerifySubstrateProof(childRoot, proof, keys);
+     }
+
+     /**
+      * @notice Verifies ethereum specific merkle patricia proofs as described by EIP-1188.
+      * @param root hash of the merkle patricia trie
+      * @param proof a list of proof nodes
+      * @param keys a list of keys to verify
+      * @return bytes[] a list of values corresponding to the supplied keys.
+      */
+     function VerifyEthereumProof(bytes32 root, bytes[] memory proof,  bytes[] memory keys)
+          public
+          pure
+          returns (bytes[] memory)
+     {
+          bytes[] memory values = new bytes[](keys.length);
+          TrieNode[] memory nodes = new TrieNode[](proof.length);
+
+          for (uint256 i = 0; i < proof.length; i++) {
+               nodes[i] = TrieNode(keccak256(proof[i]), proof[i]);
+          }
+
+          for (uint256 i = 0; i < keys.length; i++) {
+               NibbleSlice memory keyNibbles = NibbleSlice(keys[i], 0);
+               NodeKind memory node = EthereumTrieDB.decodeNodeKind(TrieDB.get(nodes, root));
+
+               // worst case scenario, so we avoid unbounded loops
+               for (uint256 j = 0; j < MAX_TRIE_DEPTH; j++) {
+                    NodeHandle memory nextNode;
+
+                    if (TrieDB.isLeaf(node)) {
+                         Leaf memory leaf = EthereumTrieDB.decodeLeaf(node);
+                         if (NibbleSliceOps.eq(leaf.key, keyNibbles)) {
+                              values[i] = TrieDB.load(nodes, leaf.value);
+                         }
+                         break;
+                    } else if (TrieDB.isExtension(node)) {
+                         Extension memory extension = EthereumTrieDB.decodeExtension(node);
+                         if (NibbleSliceOps.startsWith(keyNibbles, extension.key)) {
+                              uint256 len = NibbleSliceOps.len(extension.key);
+                              keyNibbles = NibbleSliceOps.mid(keyNibbles, len);
+                              nextNode = extension.node;
+                         } else {
+                              break;
+                         }
+                    } else if (TrieDB.isBranch(node)) {
+                         Branch memory branch = EthereumTrieDB.decodeBranch(node);
+                         if (NibbleSliceOps.isEmpty(keyNibbles)) {
+                              if (Option.isSome(branch.value)) {
+                                   values[i] = TrieDB.load(nodes, branch.value.value);
+                              }
+                              break;
+                         } else {
+                              NodeHandleOption memory handle = branch.children[NibbleSliceOps.at(keyNibbles, 0)];
+                              if (Option.isSome(handle)) {
+                                   keyNibbles = NibbleSliceOps.mid(keyNibbles, 1);
+                                   nextNode = handle.value;
+                              } else {
+                                   break;
+                              }
+                         }
+                    }  else if (TrieDB.isEmpty(node)) {
+                         break;
+                    }
+
+                    node = EthereumTrieDB.decodeNodeKind(TrieDB.load(nodes, nextNode));
+               }
+          }
+
+          return values;
      }
 }
