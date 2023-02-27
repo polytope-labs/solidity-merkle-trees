@@ -2,17 +2,12 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import "./MerkleMultiProof.sol";
-import "./MerkleMountainRange.sol";
 
-contract MerkleTests is Test {
-    function testCalculateRoot(Node[][] memory proof, Node[] memory leaves)
-    public
-    pure
-    returns (bytes32)
-    {
-        return MerkleMultiProof.calculateRoot(proof, leaves);
-    }
+import "../src/MerkleMountainRange.sol";
+
+contract MerkleMountainRangeTest is Test {
+    // needs a test method so that forge can detect it
+    function testMerkleMountainRange() public {}
 
     function countZeroes(uint64 num) public pure returns (uint256) {
         return MerkleMountainRange.countZeroes(num);
@@ -34,7 +29,11 @@ contract MerkleTests is Test {
         return MerkleMountainRange.getPeaks(num);
     }
 
-    function leavesForPeak(MmrLeaf[] memory leaves, uint64 peak) public pure returns (MmrLeaf[] memory, MmrLeaf[] memory) {
+    function leavesForPeak(MmrLeaf[] memory leaves, uint64 peak)
+        public
+        pure
+        returns (MmrLeaf[] memory, MmrLeaf[] memory)
+    {
         return MerkleMountainRange.leavesForPeak(leaves, peak);
     }
 
@@ -50,11 +49,11 @@ contract MerkleTests is Test {
         return MerkleMountainRange.mmrLeafToNode(leaves);
     }
 
-    function calculateRoot(
-        bytes32[] memory proof,
-        MmrLeaf[] memory leaves,
-        uint256 mmrSize
-    ) public pure returns (bytes32) {
-        return MerkleMountainRange.calculateRoot(proof, leaves, mmrSize);
+    function CalculateRoot(bytes32[] memory proof, MmrLeaf[] memory leaves, uint256 mmrSize)
+        public
+        pure
+        returns (bytes32)
+    {
+        return MerkleMountainRange.CalculateRoot(proof, leaves, mmrSize);
     }
 }

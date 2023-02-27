@@ -12,7 +12,7 @@ use forge::{
     ContractRunner, MultiContractRunner, MultiContractRunnerBuilder,
 };
 use foundry_config::{fs_permissions::PathPermission, Config, FsPermissions};
-use foundry_evm::executor::{Backend, ExecutorBuilder};
+use foundry_evm::executor::{Backend, EvmError, ExecutorBuilder};
 use once_cell::sync::Lazy;
 use std::{
     fmt::Debug,
@@ -60,7 +60,7 @@ fn manifest_root() -> PathBuf {
     let mut root = Path::new(env!("CARGO_MANIFEST_DIR"));
     // need to check here where we're executing the test from, if in `forge` we need to also allow
     // `testdata`
-    if root.ends_with("test") {
+    if root.ends_with("forge") {
         root = root.parent().unwrap();
     }
     root.to_path_buf()
@@ -94,12 +94,16 @@ pub fn execute<T, R>(
     contract_name: &'static str,
     fn_name: &'static str,
     args: T,
-) -> R
+) -> Result<R, EvmError>
 where
     T: Tokenize,
     R: Detokenize + Debug,
 {
     let db = Backend::spawn(runner.fork.take());
+
+    let names = runner.contracts.iter().map(|(id, _)| id.name.clone()).collect::<Vec<_>>();
+
+    println!("names: {:?}", names);
 
     let (_, (abi, deploy_code, libs)) = runner
         .contracts
@@ -131,19 +135,17 @@ where
     let setup = single_runner.setup(false).unwrap();
     let TestSetup { address, .. } = setup;
 
-    let result = single_runner
-        .executor
-        .execute_test::<R, _, _>(
-            single_runner.sender,
-            address,
-            function,
-            args,
-            0.into(),
-            single_runner.errors,
-        )
-        .unwrap();
+    let result = single_runner.executor.execute_test::<R, _, _>(
+        single_runner.sender,
+        address,
+        function,
+        args,
+        0.into(),
+        single_runner.errors,
+    )?;
 
     println!("Gas used {fn_name}: {:#?}", result.gas_used);
+    println!("Logs {fn_name}: {:#?}", result.logs);
 
-    result.result
+    Ok(result.result)
 }
