@@ -45,10 +45,7 @@ library MerkleMultiProof {
         Node[] memory next_layer = new Node[](0);
 
         // merge leaves
-        Node[] memory base = mergeSort(leaves, proof[0]);
-        mergeArrays(base, leaves, proof[0]);
-        quickSort(base, 0, base.length - 1);
-        proof[0] = base;
+        proof[0] = mergeSort(leaves, proof[0]);
 
         uint256 proof_length = proof.length;
         for (uint256 height = 0; height < proof_length; height++) {
@@ -106,8 +103,8 @@ library MerkleMultiProof {
 
     /// @notice an internal function to merge two arrays and sort them at the same time.
     /// @dev compares the k-index of each node and sort in increasing order
-    /// @param left leftmost index in arr
-    /// @param right highest index in arr
+    /// @param arr1 leftmost index in arr
+    /// @param arr2 highest index in arr
     function mergeSort(
         Node[] memory arr1,
         Node[] memory arr2
@@ -125,33 +122,33 @@ library MerkleMultiProof {
         while (i < arr1_length && j < arr2_length) {
             if (arr1[i].k_index < arr2[j].k_index) {
                 out[k] = arr1[i];
-            unchecked {
-                i++;
-                k++;
-            }
+                unchecked {
+                    i++;
+                    k++;
+                }
             } else {
                 out[k] = arr2[j];
-            unchecked {
-                j++;
-                k++;
-            }
+                unchecked {
+                    j++;
+                    k++;
+                }
             }
         }
 
         while (i < arr1_length) {
             out[k] = arr1[i];
-        unchecked {
-            i++;
-            k++;
-        }
+            unchecked {
+                i++;
+                k++;
+            }
         }
 
         while (j < arr2_length) {
             out[k] = arr2[j];
-        unchecked {
-            j++;
-            k++;
-        }
+            unchecked {
+                j++;
+                k++;
+            }
         }
 
         return out;

@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use crate::{execute, keccak256, runner, Keccak256, Token};
 use hex_literal::hex;
 use primitive_types::U256;

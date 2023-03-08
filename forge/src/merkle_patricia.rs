@@ -1,3 +1,4 @@
+#![cfg(test)]
 #![allow(dead_code, unused_imports)]
 
 use crate::forge::{execute, runner};
