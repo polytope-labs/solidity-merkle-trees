@@ -45,7 +45,7 @@ library MerkleMultiProof {
         Node[] memory next_layer = new Node[](0);
 
         // merge leaves
-        Node[] memory base = new Node[](leaves.length + proof[0].length);
+        Node[] memory base = mergeSort(leaves, proof[0]);
         mergeArrays(base, leaves, proof[0]);
         quickSort(base, 0, base.length - 1);
         proof[0] = base;
@@ -57,12 +57,7 @@ library MerkleMultiProof {
             if (next_layer.length == 0) {
                 current_layer = proof[height];
             } else {
-                current_layer = new Node[](
-                    proof[height].length + next_layer.length
-                );
-                mergeArrays(current_layer, proof[height], next_layer);
-                quickSort(current_layer, 0, current_layer.length - 1);
-                delete next_layer;
+                current_layer = mergeSort(proof[height], next_layer);
             }
 
             next_layer = new Node[](div_ceil(current_layer.length, 2));
@@ -109,60 +104,57 @@ library MerkleMultiProof {
         return result;
     }
 
-    /// @notice an internal function to sort a list of Merkle nodes
-    /// @dev compare the k-index of each node and sort in increasing order
-    /// @param arr A list of merkle nodes to sort
+    /// @notice an internal function to merge two arrays and sort them at the same time.
+    /// @dev compares the k-index of each node and sort in increasing order
     /// @param left leftmost index in arr
     /// @param right highest index in arr
-    function quickSort(
-        Node[] memory arr,
-        uint256 left,
-        uint256 right
-    ) internal pure {
-        uint256 i = left;
-        uint256 j = right;
-        if (i == j) return;
-        uint256 pivot = arr[uint256(left + (right - left) / 2)].k_index;
-        while (i <= j) {
-            while (arr[uint256(i)].k_index < pivot) i++;
-            while (pivot < arr[uint256(j)].k_index) if (j > 0) j--;
-            if (i <= j) {
-                (arr[uint256(i)], arr[uint256(j)]) = (
-                    arr[uint256(j)],
-                    arr[uint256(i)]
-                );
-                i++;
-                if (j > 0) j--;
-            }
-        }
-        if (left < j) quickSort(arr, left, j);
-        if (i < right) quickSort(arr, i, right);
-    }
-
-    function mergeArrays(
-        Node[] memory out,
+    function mergeSort(
         Node[] memory arr1,
         Node[] memory arr2
-    ) internal pure {
+    ) internal pure returns (Node[] memory) {
         // merge the two arrays
         uint256 i = 0;
+        uint256 j = 0;
+        uint256 k = 0;
         uint256 arr1_length = arr1.length;
-        while (i < arr1_length) {
-            out[i] = arr1[i];
+        uint256 arr2_length = arr2.length;
+        uint256 out_len = arr1_length + arr2_length;
+        Node[] memory out = new Node[](out_len);
+
+
+        while (i < arr1_length && j < arr2_length) {
+            if (arr1[i].k_index < arr2[j].k_index) {
+                out[k] = arr1[i];
             unchecked {
                 i++;
+                k++;
+            }
+            } else {
+                out[k] = arr2[j];
+            unchecked {
+                j++;
+                k++;
+            }
             }
         }
 
-        uint256 j = 0;
-        uint256 arr2_length = arr2.length;
-        while (j < arr2_length) {
-            out[i] = arr2[j];
-            unchecked {
-                i++;
-                j++;
-            }
+        while (i < arr1_length) {
+            out[k] = arr1[i];
+        unchecked {
+            i++;
+            k++;
         }
+        }
+
+        while (j < arr2_length) {
+            out[k] = arr2[j];
+        unchecked {
+            j++;
+            k++;
+        }
+        }
+
+        return out;
     }
 
     /// @notice compute the keccak256 hash of two nodes

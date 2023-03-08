@@ -132,14 +132,6 @@ library SubstrateTrieDB {
         return leaf;
     }
 
-    function decodeExtension(NodeKind memory _node) external pure returns (Extension memory) {
-        revert("Substrate doesn't support extension nodes");
-    }
-
-    function decodeBranch(NodeKind memory _node) external pure returns (Branch memory) {
-        revert("Substrate doesn't support non-nibbled branch nodes");
-    }
-
     function decodeSize(uint8 first, ByteSlice memory encoded, uint8 prefixMask) internal pure returns (uint256) {
         uint8 maxValue = uint8(255 >> prefixMask);
         uint256 result = uint256(first & maxValue);
