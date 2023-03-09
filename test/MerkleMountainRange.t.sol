@@ -49,6 +49,14 @@ contract MerkleMountainRangeTest is Test {
         return MerkleMountainRange.mmrLeafToNode(leaves);
     }
 
+    function leafIndexToPos(uint64 index) public pure returns (uint64) {
+        return MerkleMountainRange.leafIndexToPos(index);
+    }
+
+    function leafIndexToMmrSize(uint64 index) public pure returns (uint64) {
+        return MerkleMountainRange.leafIndexToMmrSize(index);
+    }
+
     function CalculateRoot(bytes32[] memory proof, MmrLeaf[] memory leaves, uint256 mmrSize)
         public
         pure

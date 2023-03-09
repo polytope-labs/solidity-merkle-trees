@@ -430,4 +430,33 @@ library MerkleMountainRange {
 
         return data;
     }
+
+    function leafIndexToPos(uint64 index) public pure returns (uint64) {
+        // mmr_size - H - 1, H is the height(intervals) of last peak
+        return leafIndexToMmrSize(index) - trailingZeros(index + 1) - 1;
+    }
+
+    // count leading zeros: https://stackoverflow.com/a/45222481/6394734
+    function trailingZeros(uint64 x) internal pure returns (uint64) {
+        uint64 n = 0;
+
+        if (x == 0) return(32);
+
+        n = 1;
+        if ((x & 0x0000FFFF) == 0) {n = n +16; x = x >>16;}
+        if ((x & 0x000000FF) == 0) {n = n + 8; x = x >> 8;}
+        if ((x & 0x0000000F) == 0) {n = n + 4; x = x >> 4;}
+        if ((x & 0x00000003) == 0) {n = n + 2; x = x >> 2;}
+        return n - (x & 1);
+    }
+
+    function leafIndexToMmrSize(uint64 index) public pure returns (uint64) {
+        // leaf index start with 0
+        uint64 leaves_count = index + 1;
+
+        // the peak count(k) is actually the count of 1 in leaves count's binary representation
+        uint64 peak_count = countOnes(leaves_count);
+
+        return 2 * leaves_count - peak_count;
+    }
 }
