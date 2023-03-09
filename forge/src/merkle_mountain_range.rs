@@ -3,7 +3,7 @@
 use crate::{execute, runner, MergeKeccak, NumberHash, Token};
 use ckb_merkle_mountain_range::{
     helper::{get_peaks, pos_height_in_tree},
-    mmr_position_to_k_index,
+    leaf_index_to_mmr_size, leaf_index_to_pos, mmr_position_to_k_index,
     util::MemStore,
     MMR,
 };
@@ -142,6 +142,34 @@ fn test_mmr_utils() {
             .unwrap();
 
             assert_eq!(peaks, get_peaks(pos));
+        }
+    }
+
+    {
+        for pos in [45, 98, 200, 412] {
+            let peaks = execute::<_, u64>(
+                &mut runner,
+                "MerkleMountainRangeTest",
+                "leafIndexToPos",
+                (Token::Uint(U256::from(pos))),
+            )
+            .unwrap();
+
+            assert_eq!(peaks, leaf_index_to_pos(pos));
+        }
+    }
+
+    {
+        for pos in [45, 98, 200, 412] {
+            let peaks = execute::<_, u64>(
+                &mut runner,
+                "MerkleMountainRangeTest",
+                "leafIndexToMmrSize",
+                (Token::Uint(U256::from(pos))),
+            )
+            .unwrap();
+
+            assert_eq!(peaks, leaf_index_to_mmr_size(pos));
         }
     }
 }
