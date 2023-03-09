@@ -1,7 +1,12 @@
 #![cfg(test)]
 
 use crate::{execute, runner, MergeKeccak, NumberHash, Token};
-use ckb_merkle_mountain_range::{helper::{get_peaks, pos_height_in_tree}, mmr_position_to_k_index, util::MemStore, MMR, leaf_index_to_pos, leaf_index_to_mmr_size};
+use ckb_merkle_mountain_range::{
+    helper::{get_peaks, pos_height_in_tree},
+    leaf_index_to_mmr_size, leaf_index_to_pos, mmr_position_to_k_index,
+    util::MemStore,
+    MMR,
+};
 use hex_literal::hex;
 use primitive_types::U256;
 
@@ -148,7 +153,7 @@ fn test_mmr_utils() {
                 "leafIndexToPos",
                 (Token::Uint(U256::from(pos))),
             )
-                .unwrap();
+            .unwrap();
 
             assert_eq!(peaks, leaf_index_to_pos(pos));
         }
@@ -162,7 +167,7 @@ fn test_mmr_utils() {
                 "leafIndexToMmrSize",
                 (Token::Uint(U256::from(pos))),
             )
-                .unwrap();
+            .unwrap();
 
             assert_eq!(peaks, leaf_index_to_mmr_size(pos));
         }
