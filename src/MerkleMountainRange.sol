@@ -13,6 +13,11 @@ struct MmrLeaf {
     bytes32 hash;
 }
 
+struct Iterator {
+    uint256 offset;
+    bytes32[] data;
+}
+
 /**
  * @title A Merkle Mountain Range proof library
  * @author Polytope Labs
@@ -35,7 +40,7 @@ library MerkleMountainRange {
         return root == CalculateRoot(proof, leaves, mmrSize);
     }
 
-    /// @notice Calculate merkle root 
+    /// @notice Calculate merkle root
     /// @notice this method allows computing the root hash of a merkle tree using Merkle Mountain Range
     /// @param proof A list of the merkle nodes that are needed to re-calculate root node.
     /// @param leaves a list of mmr leaves to prove
@@ -47,7 +52,8 @@ library MerkleMountainRange {
         uint256 mmrSize
     ) public pure returns (bytes32) {
         uint256[] memory peaks = getPeaks(mmrSize);
-        bytes32[] memory peakRoots = new bytes32[](peaks.length);
+        Iterator memory peakRoots = Iterator(0, new bytes32[](peaks.length));
+        Iterator memory proofIter = Iterator(0, proof);
         uint256 pc = 0;
         uint256 prc = 0;
 
@@ -59,44 +65,44 @@ library MerkleMountainRange {
             }
 
             if (peakLeaves.length == 0) {
-                if (proof.length == pc) {
+                if (proofIter.data.length == proofIter.offset) {
                     break;
                 } else {
-                    peakRoots[prc] = proof[pc];
-                    prc++;
-                    pc++;
+                    push(peakRoots, next(proofIter));
                 }
             } else if (peakLeaves.length == 1 && peakLeaves[0].mmr_pos == peak) {
-                peakRoots[prc] = peakLeaves[0].hash;
-                prc++;
+                push(peakRoots, peakLeaves[0].hash);
             } else {
-                (peakRoots[prc], pc) = CalculatePeakRoot(peakLeaves, proof, peak, pc);
-                prc++;
+                push(peakRoots, CalculatePeakRoot(peakLeaves, proofIter, peak));
             }
         }
 
-        prc--;
-        while (prc != 0) {
-            bytes32 right = peakRoots[prc];
-            prc--;
-            bytes32 left = peakRoots[prc];
-            peakRoots[prc] = keccak256(abi.encodePacked(right, left));
+        unchecked {
+            peakRoots.offset--;
         }
 
-        return peakRoots[0];
+        while (peakRoots.offset != 0) {
+            bytes32 right = previous(peakRoots);
+            bytes32 left = previous(peakRoots);
+            unchecked {
+                peakRoots.offset++;
+            }
+            peakRoots.data[peakRoots.offset] = keccak256(abi.encodePacked(right, left));
+        }
+
+        return peakRoots.data[0];
     }
 
     /// @notice calculate root hash of a sub peak of the merkle mountain
-    /// @param peakLeaves  a list of nodes to provide proof for 
-    /// @param proof   a list of node hashes to traverse to compute the peak root hash
+    /// @param peakLeaves  a list of nodes to provide proof for
+    /// @param proofIter   a list of node hashes to traverse to compute the peak root hash
     /// @param peak    index of the peak node
     /// @return peakRoot a tuple containing the peak root hash, and the peak root position in the merkle
     function CalculatePeakRoot(
         MmrLeaf[] memory peakLeaves,
-        bytes32[] memory proof,
-        uint256 peak,
-        uint256 pc
-    ) internal pure returns (bytes32, uint256)  {
+        Iterator memory proofIter,
+        uint256 peak
+    ) internal pure returns (bytes32)  {
         uint256[] memory current_layer;
         Node[] memory leaves;
         (leaves, current_layer) = mmrLeafToNode(peakLeaves);
@@ -112,14 +118,13 @@ library MerkleMountainRange {
 
             layers[i] = new Node[](diff.length);
             for (uint256 j = 0; j < diff.length; j++) {
-                layers[i][j] = Node(diff[j], proof[pc]);
-                pc++;
+                layers[i][j] = Node(diff[j], next(proofIter));
             }
 
             current_layer = parentIndices(siblings);
         }
 
-        return (MerkleMultiProof.CalculateRoot(layers, leaves), pc);
+        return MerkleMultiProof.CalculateRoot(layers, leaves);
     }
 
     /**
@@ -127,7 +132,7 @@ library MerkleMountainRange {
      * @dev left and right are designed to be equal length array
      * @param left a list of hashes
      * @param right a list of hashes to compare
-     * @return uint256[] a new array with difference 
+     * @return uint256[] a new array with difference
      */
     function difference(uint256[] memory left, uint256[] memory right) internal pure returns (uint256[] memory) {
         uint256[] memory diff = new uint256[](left.length);
@@ -183,7 +188,7 @@ library MerkleMountainRange {
     /**
      * @notice Compute Parent Indices
      * @dev Used internally to calculate the indices of the parent nodes of the provided proof nodes
-     * @param indices a list of indices of proof nodes in a merkle mountain 
+     * @param indices a list of indices of proof nodes in a merkle mountain
      * @return uint256[] a list of parent indices for each index provided
      */
     function parentIndices(uint256[] memory indices) internal pure returns (uint256[] memory) {
@@ -382,128 +387,8 @@ library MerkleMountainRange {
         return count;
     }
 
-    /// @dev Merge a list of nodes into one node. The result will need to be sorted aftewards
-    /// @param out the array to merge the nodes into
-    /// @param arr1 one of the list of nodes to merge
-    /// @param arr2 the other of the list of nodes to merge
-    function mergeArrays(
-        Node[] memory out,
-        Node[] memory arr1,
-        Node[] memory arr2
-    ) internal pure {
-        // merge the two arrays
-        uint256 i = 0;
-        while (i < arr1.length) {
-            out[i] = arr1[i];
-            i++;
-        }
-
-        uint256 j = 0;
-        while (j < arr2.length) {
-            out[i] = arr2[j];
-            i++;
-            j++;
-        }
-    }
-
-    /**
-     * @notice Sort a list of data using quick sort algorithm 
-     * @notice this is an overloaded function, but they all do the same thing 
-     * @param arr list of data to sort. In this case, it's a merkle node 
-     * @param left leftmost position on the list, or lowest point 
-     * @param right rightmost position on the list, or highest point 
-     */
-    function quickSort(
-        Node[] memory arr,
-        uint256 left,
-        uint256 right
-    ) internal pure {
-        uint256 i = left;
-        uint256 j = right;
-        if (i == j) return;
-        uint256 pivot = arr[uint256(left + (right - left) / 2)].k_index;
-        while (i <= j) {
-            while (arr[uint256(i)].k_index < pivot) i++;
-            while (pivot < arr[uint256(j)].k_index) if (j > 0) j--;
-            if (i <= j) {
-                (arr[uint256(i)], arr[uint256(j)]) = (
-                arr[uint256(j)],
-                arr[uint256(i)]
-                );
-                i++;
-                if (j > 0) j--;
-            }
-        }
-        if (left < j) quickSort(arr, left, j);
-        if (i < right) quickSort(arr, i, right);
-    }
-
-  /**
-     * @notice Sort a list of data using quick sort algorithm
-     * @notice this is an overloaded function, but they all do the same thing
-     * @param arr list of data to sort. In this case, it's a list of node hashes
-     * @param left leftmost position on the list, or lowest point
-     * @param right rightmost position on the list, or highest point
-     */
-    function quickSort(
-        uint256[] memory arr,
-        uint256 left,
-        uint256 right
-    ) internal pure {
-        uint256 i = left;
-        uint256 j = right;
-        if (i == j) return;
-        uint256 pivot = arr[uint256(left + (right - left) / 2)];
-        while (i <= j) {
-            while (arr[uint256(i)] < pivot) i++;
-            while (pivot < arr[uint256(j)]) if (j > 0) j--;
-            if (i <= j) {
-                (arr[uint256(i)], arr[uint256(j)]) = (
-                arr[uint256(j)],
-                arr[uint256(i)]
-                );
-                i++;
-                if (j > 0) j--;
-            }
-        }
-        if (left < j) quickSort(arr, left, j);
-        if (i < right) quickSort(arr, i, right);
-    }
-
-  /**
-     * @notice Sort a list of data using quick sort algorithm
-     * @notice this is an overloaded function, but they all do the same thing
-     * @param arr list of data to sort. In this case, it's a merkle mountain node
-     * @param left leftmost position on the list, or lowest point
-     * @param right rightmost position on the list, or highest point
-     */
-    function quickSort(
-        MmrLeaf[] memory arr,
-        uint256 left,
-        uint256 right
-    ) internal pure {
-        uint256 i = left;
-        uint256 j = right;
-        if (i == j) return;
-        uint256 pivot = arr[uint256(left + (right - left) / 2)].mmr_pos;
-        while (i <= j) {
-            while (arr[uint256(i)].mmr_pos < pivot) i++;
-            while (pivot < arr[uint256(j)].mmr_pos) if (j > 0) j--;
-            if (i <= j) {
-                (arr[uint256(i)], arr[uint256(j)]) = (
-                arr[uint256(j)],
-                arr[uint256(i)]
-                );
-                i++;
-                if (j > 0) j--;
-            }
-        }
-        if (left < j) quickSort(arr, left, j);
-        if (i < right) quickSort(arr, i, right);
-    }
-
     /// @notice Integer log2
-    /// @notice if x is nonzero floored value is returned, otherwise 0. 
+    /// @notice if x is nonzero floored value is returned, otherwise 0.
     /// @notice This is the same as the location of the highest set bit.
     /// @dev Consumes 232 gas. This could have been an 3 gas EVM opcode though.
     /// @param x Integer value, calculate the log2 and floor it
@@ -519,5 +404,30 @@ library MerkleMountainRange {
             r := or(r, shl(1, lt(0x3, shr(r, x))))
             r := or(r, lt(0x1, shr(r, x)))
         }
+    }
+
+    function push(Iterator memory iterator, bytes32 data) public pure {
+        iterator.data[iterator.offset] = data;
+        unchecked {
+            iterator.offset++;
+        }
+    }
+
+    function next(Iterator memory iterator) public pure returns (bytes32)  {
+        bytes32 data = iterator.data[iterator.offset];
+        unchecked {
+            iterator.offset++;
+        }
+
+        return data;
+    }
+
+    function previous(Iterator memory iterator) public pure returns (bytes32)  {
+        bytes32 data = iterator.data[iterator.offset];
+        unchecked {
+            iterator.offset--;
+        }
+
+        return data;
     }
 }
