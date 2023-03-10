@@ -12,4 +12,8 @@ contract MerkleMultiProofTest is Test {
     function CalculateRoot(Node[][] memory proof, Node[] memory leaves) public pure returns (bytes32) {
         return MerkleMultiProof.CalculateRoot(proof, leaves);
     }
+
+    function CalculateRootSorted(Node[][] memory proof, Node[] memory leaves) public pure returns (bytes32) {
+        return MerkleMultiProof.CalculateRootSorted(proof, leaves);
+    }
 }
