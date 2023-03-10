@@ -1,7 +1,7 @@
 #![cfg(test)]
 
-use ethers::abi::Uint;
 use crate::{execute, keccak256, runner, Keccak256, Token};
+use ethers::abi::Uint;
 use hex_literal::hex;
 use primitive_types::{H256, U256};
 use rs_merkle::{merkle_proof_2d_sorted, MerkleTree};
@@ -235,12 +235,14 @@ fn multi_merkle_proof() {
         let proof = merkle_proof_2d_sorted::<Keccak256>(leaf_hashes.clone(), leaf_indices.clone())
             .into_iter()
             .map(|l| {
-                l.into_iter().map(|(i, h)|  {
-                    Token::Tuple(vec![
-                        Token::Uint(Uint::from(i)),
-                        Token::FixedBytes(h.to_vec())
-                    ])
-                }).collect::<Vec<_>>()
+                l.into_iter()
+                    .map(|(i, h)| {
+                        Token::Tuple(vec![
+                            Token::Uint(Uint::from(i)),
+                            Token::FixedBytes(h.to_vec()),
+                        ])
+                    })
+                    .collect::<Vec<_>>()
             })
             .collect::<Vec<_>>();
 
@@ -249,7 +251,7 @@ fn multi_merkle_proof() {
             .map(|i| {
                 Token::Tuple(vec![
                     Token::Uint(Uint::from(i)),
-                    Token::FixedBytes(keccak256(&leaf_hashes[i]).to_vec())
+                    Token::FixedBytes(keccak256(&leaf_hashes[i]).to_vec()),
                 ])
             })
             .collect::<Vec<_>>();
@@ -264,5 +266,7 @@ fn multi_merkle_proof() {
 
         dbg!(H256(calculated));
         dbg!(sorted_root);
+
+        assert_eq!(sorted_root, H256(calculated));
     }
 }
