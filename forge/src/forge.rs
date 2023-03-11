@@ -1,6 +1,6 @@
 use ethers::{
     abi::{Detokenize, Tokenize},
-    solc::{Project, ProjectCompileOutput, ProjectPathsConfig},
+    solc::{remappings::Remapping, Project, ProjectCompileOutput, ProjectPathsConfig},
     types::U256,
 };
 use forge::{
@@ -18,7 +18,6 @@ use std::{
     fmt::Debug,
     path::{Path, PathBuf},
 };
-use ethers::solc::remappings::Remapping;
 
 static PROJECT: Lazy<Project> = Lazy::new(|| {
     let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));

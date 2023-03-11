@@ -226,7 +226,6 @@ fn multi_merkle_proof() {
 
     assert_eq!(tree.root().unwrap(), calculated);
 
-
     {
         // let leaf_indices = vec![2];
         let leaf_indices = vec![0, 2, 4, 8, 16];
@@ -238,7 +237,7 @@ fn multi_merkle_proof() {
                     "TreeHeight",
                     (Token::Uint(Uint::from(i))),
                 )
-                    .unwrap();
+                .unwrap();
                 assert_eq!(calculated as u32, i.ilog2());
             }
 
@@ -248,7 +247,7 @@ fn multi_merkle_proof() {
                 "TreeHeight",
                 (Token::Uint(Uint::from(leaf_hashes.len()))),
             )
-                .unwrap();
+            .unwrap();
 
             let len = merkelize_sorted::<Keccak256>(leaf_hashes.clone()).len();
 
@@ -296,5 +295,3 @@ fn multi_merkle_proof() {
         assert_eq!(sorted_root, H256(calculated));
     }
 }
-
-
