@@ -83,7 +83,7 @@ library MerkleMountainRange {
             bytes32 right = previous(peakRoots);
             bytes32 left = previous(peakRoots);
             unchecked {
-                peakRoots.offset++;
+                ++peakRoots.offset;
             }
             peakRoots.data[peakRoots.offset] = keccak256(abi.encodePacked(right, left));
         }
@@ -154,7 +154,7 @@ library MerkleMountainRange {
         uint256 k = 0;
         while (k < d) {
             out[k] = diff[k];
-            k++;
+            ++k;
         }
 
         return out;
@@ -211,7 +211,7 @@ library MerkleMountainRange {
         while (i < leaves.length) {
             nodes[i] = Node(leaves[i].k_index, leaves[i].hash);
             indices[i] = leaves[i].k_index;
-            i++;
+            ++i;
         }
 
         return (nodes, indices);
@@ -242,14 +242,14 @@ library MerkleMountainRange {
         uint256 i = 0;
         while (i < left.length) {
             left[i] = leaves[i];
-            i++;
+            ++i;
         }
 
         uint256 j = 0;
         while (i < leaves.length) {
             right[j] = leaves[i];
-            i++;
-            j++;
+            ++i;
+            ++j;
         }
 
         return (left, right);
@@ -281,7 +281,7 @@ library MerkleMountainRange {
             height = _height;
             pos = _pos;
             positions[p] = pos;
-            p++;
+            ++p;
         }
 
         // copy array to new one, sigh solidity.
@@ -289,7 +289,7 @@ library MerkleMountainRange {
         uint256[] memory out = new uint256[](p);
         while (i < p) {
             out[i] = positions[i];
-            i++;
+            ++i;
         }
 
         return out;
@@ -302,7 +302,7 @@ library MerkleMountainRange {
             if (height == 0) {
                 return (0, 0);
             }
-            height -= 1;
+            --height;
             pos -= parentOffset(height);
         }
 
@@ -311,10 +311,10 @@ library MerkleMountainRange {
 
     function leftPeakHeightPos(uint256 mmrSize) internal pure returns (uint256, uint256) {
         uint256 height = 1;
-        uint256 prevPos = 0;
+        uint256 prevPos;
         uint256 pos = getPeakPosByHeight(height);
         while (pos < mmrSize) {
-            height += 1;
+            ++height;
             prevPos = pos;
             pos = getPeakPosByHeight(height);
         }
@@ -327,7 +327,7 @@ library MerkleMountainRange {
     }
 
     function posToHeight(uint64 pos) internal pure returns (uint64) {
-        pos += 1;
+        ++pos;
 
         while (!allOnes(pos)) {
             pos = jumpLeft(pos);
@@ -362,7 +362,7 @@ library MerkleMountainRange {
             if (((num << i) & msb) != 0) {
                 break;
             }
-            count++;
+            ++count;
 
         }
 
@@ -378,7 +378,7 @@ library MerkleMountainRange {
 
         while (num !=  0) {
             num &= (num - 1);
-            count++;
+            ++count;
         }
 
         return count;
@@ -387,14 +387,14 @@ library MerkleMountainRange {
     function push(Iterator memory iterator, bytes32 data) public pure {
         iterator.data[iterator.offset] = data;
         unchecked {
-            iterator.offset++;
+            ++iterator.offset;
         }
     }
 
     function next(Iterator memory iterator) public pure returns (bytes32)  {
         bytes32 data = iterator.data[iterator.offset];
         unchecked {
-            iterator.offset++;
+            ++iterator.offset;
         }
 
         return data;
@@ -403,7 +403,7 @@ library MerkleMountainRange {
     function previous(Iterator memory iterator) public pure returns (bytes32)  {
         bytes32 data = iterator.data[iterator.offset];
         unchecked {
-            iterator.offset--;
+            --iterator.offset;
         }
 
         return data;
