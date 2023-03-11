@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache2
 pragma solidity ^0.8.17;
 
+import "openzeppelin/utils/math/Math.sol";
+
+
 /// @title A representation of a Merkle tree node
 struct Node {
     // Distance of the node to the leftmost node
@@ -239,5 +242,27 @@ library MerkleMultiProof {
             mstore(0x20, node2)
             hash := keccak256(0x0, 0x40)
         }
+    }
+
+    /// @notice compute the height of the tree whose total number of leaves is given, it accounts for unbalanced trees.
+    /// @param leavesCount number of leaves in the tree
+    /// @return height of the tree
+    function TreeHeight(uint256 leavesCount) public pure returns (uint256) {
+        uint256 height = Math.log2(leavesCount, Math.Rounding.Up);
+        if (!isPowerOfTwo(leavesCount)) {
+            unchecked {
+                height++;
+            }
+        }
+
+        return height;
+    }
+
+    function isPowerOfTwo(uint256 x) internal pure returns (bool) {
+        if (x == 0) {
+            return false;
+        }
+
+        return (x & (x - 1)) == 0;
     }
 }

@@ -54,8 +54,6 @@ library MerkleMountainRange {
         uint256[] memory peaks = getPeaks(mmrSize);
         Iterator memory peakRoots = Iterator(0, new bytes32[](peaks.length));
         Iterator memory proofIter = Iterator(0, proof);
-        uint256 pc = 0;
-        uint256 prc = 0;
 
         for (uint256 p = 0; p < peaks.length; p++) {
             uint256 peak = peaks[p];
@@ -336,7 +334,6 @@ library MerkleMountainRange {
         }
 
         return (64 - countLeadingZeros(pos) - 1);
-
     }
 
     function siblingOffset(uint256 height) internal pure returns (uint256) {
@@ -385,25 +382,6 @@ library MerkleMountainRange {
         }
 
         return count;
-    }
-
-    /// @notice Integer log2
-    /// @notice if x is nonzero floored value is returned, otherwise 0.
-    /// @notice This is the same as the location of the highest set bit.
-    /// @dev Consumes 232 gas. This could have been an 3 gas EVM opcode though.
-    /// @param x Integer value, calculate the log2 and floor it
-    /// @return r the floored result
-    function floorLog2(uint256 x) internal pure returns (uint256 r) {
-        assembly {
-            r := shl(7, lt(0xffffffffffffffffffffffffffffffff, x))
-            r := or(r, shl(6, lt(0xffffffffffffffff, shr(r, x))))
-            r := or(r, shl(5, lt(0xffffffff, shr(r, x))))
-            r := or(r, shl(4, lt(0xffff, shr(r, x))))
-            r := or(r, shl(3, lt(0xff, shr(r, x))))
-            r := or(r, shl(2, lt(0xf, shr(r, x))))
-            r := or(r, shl(1, lt(0x3, shr(r, x))))
-            r := or(r, lt(0x1, shr(r, x)))
-        }
     }
 
     function push(Iterator memory iterator, bytes32 data) public pure {
