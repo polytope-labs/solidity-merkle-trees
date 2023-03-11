@@ -1,13 +1,14 @@
 #![cfg(test)]
 
 use crate::{execute, keccak256, runner, Keccak256, Token};
+use ethers::abi::Uint;
 use hex_literal::hex;
-use primitive_types::U256;
-use rs_merkle::MerkleTree;
+use primitive_types::{H256, U256};
+use rs_merkle::{merkelize_sorted, merkle_proof_2d_sorted, MerkleTree};
 
 #[test]
 fn multi_merkle_proof() {
-    let leaf_hashes = [
+    let mut leaf_hashes = [
         hex!("9aF1Ca5941148eB6A3e9b9C741b69738292C533f"),
         hex!("DD6ca953fddA25c496165D9040F7F77f75B75002"),
         hex!("60e9C47B64Bc1C7C906E891255EaEC19123E7F42"),
@@ -180,6 +181,8 @@ fn multi_merkle_proof() {
     .map(|h| keccak256(&h))
     .collect::<Vec<[u8; 32]>>();
 
+    leaf_hashes.sort();
+
     let tree = MerkleTree::<Keccak256>::from_leaves(&leaf_hashes);
 
     let leaves = vec![0, 2, 5, 9, 20, 25, 31];
@@ -221,5 +224,74 @@ fn multi_merkle_proof() {
     )
     .unwrap();
 
-    assert_eq!(tree.root().unwrap(), calculated)
+    assert_eq!(tree.root().unwrap(), calculated);
+
+    {
+        // let leaf_indices = vec![2];
+        let leaf_indices = vec![0, 2, 4, 8, 16];
+        {
+            for i in [2usize, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048] {
+                let calculated = execute::<_, u32>(
+                    &mut runner,
+                    "MerkleMultiProofTest",
+                    "TreeHeight",
+                    (Token::Uint(Uint::from(i))),
+                )
+                .unwrap();
+                assert_eq!(calculated as u32, i.ilog2());
+            }
+
+            let calculated = execute::<_, u32>(
+                &mut runner,
+                "MerkleMultiProofTest",
+                "TreeHeight",
+                (Token::Uint(Uint::from(leaf_hashes.len()))),
+            )
+            .unwrap();
+
+            let len = merkelize_sorted::<Keccak256>(leaf_hashes.clone()).len();
+
+            assert_eq!(calculated as usize, len);
+        }
+
+        let sorted_root =
+            beefy_merkle_tree::merkle_root::<beefy_merkle_tree::Keccak256, _>(leaf_hashes.clone());
+
+        let proof = merkle_proof_2d_sorted::<Keccak256>(leaf_hashes.clone(), leaf_indices.clone())
+            .into_iter()
+            .map(|l| {
+                l.into_iter()
+                    .map(|(i, h)| {
+                        Token::Tuple(vec![
+                            Token::Uint(Uint::from(i)),
+                            Token::FixedBytes(h.to_vec()),
+                        ])
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+
+        let leaves = leaf_indices
+            .into_iter()
+            .map(|i| {
+                Token::Tuple(vec![
+                    Token::Uint(Uint::from(i)),
+                    Token::FixedBytes(keccak256(&leaf_hashes[i]).to_vec()),
+                ])
+            })
+            .collect::<Vec<_>>();
+
+        let calculated = execute::<_, [u8; 32]>(
+            &mut runner,
+            "MerkleMultiProofTest",
+            "CalculateRootSorted",
+            (proof, leaves),
+        )
+        .unwrap();
+
+        dbg!(H256(calculated));
+        dbg!(sorted_root);
+
+        assert_eq!(sorted_root, H256(calculated));
+    }
 }

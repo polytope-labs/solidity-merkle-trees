@@ -25,6 +25,7 @@ codec = { package = "parity-scale-codec", version = "3.4.0" }
 sp-core = "17.0.0"
 sp-trie = "17.0.0"
 libfuzzer-sys = "0.4.6"
+beefy-merkle-tree = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
 
 # Prevent this from interfering with workspaces
 [workspace]

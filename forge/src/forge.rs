@@ -1,6 +1,6 @@
 use ethers::{
     abi::{Detokenize, Tokenize},
-    solc::{Project, ProjectCompileOutput, ProjectPathsConfig},
+    solc::{remappings::Remapping, Project, ProjectCompileOutput, ProjectPathsConfig},
     types::U256,
 };
 use forge::{
@@ -22,7 +22,15 @@ use std::{
 static PROJECT: Lazy<Project> = Lazy::new(|| {
     let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     root = PathBuf::from(root.parent().unwrap().clone());
-    let paths = ProjectPathsConfig::builder().root(root.clone()).sources(root).build().unwrap();
+    let mut paths = ProjectPathsConfig::builder().root(root.clone()).build().unwrap();
+    {
+        // manually insert openzeppelin to remmapings. forge isn't autodetecting.
+        root.push("lib/openzeppelin-contracts/contracts");
+        paths.remappings.push(Remapping {
+            name: "openzeppelin/".to_string(),
+            path: root.to_str().unwrap().to_string(),
+        });
+    }
     Project::builder().paths(paths).ephemeral().no_artifacts().build().unwrap()
 });
 

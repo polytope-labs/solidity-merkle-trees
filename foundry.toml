@@ -1,4 +1,4 @@
 [profile.default]
-src = 'lib'
+src = 'src'
 out = 'out'
 libs = ['lib']
