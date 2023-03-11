@@ -31,6 +31,21 @@ library MerkleMultiProof {
         return root == CalculateRoot(proof, leaves);
     }
 
+    /**
+     * @notice Verify a Merkle Multi Proof whose internal nodes are sorted
+     * @param root hash of the root node of the merkle tree
+     * @param proof A list of the merkle nodes along with their k-indices that are needed to re-calculate root node.
+     * @param leaves A list of the leaves along with their k-indices to prove
+     * @return boolean if the calculated root matches the provides root node
+     */
+    function VerifyProofSorted(bytes32 root, Node[][] memory proof, Node[] memory leaves)
+        public
+        pure
+        returns (bool)
+    {
+        return root == CalculateRootSorted(proof, leaves);
+    }
+
     /// @notice Calculate the hash of the root node
     /// @dev Use this function to calculate the hash of the root node
     /// @param proof A list of the merkle nodes along with their k-indices that are needed to re-calculate root node.
