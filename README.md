@@ -90,6 +90,21 @@ contract YourContract {
 }
 ```
 
+## Testing Guide
+This guide assumes you have Rust along with it's nightly version, Solidity, cargo-fuzz and forge installed, if not browse the official websites/repositories for instructions.
+
+To run the merkle multi proof unit tests run
+```bash
+cargo test --lib merkle
+```
+
+To run the unit and fuzz tests associated with the merkle patricia trie library run the following respectively.
+
+```bash
+cargo test --lib merkle_patricia
+cargo +nightly fuzz run trie_proof_valid
+```
+
 ## License
 
 This library is licensed under the [Apache 2.0 License](./LICENSE), Copyright (c) 2023 Polytope Labs.
