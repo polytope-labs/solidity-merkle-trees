@@ -91,7 +91,13 @@ contract YourContract {
 ```
 
 ## Testing Guide
-This guide assumes Rust...along with it's nightly version, Solidity, cargo-fuzz and Forge are installed, if not browse the official websites/repositories for instructions.
+This guide assumes [Rust](https://www.rust-lang.org/tools/install)...along with it's [nightly](https://rust-lang.github.io/rustup/concepts/channels.html#:~:text=it%20just%20run-,rustup%20toolchain%20install%20nightly,-%3A) version, Solidity, [cargo-fuzz](https://github.com/rust-fuzz/cargo-fuzz) and [Forge](https://github.com/foundry-rs/foundry/blob/master/README.md) are installed, if not browse the official websites/repositories for instructions.
+
+Change into the forge directory and build the contracts using forge;
+```bash
+cd forge
+forge build
+```
 
 To run the unit tests associated with the Merkle Multi Proof library;
 ```bash
