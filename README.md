@@ -91,14 +91,19 @@ contract YourContract {
 ```
 
 ## Testing Guide
-This guide assumes you have Rust along with it's nightly version, Solidity, cargo-fuzz and forge installed, if not browse the official websites/repositories for instructions.
+This guide assumes Rust...along with it's nightly version, Solidity, cargo-fuzz and Forge are installed, if not browse the official websites/repositories for instructions.
 
-To run the merkle multi proof unit tests run
+To run the unit tests associated with the Merkle Multi Proof library;
 ```bash
-cargo test --lib merkle
+cargo test --lib merkle_multi_proof
 ```
 
-To run the unit and fuzz tests associated with the merkle patricia trie library run the following respectively.
+To run the unit tests associated with the Merkle Mountain Range library;
+```bash
+cargo test --lib merkle_mountain_proof
+```
+
+To run the unit and fuzz tests associated with the Merkle Patricia Trie library;
 
 ```bash
 cargo test --lib merkle_patricia
