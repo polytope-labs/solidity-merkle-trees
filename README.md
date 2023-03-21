@@ -91,9 +91,9 @@ contract YourContract {
 ```
 
 ## Testing Guide
-This guide assumes [Rust](https://www.rust-lang.org/tools/install)...along with it's [nightly](https://rust-lang.github.io/rustup/concepts/channels.html#:~:text=it%20just%20run-,rustup%20toolchain%20install%20nightly,-%3A) version, Solidity, [cargo-fuzz](https://github.com/rust-fuzz/cargo-fuzz) and [Forge](https://github.com/foundry-rs/foundry/blob/master/README.md) are installed, if not browse the official websites/repositories for instructions.
+This guide assumes [Rust](https://www.rust-lang.org/tools/install)...along with it's [nightly](https://rust-lang.github.io/rustup/concepts/channels.html#:~:text=it%20just%20run-,rustup%20toolchain%20install%20nightly,-%3A) version, [Solidity](https://docs.soliditylang.org/en/v0.8.17/installing-solidity.html), [cargo-fuzz](https://github.com/rust-fuzz/cargo-fuzz) and [Forge](https://github.com/foundry-rs/foundry/blob/master/README.md) are installed, if not browse the official websites/repositories for instructions.
 
-Change into the forge directory and build the contracts using forge;
+Change into the forge directory and build the contracts;
 ```bash
 cd forge
 forge build
