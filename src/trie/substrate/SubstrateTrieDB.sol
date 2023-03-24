@@ -5,6 +5,7 @@ import "../Bytes.sol";
 import { NibbleSliceOps } from "../NibbleSlice.sol";
 
 import { ScaleCodec } from "./ScaleCodec.sol";
+import "openzeppelin/utils/Strings.sol";
 
 // SPDX-License-Identifier: Apache2
 
@@ -22,7 +23,7 @@ library SubstrateTrieDB {
     uint256 public constant BITMAP_LENGTH = 2;
     uint256 public constant HASH_lENGTH = 32;
 
-    function decodeNodeKind(bytes memory encoded) external pure returns (NodeKind memory) {
+    function decodeNodeKind(bytes memory encoded) internal pure returns (NodeKind memory) {
         NodeKind memory node;
         ByteSlice memory input = ByteSlice(encoded, 0);
         uint8 i = Bytes.readByte(input);
@@ -60,7 +61,7 @@ library SubstrateTrieDB {
         return node;
     }
 
-    function decodeNibbledBranch(NodeKind memory node) external pure returns (NibbledBranch memory) {
+    function decodeNibbledBranch(NodeKind memory node) internal pure returns (NibbledBranch memory) {
         NibbledBranch memory nibbledBranch;
         ByteSlice memory input = node.data;
 
@@ -73,6 +74,7 @@ library SubstrateTrieDB {
 
         bytes memory bitmapBytes = Bytes.read(input, BITMAP_LENGTH);
         uint16 bitmap = uint16(ScaleCodec.decodeUint256(bitmapBytes));
+
 
         NodeHandleOption memory valueHandle;
         if (node.isNibbledHashedValueBranch) {
@@ -92,6 +94,7 @@ library SubstrateTrieDB {
             if (valueAt(bitmap, i)) {
                 childHandle.isSome = true;
                 uint256 len = ScaleCodec.decodeUintCompact(input);
+//                revert(string.concat("node index: ", Strings.toString(len)));
                 if (len == HASH_lENGTH) {
                     childHandle.value.isHash = true;
                     childHandle.value.hash = Bytes.toBytes32(Bytes.read(input, HASH_lENGTH));
@@ -106,7 +109,7 @@ library SubstrateTrieDB {
         return nibbledBranch;
     }
 
-    function decodeLeaf(NodeKind memory node) external pure returns (Leaf memory) {
+    function decodeLeaf(NodeKind memory node) internal pure returns (Leaf memory) {
         Leaf memory leaf;
         ByteSlice memory input = node.data;
 

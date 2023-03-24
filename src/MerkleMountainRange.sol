@@ -36,7 +36,7 @@ library MerkleMountainRange {
         bytes32[] memory proof,
         MmrLeaf[] memory leaves,
         uint256 mmrSize
-    ) public pure returns (bool) {
+    ) internal pure returns (bool) {
         return root == CalculateRoot(proof, leaves, mmrSize);
     }
 
@@ -50,7 +50,7 @@ library MerkleMountainRange {
         bytes32[] memory proof,
         MmrLeaf[] memory leaves,
         uint256 mmrSize
-    ) public pure returns (bytes32) {
+    ) internal pure returns (bytes32) {
         uint256[] memory peaks = getPeaks(mmrSize);
         Iterator memory peakRoots = Iterator(0, new bytes32[](peaks.length));
         Iterator memory proofIter = Iterator(0, proof);
@@ -384,14 +384,14 @@ library MerkleMountainRange {
         return count;
     }
 
-    function push(Iterator memory iterator, bytes32 data) public pure {
+    function push(Iterator memory iterator, bytes32 data) internal pure {
         iterator.data[iterator.offset] = data;
         unchecked {
             ++iterator.offset;
         }
     }
 
-    function next(Iterator memory iterator) public pure returns (bytes32)  {
+    function next(Iterator memory iterator) internal pure returns (bytes32)  {
         bytes32 data = iterator.data[iterator.offset];
         unchecked {
             ++iterator.offset;
@@ -400,7 +400,7 @@ library MerkleMountainRange {
         return data;
     }
 
-    function previous(Iterator memory iterator) public pure returns (bytes32)  {
+    function previous(Iterator memory iterator) internal pure returns (bytes32)  {
         bytes32 data = iterator.data[iterator.offset];
         unchecked {
             --iterator.offset;
@@ -409,7 +409,7 @@ library MerkleMountainRange {
         return data;
     }
 
-    function leafIndexToPos(uint64 index) public pure returns (uint64) {
+    function leafIndexToPos(uint64 index) internal pure returns (uint64) {
         // mmr_size - H - 1, H is the height(intervals) of last peak
         return leafIndexToMmrSize(index) - trailingZeros(index + 1) - 1;
     }
@@ -428,7 +428,7 @@ library MerkleMountainRange {
         return n - (x & 1);
     }
 
-    function leafIndexToMmrSize(uint64 index) public pure returns (uint64) {
+    function leafIndexToMmrSize(uint64 index) internal pure returns (uint64) {
         // leaf index start with 0
         uint64 leaves_count = index + 1;
 

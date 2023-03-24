@@ -21,7 +21,7 @@ library ScaleCodec {
     returns (uint256 v)
     {
         uint8 b = Bytes.readByte(data); // read the first byte
-        uint8 mode = b & 3; // bitwise operation
+        uint8 mode = b % 4; // bitwise operation
 
         uint256 value;
         if (mode == 0) {
@@ -48,11 +48,9 @@ library ScaleCodec {
             value = uint256(x3);
         } else if (mode == 3) {
             // [1073741824, 4503599627370496]
-            uint8 l = b >> 2; // remove mode bits
-            require(
-                l > 32,
-                "Not supported: number cannot be greater than 32 bytes"
-            );
+            uint8 l = (b >> 2) + 4; // remove mode bits
+            require(l <= 8, "unexpected prefix decoding Compact<Uint>");
+            return decodeUint256(Bytes.read(data, l));
         } else {
             revert("Code should be unreachable");
         }
@@ -61,7 +59,7 @@ library ScaleCodec {
 
     // Decodes a SCALE encoded compact unsigned integer
     function decodeUintCompact(bytes memory data)
-        internal 
+        internal
         pure
         returns (uint256 v, uint8 m)
     {
@@ -126,7 +124,7 @@ library ScaleCodec {
 
     // Read a byte at a specific index and return it as type uint8
     function readByteAtIndex(bytes memory data, uint8 index)
-        public
+        internal
         pure
         returns (uint8)
     {
