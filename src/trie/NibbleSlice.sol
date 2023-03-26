@@ -8,37 +8,37 @@ struct NibbleSlice {
 }
 
 library NibbleSliceOps {
-    uint256 public constant NIBBLE_PER_BYTE = 2;
-    uint256 public constant BITS_PER_NIBBLE = 4;
+    uint256 internal constant NIBBLE_PER_BYTE = 2;
+    uint256 internal constant BITS_PER_NIBBLE = 4;
 
-    function len(NibbleSlice memory nibble) public pure returns (uint256) {
+    function len(NibbleSlice memory nibble) internal pure returns (uint256) {
         return nibble.data.length * NIBBLE_PER_BYTE - nibble.offset;
     }
 
-    function mid(NibbleSlice memory self, uint256 i) public pure returns (NibbleSlice memory) {
+    function mid(NibbleSlice memory self, uint256 i) internal pure returns (NibbleSlice memory) {
         return NibbleSlice(self.data, self.offset + i);
     }
 
-    function isEmpty(NibbleSlice memory self) public pure returns (bool) {
+    function isEmpty(NibbleSlice memory self) internal pure returns (bool) {
         return len(self) == 0;
     }
 
-    function eq(NibbleSlice memory self, NibbleSlice memory other) public pure returns (bool) {
+    function eq(NibbleSlice memory self, NibbleSlice memory other) internal pure returns (bool) {
         return len(self) == len(other) && startsWith(self, other);
     }
 
-    function at(NibbleSlice memory self, uint256 i) public pure returns (uint256) {
+    function at(NibbleSlice memory self, uint256 i) internal pure returns (uint256) {
         uint256 ix = (self.offset + i) / NIBBLE_PER_BYTE;
         uint256 pad = (self.offset + i) % NIBBLE_PER_BYTE;
         uint8 data = uint8(self.data[ix]);
         return (pad == 1) ? data & 0x0F : data >> BITS_PER_NIBBLE;
     }
 
-    function startsWith(NibbleSlice memory self, NibbleSlice memory other) public pure returns (bool) {
+    function startsWith(NibbleSlice memory self, NibbleSlice memory other) internal pure returns (bool) {
         return commonPrefix(self, other) == len(other);
     }
 
-    function commonPrefix(NibbleSlice memory self, NibbleSlice memory other) public pure returns (uint256) {
+    function commonPrefix(NibbleSlice memory self, NibbleSlice memory other) internal pure returns (uint256) {
         uint256 self_align = self.offset % NIBBLE_PER_BYTE;
         uint256 other_align = other.offset % NIBBLE_PER_BYTE;
 
@@ -71,7 +71,7 @@ library NibbleSliceOps {
         }
     }
 
-    function biggestDepth(bytes memory a, bytes memory b) public pure returns (uint256) {
+    function biggestDepth(bytes memory a, bytes memory b) internal pure returns (uint256) {
         uint256 upperBound = min(a.length, b.length);
         uint256 i = 0;
         while(i < upperBound) {
@@ -83,7 +83,7 @@ library NibbleSliceOps {
         return i * NIBBLE_PER_BYTE;
     }
 
-    function leftCommon(bytes1 a, bytes1 b) public pure returns (uint256) {
+    function leftCommon(bytes1 a, bytes1 b) internal pure returns (uint256) {
         if (a == b) {
             return 2;
         }else if(uint8(a) & 0xF0 == uint8(b) & 0xF0) {

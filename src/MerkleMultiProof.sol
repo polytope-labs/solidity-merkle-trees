@@ -27,7 +27,7 @@ library MerkleMultiProof {
      * @return boolean if the calculated root matches the provides root node
      */
     function VerifyProof(bytes32 root, Node[][] memory proof, Node[] memory leaves)
-        public
+        internal
         pure
         returns (bool)
     {
@@ -42,7 +42,7 @@ library MerkleMultiProof {
      * @return boolean if the calculated root matches the provides root node
      */
     function VerifyProofSorted(bytes32 root, Node[][] memory proof, Node[] memory leaves)
-        public
+        internal
         pure
         returns (bool)
     {
@@ -55,7 +55,7 @@ library MerkleMultiProof {
     /// @param leaves A list of the leaves along with their k-indices to prove
     /// @return Hash of root node, value is a bytes32 type
     function CalculateRoot(Node[][] memory proof, Node[] memory leaves)
-        public
+        internal
         pure
         returns (bytes32)
     {
@@ -110,7 +110,7 @@ library MerkleMultiProof {
     /// @param leaves A list of the leaves to prove
     /// @return Hash of root node, value is a bytes32 type
     function CalculateRootSorted(Node[][] memory proof, Node[] memory leaves)
-        public
+        internal
         pure
         returns (bytes32)
     {
@@ -247,7 +247,7 @@ library MerkleMultiProof {
     /// @notice compute the height of the tree whose total number of leaves is given, it accounts for unbalanced trees.
     /// @param leavesCount number of leaves in the tree
     /// @return height of the tree
-    function TreeHeight(uint256 leavesCount) public pure returns (uint256) {
+    function TreeHeight(uint256 leavesCount) internal pure returns (uint256) {
         uint256 height = Math.log2(leavesCount, Math.Rounding.Up);
         if (!isPowerOfTwo(leavesCount)) {
             unchecked {
