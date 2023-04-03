@@ -5,9 +5,10 @@
 
 This library contains the implementations of various merkle tree verification algorithms. Currently supported algorithms:
 <br />
- - [x] Merkle Trees (supports unbalanced trees).
- - [x] Merkle Mountain Ranges.
- - [x] Merkle-Patricia Trie.
+
+- [x] Merkle Trees (supports unbalanced trees).
+- [x] Merkle Mountain Ranges.
+- [x] Merkle-Patricia Trie.
 
 ## Installation
 
@@ -68,10 +69,10 @@ You can derive the k-indices for the mmr leaves using this rust lib [polytope-la
 
 This library also supports the verification of the different styles of merkle patricia tries:
 
- - [x] Substrate
- - [ ] Ethereum
- - [ ] NEAR
-   <br />
+- [x] Substrate
+- [ ] Ethereum
+- [ ] NEAR
+      <br />
 
 ```solidity
 pragma solidity ^0.8.0;
@@ -91,20 +92,24 @@ contract YourContract {
 ```
 
 ## Testing Guide
+
 This guide assumes [Rust](https://www.rust-lang.org/tools/install)...along with it's [nightly](https://rust-lang.github.io/rustup/concepts/channels.html#:~:text=it%20just%20run-,rustup%20toolchain%20install%20nightly,-%3A) version, [Solidity](https://docs.soliditylang.org/en/v0.8.17/installing-solidity.html), [cargo-fuzz](https://github.com/rust-fuzz/cargo-fuzz) and [Forge](https://github.com/foundry-rs/foundry/blob/master/README.md) are installed, if not browse the official websites/repositories for instructions.
 
 Change into the forge directory and build the contracts;
+
 ```bash
 cd forge
 forge build
 ```
 
 To run the unit tests associated with the Merkle Multi Proof library;
+
 ```bash
 cargo test --lib merkle_multi_proof
 ```
 
 To run the unit tests associated with the Merkle Mountain Range library;
+
 ```bash
 cargo test --lib merkle_mountain_proof
 ```
@@ -114,6 +119,19 @@ To run the unit and fuzz tests associated with the Merkle Patricia Trie library;
 ```bash
 cargo test --lib merkle_patricia
 cargo +nightly fuzz run trie_proof_valid
+```
+
+### Dockerizing
+
+Execute the following commands in the project directory:
+
+```bash
+# Download the latest foundry image.
+docker pull ghcr.io/foundry-rs/foundry:latest
+# Re-tag the image.
+docker tag ghcr.io/foundry-rs/foundry:latest solidity-merkle-trees:latest
+# Mount the directory into docker and run the Solidity test using forge.
+docker run -v $PWD:/app solidity-merkle-trees "forge test --root /app --watch"
 ```
 
 ## License
