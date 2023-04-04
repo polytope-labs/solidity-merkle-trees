@@ -127,6 +127,7 @@ cargo +nightly fuzz run trie_proof_invalid
 Execute the following commands in the project directory:
 
 ```bash
+git submodule update --init --recursive
 # run tests for all merkle verifiers
 docker run --rm --user root -v "$PWD":/app -w /app rust:latest cargo test --release --manifest-path=./forge/Cargo.toml
 # fuzz the merkle-patricia verifier
