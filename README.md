@@ -119,19 +119,21 @@ To run the unit and fuzz tests associated with the Merkle Patricia Trie library;
 ```bash
 cargo test --lib merkle_patricia
 cargo +nightly fuzz run trie_proof_valid
+cargo +nightly fuzz run trie_proof_invalid
 ```
 
-### Dockerizing
+### Run Tests in Docker
 
 Execute the following commands in the project directory:
 
 ```bash
-# Download the latest foundry image.
-docker pull ghcr.io/foundry-rs/foundry:latest
-# Re-tag the image.
-docker tag ghcr.io/foundry-rs/foundry:latest solidity-merkle-trees:latest
-# Mount the directory into docker and run the Solidity test using forge.
-docker run -v $PWD:/app solidity-merkle-trees "forge test --root /app --watch"
+# run tests for all merkle verifiers
+docker run --rm --user root -v "$PWD":/app -w /app rust:latest cargo test --release --manifest-path=./forge/Cargo.toml
+# fuzz the merkle-patricia verifier
+docker build -t test .
+docker run --rm --user root -v "$PWD":/app -w /app/forge/fuzz test cargo +nightly fuzz run trie_proof_valid
+docker run --rm --user root -v "$PWD":/app -w /app/forge/fuzz test cargo +nightly fuzz run trie_proof_invalid
+
 ```
 
 ## License
