@@ -129,11 +129,11 @@ Execute the following commands in the project directory:
 ```bash
 git submodule update --init --recursive
 # run tests for all merkle verifiers
-docker run --rm --user root -v "$PWD":/app -w /app rust:latest cargo test --release --manifest-path=./forge/Cargo.toml
+docker run --memory="24g" --rm --user root -v "$PWD":/app -w /app rust:latest cargo test --release --manifest-path=./forge/Cargo.toml
 # fuzz the merkle-patricia verifier
 docker build -t test .
-docker run --rm --user root -v "$PWD":/app -w /app/forge/fuzz test cargo +nightly fuzz run trie_proof_valid
-docker run --rm --user root -v "$PWD":/app -w /app/forge/fuzz test cargo +nightly fuzz run trie_proof_invalid
+docker run --memory="24g" --rm --user root -v "$PWD":/app -w /app/forge/fuzz test cargo +nightly fuzz run trie_proof_valid
+docker run --memory="24g" --rm --user root -v "$PWD":/app -w /app/forge/fuzz test cargo +nightly fuzz run trie_proof_invalid
 
 ```
 
