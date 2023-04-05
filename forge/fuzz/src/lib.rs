@@ -154,7 +154,7 @@ pub fn fuzz_that_verify_rejects_invalid_proofs(input: &[u8]) {
     for (key, value) in items {
         let result = execute::<_, Vec<Vec<u8>>>(
             &mut runner,
-            "MerkleTests",
+            "MerklePatriciaTest",
             "VerifyKeys",
             (
                 Token::FixedBytes(root.as_ref().to_vec()),
@@ -192,7 +192,7 @@ pub fn fuzz_that_verify_accepts_valid_proofs(input: &[u8]) {
     for (key, value) in items {
         let result = execute::<_, Vec<Vec<u8>>>(
             &mut runner,
-            "MerkleTests",
+            "MerklePatriciaTest",
             "VerifyKeys",
             (
                 Token::FixedBytes(root.as_ref().to_vec()),
