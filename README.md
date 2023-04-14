@@ -111,7 +111,7 @@ cargo test --lib merkle_multi_proof
 To run the unit tests associated with the Merkle Mountain Range library;
 
 ```bash
-cargo test --lib merkle_mountain_proof
+cargo test --lib merkle_mountain_range
 ```
 
 To run the unit and fuzz tests associated with the Merkle Patricia Trie library;
