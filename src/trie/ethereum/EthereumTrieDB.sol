@@ -5,47 +5,55 @@ import "../Bytes.sol";
 import {NibbleSliceOps} from "../NibbleSlice.sol";
 import "./RLPReader.sol";
 
+//import "hardhat/console.sol";
+
 // SPDX-License-Identifier: Apache2
 
 library EthereumTrieDB {
+    using RLPReader for bytes;
     using RLPReader for RLPReader.RLPItem;
     using RLPReader for RLPReader.Iterator;
 
+    bytes constant HASHED_NULL_NODE =
+        hex"56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421";
+
     function decodeNodeKind(
         bytes memory encoded
-    ) external pure returns (NodeKind memory) {
+    ) external view returns (NodeKind memory) {
+        // console.log("decodeNodeKind");
         NodeKind memory node;
         ByteSlice memory input = ByteSlice(encoded, 0);
-        RLPReader.Iterator memory decoded = RLPReader
-            .toRlpItem(encoded)
-            .iterator();
-        uint numItems = decoded.item.numItems();
+        if (Bytes.equals(encoded, HASHED_NULL_NODE)) {
+            // console.log("decodeNodeKind - empty");
+            node.isEmpty = true;
+            return node;
+        }
+        RLPReader.RLPItem[] memory itemList = encoded.toRlpItem().toList();
+        uint numItems = itemList.length;
         if (numItems == 0) {
+            // console.log("decodeNodeKind - empty 2");
             node.isEmpty = true;
             return node;
         } else if (numItems == 2) {
             //It may be a leaf or extension
-            bytes memory key = decoded.item.toBytes();
+            bytes memory key = itemList[0].toBytes();
             uint256 prefix;
             assembly {
                 let first := shr(248, mload(add(key, 32)))
                 prefix := shr(4, first)
             }
-            if (prefix == 2) {
+            if (prefix == 2 || prefix == 3) {
+                // console.log("decodeNodeKind - leaf");
                 node.isLeaf = true;
             } else {
+                // console.log("decodeNodeKind - extension");
                 node.isExtension = true;
             }
         } else if (numItems == 17) {
+            // console.log("decodeNodeKind - branch");
             node.isBranch = true;
         } else {
-            bytes memory data = decoded.item.toBytes();
-            if (data[0] < 0xc0 && data.length == 32) {
-                node.isLeaf = true;
-                node.isHashedLeaf = true;
-            } else {
-                revert("Invalid data");
-            }
+            revert("Invalid data");
         }
         node.data = input;
         return node;
@@ -53,84 +61,102 @@ library EthereumTrieDB {
 
     function decodeLeaf(
         NodeKind memory node
-    ) external pure returns (Leaf memory) {
+    ) external view returns (Leaf memory) {
         Leaf memory leaf;
-        ByteSlice memory input = node.data;
-        RLPReader.Iterator memory decoded = RLPReader
-            .toRlpItem(input.data)
-            .iterator();
-        bytes memory key = decoded.item.toBytes();
+        RLPReader.RLPItem[] memory decoded = node
+            .data
+            .data
+            .toRlpItem()
+            .toList();
+        bytes memory key = decoded[0].toBytes();
 
-        // todo: check if any transformation in needed on the key
+        // console.log("decodeLeaf - key");
+        // console.logBytes(key);
+        bytes memory data = decoded[1].toBytes();
 
-        if (!node.isHashedLeaf) {
-            bytes memory data = decoded.next().toBytes();
+        // console.log("decodeLeaf - data");
+        // console.logBytes(data);
+        leaf.key = NibbleSlice(key, 0);
+        leaf.value = NodeHandle(false, bytes32(0), true, data);
 
-            leaf.key = NibbleSlice(key, 0);
-            leaf.value = NodeHandle(false, bytes32(0), true, data);
-        } else {
-            leaf.key = NibbleSlice(key, 0);
-            leaf.value = NodeHandle(
-                true,
-                Bytes.toBytes32(key),
-                false,
-                new bytes(0)
-            );
-        }
         return leaf;
     }
 
     function decodeExtension(
         NodeKind memory node
-    ) external pure returns (Extension memory) {
+    ) external view returns (Extension memory) {
         Extension memory extension;
-        ByteSlice memory input = node.data;
-        RLPReader.Iterator memory decoded = RLPReader
-            .toRlpItem(input.data)
-            .iterator();
-        bytes memory key = decoded.item.toBytes();
-
-        // todo: check if any transformation in needed on the key
-
-        bytes memory data = decoded.next().toBytes();
+        RLPReader.RLPItem[] memory decoded = node
+            .data
+            .data
+            .toRlpItem()
+            .toList();
+        bytes memory key = decoded[0].toBytes();
+        // console.log("decodeExtension - key");
+        // console.logBytes(key);
+        bytes memory data = decoded[1].toBytes();
+        // console.log("decodeExtension - data");
+        // console.logBytes(data);
 
         extension.key = NibbleSlice(key, 0);
-        extension.node = NodeHandle(false, bytes32(0), true, data);
+        extension.node = NodeHandle(
+            true,
+            Bytes.toBytes32(data),
+            false,
+            new bytes(0)
+        );
 
         return extension;
     }
 
     function decodeBranch(
         NodeKind memory node
-    ) external pure returns (Branch memory) {
+    ) external view returns (Branch memory) {
         Branch memory branch;
-        ByteSlice memory input = node.data;
-        RLPReader.Iterator memory decoded = RLPReader
-            .toRlpItem(input.data)
-            .iterator();
+        RLPReader.RLPItem[] memory decoded = node
+            .data
+            .data
+            .toRlpItem()
+            .toList();
 
         NodeHandleOption[16] memory childrens;
 
-        RLPReader.RLPItem memory current = decoded.next();
-        for (uint256 i = 0; i < childrens.length; i++) {
-            childrens[i] = NodeHandleOption(
-                true,
-                NodeHandle(false, bytes32(0), true, current.toBytes())
-            );
-            current = decoded.next();
+        for (uint256 i = 0; i < 16; i++) {
+            // console.log("decodeBranch - children %s", i);
+            bytes memory dataAsBytes = decoded[i].toBytes();
+            if (dataAsBytes.length != 32) {
+                // console.log("decodeBranch - children is empty");
+                childrens[i] = NodeHandleOption(
+                    false,
+                    NodeHandle(false, bytes32(0), false, new bytes(0))
+                );
+            } else {
+                bytes32 data = Bytes.toBytes32(dataAsBytes);
+                childrens[i] = NodeHandleOption(
+                    true,
+                    NodeHandle(true, data, false, new bytes(0))
+                );
+            }
         }
-        if (current.len == 0) {
+        if (isEmpty(decoded[16].toBytes())) {
+            // console.log("decodeBranch - last is empty");
             branch.value = NodeHandleOption(
                 false,
                 NodeHandle(false, bytes32(0), false, new bytes(0))
             );
         } else {
+            // console.log("decodeBranch - last is value");
             branch.value = NodeHandleOption(
                 true,
-                NodeHandle(false, bytes32(0), true, current.toBytes())
+                NodeHandle(false, bytes32(0), true, decoded[16].toBytes())
             );
         }
+        branch.children = childrens;
 
         return branch;
+    }
+
+    function isEmpty(bytes memory item) internal pure returns (bool) {
+        return item.length > 0 && (item[0] == 0xc0 || item[0] == 0x80);
     }
 }
