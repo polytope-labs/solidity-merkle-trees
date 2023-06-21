@@ -4,8 +4,7 @@ import "../Node.sol";
 import "../Bytes.sol";
 import {NibbleSliceOps} from "../NibbleSlice.sol";
 import "./RLPReader.sol";
-
-//import "hardhat/console.sol";
+import "../NibbleVec.sol";
 
 // SPDX-License-Identifier: Apache2
 
@@ -19,19 +18,16 @@ library EthereumTrieDB {
 
     function decodeNodeKind(
         bytes memory encoded
-    ) external view returns (NodeKind memory) {
-        // console.log("decodeNodeKind");
+    ) external pure returns (NodeKind memory) {
         NodeKind memory node;
         ByteSlice memory input = ByteSlice(encoded, 0);
         if (Bytes.equals(encoded, HASHED_NULL_NODE)) {
-            // console.log("decodeNodeKind - empty");
             node.isEmpty = true;
             return node;
         }
         RLPReader.RLPItem[] memory itemList = encoded.toRlpItem().toList();
         uint numItems = itemList.length;
         if (numItems == 0) {
-            // console.log("decodeNodeKind - empty 2");
             node.isEmpty = true;
             return node;
         } else if (numItems == 2) {
@@ -43,14 +39,11 @@ library EthereumTrieDB {
                 prefix := shr(4, first)
             }
             if (prefix == 2 || prefix == 3) {
-                // console.log("decodeNodeKind - leaf");
                 node.isLeaf = true;
             } else {
-                // console.log("decodeNodeKind - extension");
                 node.isExtension = true;
             }
         } else if (numItems == 17) {
-            // console.log("decodeNodeKind - branch");
             node.isBranch = true;
         } else {
             revert("Invalid data");
@@ -61,22 +54,17 @@ library EthereumTrieDB {
 
     function decodeLeaf(
         NodeKind memory node
-    ) external view returns (Leaf memory) {
+    ) external pure returns (Leaf memory) {
         Leaf memory leaf;
         RLPReader.RLPItem[] memory decoded = node
             .data
             .data
             .toRlpItem()
             .toList();
-        bytes memory key = decoded[0].toBytes();
-
-        // console.log("decodeLeaf - key");
-        // console.logBytes(key);
+        NibbleVec memory key = NibbleVecOps.fromCompact(decoded[0].toBytes());
         bytes memory data = decoded[1].toBytes();
 
-        // console.log("decodeLeaf - data");
-        // console.logBytes(data);
-        leaf.key = NibbleSlice(key, 0);
+        leaf.key = NibbleSlice(Bytes.removeLeadingZero(key.data), 0);
         leaf.value = NodeHandle(false, bytes32(0), true, data);
 
         return leaf;
@@ -84,34 +72,28 @@ library EthereumTrieDB {
 
     function decodeExtension(
         NodeKind memory node
-    ) external view returns (Extension memory) {
+    ) external pure returns (Extension memory) {
         Extension memory extension;
         RLPReader.RLPItem[] memory decoded = node
             .data
             .data
             .toRlpItem()
             .toList();
-        bytes memory key = decoded[0].toBytes();
-        // console.log("decodeExtension - key");
-        // console.logBytes(key);
+        NibbleVec memory key = NibbleVecOps.fromCompact(decoded[0].toBytes());
         bytes memory data = decoded[1].toBytes();
-        // console.log("decodeExtension - data");
-        // console.logBytes(data);
-
-        extension.key = NibbleSlice(key, 0);
+        extension.key = NibbleSlice(Bytes.removeLeadingZero(key.data), 0);
         extension.node = NodeHandle(
             true,
             Bytes.toBytes32(data),
             false,
             new bytes(0)
         );
-
         return extension;
     }
 
     function decodeBranch(
         NodeKind memory node
-    ) external view returns (Branch memory) {
+    ) external pure returns (Branch memory) {
         Branch memory branch;
         RLPReader.RLPItem[] memory decoded = node
             .data
@@ -122,10 +104,8 @@ library EthereumTrieDB {
         NodeHandleOption[16] memory childrens;
 
         for (uint256 i = 0; i < 16; i++) {
-            // console.log("decodeBranch - children %s", i);
             bytes memory dataAsBytes = decoded[i].toBytes();
             if (dataAsBytes.length != 32) {
-                // console.log("decodeBranch - children is empty");
                 childrens[i] = NodeHandleOption(
                     false,
                     NodeHandle(false, bytes32(0), false, new bytes(0))
@@ -139,13 +119,11 @@ library EthereumTrieDB {
             }
         }
         if (isEmpty(decoded[16].toBytes())) {
-            // console.log("decodeBranch - last is empty");
             branch.value = NodeHandleOption(
                 false,
                 NodeHandle(false, bytes32(0), false, new bytes(0))
             );
         } else {
-            // console.log("decodeBranch - last is value");
             branch.value = NodeHandleOption(
                 true,
                 NodeHandle(false, bytes32(0), true, decoded[16].toBytes())
