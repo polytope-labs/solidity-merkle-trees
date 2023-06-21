@@ -26,14 +26,14 @@ fn fuzz_to_data(input: &[u8]) -> Vec<(Vec<u8>, Vec<u8>)> {
         v = v + 1;
         v
     } else {
-        return result
+        return result;
     };
     let mut maxkeylen = if let Some(v) = input.get(1) {
         let mut v = *v & 31u8;
         v = v + 1;
         v
     } else {
-        return result
+        return result;
     };
 
     if maxkeylen < minkeylen {
@@ -50,7 +50,7 @@ fn fuzz_to_data(input: &[u8]) -> Vec<(Vec<u8>, Vec<u8>)> {
             v = std::cmp::min(maxkeylen, v);
             v as usize
         } else {
-            break
+            break;
         };
         let key = if input.len() > ix + keylen { input[ix..ix + keylen].to_vec() } else { break };
         ix += keylen;
@@ -114,7 +114,7 @@ fn test_generate_proof<L: TrieLayout>(
 
 pub fn fuzz_that_verify_rejects_invalid_proofs(input: &[u8]) {
     if input.len() < 4 {
-        return
+        return;
     }
 
     let random_int = u32::from_le_bytes(input[0..4].try_into().expect("slice is 4 bytes")) as usize;
@@ -132,13 +132,13 @@ pub fn fuzz_that_verify_rejects_invalid_proofs(input: &[u8]) {
     keys.dedup();
 
     if keys.is_empty() {
-        return
+        return;
     }
 
     let (root, proof, mut items) = test_generate_proof::<LayoutV0<KeccakHasher>>(data, keys);
 
     if proof.len() == 0 {
-        return
+        return;
     }
 
     // Make all items incorrect.
@@ -185,7 +185,7 @@ pub fn fuzz_that_verify_accepts_valid_proofs(input: &[u8]) {
     let (root, proof, items) = test_generate_proof::<LayoutV0<KeccakHasher>>(data, keys);
 
     if proof.len() == 0 {
-        return
+        return;
     }
 
     let mut runner = runner();
