@@ -185,7 +185,7 @@ library MerklePatricia {
                         keyNibbles = NibbleSlice(
                             NibbleSliceOps.bytesSlice(
                                 keyNibbles.data,
-                                extension.key.data.length
+                                NibbleSliceOps.len(extension.key)
                             ),
                             0
                         );
