@@ -4,7 +4,6 @@ import "../Node.sol";
 import "../Bytes.sol";
 import {NibbleSliceOps} from "../NibbleSlice.sol";
 import "./RLPReader.sol";
-import "../NibbleVec.sol";
 
 // SPDX-License-Identifier: Apache2
 
@@ -61,10 +60,9 @@ library EthereumTrieDB {
             .data
             .toRlpItem()
             .toList();
-        NibbleVec memory key = NibbleVecOps.fromCompact(decoded[0].toBytes());
         bytes memory data = decoded[1].toBytes();
-
-        leaf.key = NibbleSlice(Bytes.removeLeadingZero(key.data), 0);
+        //Remove the first byte, which is the prefix and not present in the user provided key
+        leaf.key = NibbleSlice(Bytes.substr(decoded[0].toBytes(), 1), 0);
         leaf.value = NodeHandle(false, bytes32(0), true, data);
 
         return leaf;
@@ -79,9 +77,9 @@ library EthereumTrieDB {
             .data
             .toRlpItem()
             .toList();
-        NibbleVec memory key = NibbleVecOps.fromCompact(decoded[0].toBytes());
         bytes memory data = decoded[1].toBytes();
-        extension.key = NibbleSlice(Bytes.removeLeadingZero(key.data), 0);
+        //Remove the first byte, which is the prefix and not present in the user provided key
+        extension.key = NibbleSlice(Bytes.substr(decoded[0].toBytes(), 1), 0);
         extension.node = NodeHandle(
             true,
             Bytes.toBytes32(data),

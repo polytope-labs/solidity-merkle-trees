@@ -3,7 +3,6 @@ pragma solidity ^0.8.17;
 import "./trie/Node.sol";
 import "./trie/Option.sol";
 import "./trie/NibbleSlice.sol";
-import "./trie/NibbleVec.sol";
 import "./trie/TrieDB.sol";
 
 import "./trie/substrate/SubstrateTrieDB.sol";
@@ -168,17 +167,9 @@ library MerklePatricia {
                     uint offset = keyNibbles.offset % 2 == 0
                         ? keyNibbles.offset / 2
                         : keyNibbles.offset / 2 + 1;
-                    // Let's transform the key passed as input to a NibbleVec
+                    // Let's cut the key passed as input
                     keyNibbles = NibbleSlice(
-                        NibbleVecOps
-                            .fromRaw(
-                                NibbleSliceOps.bytesSlice(
-                                    keyNibbles.data,
-                                    offset
-                                ),
-                                1
-                            )
-                            .data,
+                        NibbleSliceOps.bytesSlice(keyNibbles.data, offset),
                         0
                     );
                     if (NibbleSliceOps.eq(leaf.key, keyNibbles)) {
@@ -189,20 +180,15 @@ library MerklePatricia {
                     Extension memory extension = EthereumTrieDB.decodeExtension(
                         node
                     );
-                    // Let's transform the key passed as input to a NibbleVec
-                    keyNibbles = NibbleSlice(
-                        NibbleVecOps.fromRaw(keyNibbles.data, 0).data,
-                        0
-                    );
                     if (NibbleSliceOps.startsWith(keyNibbles, extension.key)) {
-                        // Let's transform the key passed as input back to raw bytes
-                        uint256 len = NibbleSliceOps.len(extension.key) / 2;
-                        (bytes memory rawBytes, ) = NibbleVecOps.encodeRaw(
-                            NibbleVec(
-                                NibbleSliceOps.bytesSlice(keyNibbles.data, len)
-                            )
+                        // Let's cut the key passed as input
+                        keyNibbles = NibbleSlice(
+                            NibbleSliceOps.bytesSlice(
+                                keyNibbles.data,
+                                extension.key.data.length
+                            ),
+                            0
                         );
-                        keyNibbles = NibbleSlice(rawBytes, 0);
                         nextNode = extension.node;
                     } else {
                         break;
