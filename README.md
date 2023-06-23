@@ -89,7 +89,7 @@ contract YourContract {
         // do something with the verified values.
     }
 
-    function verifySubstrateProof(
+    function verifyEthereumProof(
         bytes32 root,
         bytes[] memory proof,
         bytes[] memory keys,
