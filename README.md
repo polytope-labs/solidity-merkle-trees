@@ -70,7 +70,7 @@ You can derive the k-indices for the mmr leaves using this rust lib [polytope-la
 This library also supports the verification of the different styles of merkle patricia tries:
 
 - [x] Substrate
-- [ ] Ethereum
+- [x] Ethereum
 - [ ] NEAR
       <br />
 
@@ -80,7 +80,7 @@ pragma solidity ^0.8.0;
 import "@polytope-labs/solidity-merkle-trees/MerklePatricia.sol";
 
 contract YourContract {
-    function verify(
+    function verifySubstrateProof(
         bytes32 root,
         bytes[] memory proof,
         bytes[] memory keys,
@@ -88,6 +88,18 @@ contract YourContract {
         bytes[] values = MerklePatricia.VerifySubstrateProof(root, proof, keys); // verifies proofs from state.getReadProof
         // do something with the verified values.
     }
+
+    function verifyEthereumProof(
+        bytes32 root,
+        bytes[] memory proof,
+        bytes[] memory keys,
+    ) public {
+        // verifies ethereum specific merkle patricia proofs as described by EIP-1188.
+        // can be used to verify the receipt trie, transaction trie and state trie
+        // contributed by @ripa1995
+        bytes[] values = MerklePatricia.VerifyEthereumProof(root, proof, keys);
+        // do something with the verified values.
+      }
 }
 ```
 
