@@ -30,7 +30,7 @@ contract MerklePatriciaTest is Test {
             root,
             proof,
             keys
-        )[0];
+        )[0].value;
         uint256 timestamp = ScaleCodec.decodeUint256(value);
         assert(timestamp == 1677168798005);
     }
@@ -50,7 +50,7 @@ contract MerklePatriciaTest is Test {
             root,
             proof,
             keys
-        )[0];
+        )[0].value;
         assertEq(
             ScaleCodec.decodeUintCompact(ByteSlice(value, 4)),
             1679661054045
@@ -61,7 +61,7 @@ contract MerklePatriciaTest is Test {
         bytes32 root,
         bytes[] memory proof,
         bytes[] memory keys
-    ) public pure returns (bytes[] memory) {
+    ) public pure returns (StorageValue[] memory) {
         return MerklePatricia.VerifySubstrateProof(root, proof, keys);
     }
 
@@ -69,7 +69,7 @@ contract MerklePatriciaTest is Test {
         bytes32 root,
         bytes[] memory proof,
         bytes[] memory keys
-    ) public pure returns (bytes[] memory) {
+    ) public pure returns (StorageValue[] memory) {
         return MerklePatricia.VerifyEthereumProof(root, proof, keys);
     }
 
