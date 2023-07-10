@@ -152,7 +152,7 @@ pub fn fuzz_that_verify_rejects_invalid_proofs(input: &[u8]) {
 
     let mut runner = runner();
     for (key, value) in items {
-        let result = execute::<_, Vec<Vec<u8>>>(
+        let result = execute::<_, Vec<(Vec<u8>, Vec<u8>)>>(
             &mut runner,
             "MerklePatriciaTest",
             "VerifyKeys",
@@ -163,7 +163,7 @@ pub fn fuzz_that_verify_rejects_invalid_proofs(input: &[u8]) {
             ),
         )
         .unwrap();
-        let result = if result[0].len() == 0 { None } else { Some(result[0].clone()) };
+        let result = if result[0].1.len() == 0 { None } else { Some(result[0].1.clone()) };
 
         assert_ne!(result, value);
     }
@@ -190,7 +190,7 @@ pub fn fuzz_that_verify_accepts_valid_proofs(input: &[u8]) {
 
     let mut runner = runner();
     for (key, value) in items {
-        let result = execute::<_, Vec<Vec<u8>>>(
+        let result = execute::<_, Vec<(Vec<u8>, Vec<u8>)>>(
             &mut runner,
             "MerklePatriciaTest",
             "VerifyKeys",
@@ -201,7 +201,7 @@ pub fn fuzz_that_verify_accepts_valid_proofs(input: &[u8]) {
             ),
         )
         .unwrap();
-        let result = if result[0].len() == 0 { None } else { Some(result[0].clone()) };
+        let result = if result[0].1.len() == 0 { None } else { Some(result[0].1.clone()) };
         assert_eq!(result, value)
     }
 }
