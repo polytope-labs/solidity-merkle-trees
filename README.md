@@ -66,14 +66,14 @@ contract YourContract {
 You can derive the k-indices for the mmr leaves using this rust lib [polytope-labs/merkle-mountain-range](https://github.com/polytope-labs/merkle-mountain-range).
 
 ## Merkle Patricia Trie
-<img src="https://drive.google.com/uc?export=view&id=1aW_M8dULbPLNo4jTP2PsdNgW2UPST1jB"  height="250">
-
 This library also supports the verification of the different styles of merkle patricia tries: 
 
 - [x] Substrate
 - [x] Ethereum
 - [ ] NEAR
       <br />
+
+<img src="https://drive.google.com/uc?export=view&id=1aW_M8dULbPLNo4jTP2PsdNgW2UPST1jB"  height="250">
 
 ```solidity
 pragma solidity ^0.8.0;
