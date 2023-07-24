@@ -73,7 +73,7 @@ This library also supports the verification of the different styles of merkle pa
 - [ ] NEAR
       <br />
 
-<img src="https://drive.google.com/uc?export=view&id=1aW_M8dULbPLNo4jTP2PsdNgW2UPST1jB"  height="250">
+<img src="https://drive.google.com/uc?export=view&id=1aW_M8dULbPLNo4jTP2PsdNgW2UPST1jB"  height="250" width="500">
 
 ```solidity
 pragma solidity ^0.8.0;
