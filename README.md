@@ -6,11 +6,11 @@
 This library contains the implementations of various merkle tree verification algorithms. Currently supported algorithms:
 <br />
 
-<img src="https://drive.google.com/uc?export=view&id=1aW_M8dULbPLNo4jTP2PsdNgW2UPST1jB"  style="max-width: 100%; height: auto;">
-
 - [x] Merkle Trees (supports unbalanced trees).
 - [x] Merkle Mountain Ranges.
 - [x] Merkle-Patricia Trie.
+
+<img src="https://drive.google.com/uc?export=view&id=1aW_M8dULbPLNo4jTP2PsdNgW2UPST1jB"  style="max-width: 100%; height: auto;">
 
 ## Installation
 
