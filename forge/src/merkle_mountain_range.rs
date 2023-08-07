@@ -12,8 +12,8 @@ use primitive_types::U256;
 
 type MmrLeaf = (u64, u64, [u8; 32]);
 
-#[test]
-fn test_mmr_utils() {
+#[tokio::test]
+async fn test_mmr_utils() {
     let mut runner = runner();
 
     let leading_zeros = execute::<_, U256>(
@@ -22,6 +22,7 @@ fn test_mmr_utils() {
         "countLeadingZeros",
         (Token::Uint(U256::from(17))),
     )
+    .await
     .unwrap();
 
     assert_eq!(leading_zeros.as_u32(), 17u64.leading_zeros());
@@ -32,6 +33,7 @@ fn test_mmr_utils() {
         "countZeroes",
         (Token::Uint(U256::from(17))),
     )
+    .await
     .unwrap();
 
     assert_eq!(count_zeros.as_u32(), 17u64.count_zeros());
@@ -42,6 +44,7 @@ fn test_mmr_utils() {
         "countOnes",
         (Token::Uint(U256::from(17))),
     )
+    .await
     .unwrap();
 
     assert_eq!(count_ones.as_u32(), 17u64.count_ones());
@@ -54,6 +57,7 @@ fn test_mmr_utils() {
                 "posToHeight",
                 (Token::Uint(U256::from(pos))),
             )
+            .await
             .unwrap();
 
             assert_eq!(height.as_u32(), pos_height_in_tree(pos));
@@ -70,6 +74,7 @@ fn test_mmr_utils() {
             "difference",
             (Token::Array(left), Token::Array(right)),
         )
+        .await
         .unwrap();
 
         assert_eq!(height, vec![3, 4]);
@@ -84,6 +89,7 @@ fn test_mmr_utils() {
             "siblingIndices",
             (indices),
         )
+        .await
         .unwrap();
 
         assert_eq!(siblings, vec![3, 4]);
@@ -114,6 +120,7 @@ fn test_mmr_utils() {
             "mmrLeafToNode",
             (leaves.clone()),
         )
+        .await
         .unwrap();
 
         assert_eq!(result.0.len(), 6);
@@ -125,6 +132,7 @@ fn test_mmr_utils() {
             "leavesForPeak",
             (leaves, Token::Uint(U256::from(15))),
         )
+        .await
         .unwrap();
 
         assert_eq!(result.0.len(), 3);
@@ -139,6 +147,7 @@ fn test_mmr_utils() {
                 "getPeaks",
                 (Token::Uint(U256::from(pos))),
             )
+            .await
             .unwrap();
 
             assert_eq!(peaks, get_peaks(pos));
@@ -153,6 +162,7 @@ fn test_mmr_utils() {
                 "leafIndexToPos",
                 (Token::Uint(U256::from(pos))),
             )
+            .await
             .unwrap();
 
             assert_eq!(peaks, leaf_index_to_pos(pos));
@@ -167,6 +177,7 @@ fn test_mmr_utils() {
                 "leafIndexToMmrSize",
                 (Token::Uint(U256::from(pos))),
             )
+            .await
             .unwrap();
 
             assert_eq!(peaks, leaf_index_to_mmr_size(pos));
@@ -174,13 +185,13 @@ fn test_mmr_utils() {
     }
 }
 
-#[test]
-fn test_merkle_mountain_range() {
+#[tokio::test]
+async fn test_merkle_mountain_range() {
     let mut runner = runner();
 
     let store = MemStore::default();
     let mut mmr = MMR::<_, MergeKeccak, _>::new(0, &store);
-    let positions: Vec<u64> = (0u32..=13).map(|i| mmr.push(NumberHash::from(i)).unwrap()).collect();
+    let positions: Vec<u64> = (0u32..30).map(|i| mmr.push(NumberHash::from(i)).unwrap()).collect();
     let proof = mmr
         .gen_proof(vec![positions[2], positions[5], positions[8], positions[10], positions[12]])
         .unwrap();
@@ -234,6 +245,7 @@ fn test_merkle_mountain_range() {
         "CalculateRoot",
         (nodes, token_leaves, Token::Uint(mmr.mmr_size().into())),
     )
+    .await
     .unwrap();
 
     assert_eq!(root.to_vec(), mmr.get_root().unwrap().0);

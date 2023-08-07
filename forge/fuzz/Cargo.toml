@@ -11,7 +11,7 @@ trie-db = "0.24.0"
 sp-trie = "17.0.0"
 sp-core = "17.0.0"
 solidity-merkle-trees-test = { path = "../" }
-patricia-merkle-trie = { git = "https://github.com/polytope-labs/patricia-merkle-trie", branch = "main" }
+patricia-merkle-trie = { package = "ethereum-trie", git = "https://github.com/polytope-labs/ethereum-trie", branch = "main" }
 libfuzzer-sys = "0.4.6"
 
 [[bin]]

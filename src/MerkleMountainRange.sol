@@ -108,11 +108,13 @@ library MerkleMountainRange {
         Node[][] memory layers = new Node[][](height);
 
         for (uint256 i = 0; i < height; i++) {
-            uint256[] memory siblings = siblingIndices(current_layer);
-            uint256[] memory diff = difference(siblings, current_layer);
-            if (diff.length == 0) {
+            uint256 nodelength = 2**(height-i);
+            if (current_layer.length == nodelength) {
                 break;
             }
+
+            uint256[] memory siblings = siblingIndices(current_layer);
+            uint256[] memory diff = difference(siblings, current_layer);
 
             layers[i] = new Node[](diff.length);
             for (uint256 j = 0; j < diff.length; j++) {
@@ -190,10 +192,27 @@ library MerkleMountainRange {
      * @return uint256[] a list of parent indices for each index provided
      */
     function parentIndices(uint256[] memory indices) internal pure returns (uint256[] memory) {
-        uint256[] memory  parents = new uint256[](indices.length);
+        uint256 length = indices.length;
+        uint256[] memory parents = new uint256[](length);
+        uint256 k = 0;
 
-        for (uint256 i = 0; i < indices.length; i++) {
-            parents[i] = indices[i] / 2;
+        for (uint256 i = 0; i < length; i++) {
+            uint256 index = indices[i] / 2;
+            if (k > 0 && parents[k - 1] == index) {
+                continue;
+            }
+            parents[k] = index;
+            unchecked {
+                ++k;
+            }
+        }
+
+        // resize array?, sigh solidity.
+        while (k < length) {
+            assembly { mstore(parents, sub(mload(parents), 1)) }
+            unchecked {
+                k++;
+            }
         }
 
         return parents;

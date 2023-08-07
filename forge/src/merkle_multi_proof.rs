@@ -1,13 +1,14 @@
 #![cfg(test)]
 
-use crate::{execute, keccak256, runner, Keccak256, Token};
+use crate::{keccak256, runner, Keccak256, Token};
 use ethers::abi::Uint;
 use hex_literal::hex;
 use primitive_types::{H256, U256};
 use rs_merkle::{merkelize_sorted, merkle_proof_2d_sorted, MerkleTree};
+use crate::forge::{execute_single, single_runner};
 
-#[test]
-fn multi_merkle_proof() {
+#[tokio::test]
+async fn multi_merkle_proof() {
     let mut leaf_hashes = [
         hex!("9aF1Ca5941148eB6A3e9b9C741b69738292C533f"),
         hex!("DD6ca953fddA25c496165D9040F7F77f75B75002"),
@@ -215,10 +216,11 @@ fn multi_merkle_proof() {
         .collect::<Vec<_>>();
 
     let mut runner = runner();
+    let (mut contract, address) = single_runner(&mut runner, "MerkleMultiProofTest").await;
 
-    let calculated = execute::<_, [u8; 32]>(
-        &mut runner,
-        "MerkleMultiProofTest",
+    let calculated = execute_single::<_, [u8; 32]>(
+        &mut contract,
+        address.clone(),
         "CalculateRoot",
         (args, leaves_with_indices),
     )
@@ -231,9 +233,9 @@ fn multi_merkle_proof() {
         let leaf_indices = vec![0, 2, 4, 8, 16];
         {
             for i in [2usize, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048] {
-                let calculated = execute::<_, u32>(
-                    &mut runner,
-                    "MerkleMultiProofTest",
+                let calculated = execute_single::<_, u32>(
+                    &mut contract,
+                    address.clone(),
                     "TreeHeight",
                     (Token::Uint(Uint::from(i))),
                 )
@@ -241,9 +243,9 @@ fn multi_merkle_proof() {
                 assert_eq!(calculated as u32, i.ilog2());
             }
 
-            let calculated = execute::<_, u32>(
-                &mut runner,
-                "MerkleMultiProofTest",
+            let calculated = execute_single::<_, u32>(
+                &mut contract,
+                address.clone(),
                 "TreeHeight",
                 (Token::Uint(Uint::from(leaf_hashes.len()))),
             )
@@ -281,9 +283,9 @@ fn multi_merkle_proof() {
             })
             .collect::<Vec<_>>();
 
-        let calculated = execute::<_, [u8; 32]>(
-            &mut runner,
-            "MerkleMultiProofTest",
+        let calculated = execute_single::<_, [u8; 32]>(
+            &mut contract,
+            address.clone(),
             "CalculateRootSorted",
             (proof, leaves),
         )
