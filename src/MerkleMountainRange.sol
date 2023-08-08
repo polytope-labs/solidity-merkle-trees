@@ -51,6 +51,11 @@ library MerkleMountainRange {
         MmrLeaf[] memory leaves,
         uint256 mmrSize
     ) internal pure returns (bytes32) {
+        // special handle the only 1 leaf MMR
+        if (mmrSize == 1 && leaves.length == 1 && leaves[0].mmr_pos == 0) {
+            return leaves[0].hash;
+        }
+
         uint256[] memory peaks = getPeaks(mmrSize);
         Iterator memory peakRoots = Iterator(0, new bytes32[](peaks.length));
         Iterator memory proofIter = Iterator(0, proof);
