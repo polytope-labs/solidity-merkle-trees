@@ -13,7 +13,7 @@ use forge::{
 };
 use foundry_config::{fs_permissions::PathPermission, Config, FsPermissions};
 use foundry_evm::{
-    executor::{Backend, EvmError, ExecutorBuilder},
+    executor::{Backend, EvmError, ExecutorBuilder, SpecId},
     Address,
 };
 use once_cell::sync::Lazy;
@@ -85,6 +85,7 @@ fn runner_with_config(mut config: Config) -> MultiContractRunner {
     base_runner()
         .with_cheats_config(CheatsConfig::new(&config, &EVM_OPTS))
         .sender(config.sender)
+        .evm_spec(SpecId::SHANGHAI)
         .build(&PROJECT.paths.root, (*COMPILED).clone(), EVM_OPTS.local_evm_env(), EVM_OPTS.clone())
         .unwrap()
 }
@@ -150,7 +151,7 @@ where
     )?;
 
     println!("Gas used {fn_name}: {:#?}", result.gas_used);
-    println!("Logs {fn_name}: {:#?}", result.logs);
+    // println!("Logs {fn_name}: {:#?}", result.logs);
 
     Ok(result.result)
 }
@@ -159,14 +160,6 @@ pub async fn single_runner<'a>(
     runner: &'a mut MultiContractRunner,
     contract_name: &'static str,
 ) -> (ContractRunner<'a>, Address) {
-    use tracing_subscriber::FmtSubscriber;
-    use tracing::Level;
-
-    let subscriber = FmtSubscriber::builder()
-        .with_max_level(Level::TRACE)
-        .finish();
-    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
-
     let db = Backend::spawn(runner.fork.take()).await;
 
     let names = runner.contracts.iter().map(|(id, _)| id.name.clone()).collect::<Vec<_>>();
