@@ -21,13 +21,12 @@ jobs:
           submodules: recursive
       - uses: actions-rs/toolchain@v1
         with:
-          profile: minimal
           toolchain: nightly
           override: true
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --release --manifest-path ./forge/Cargo.toml -- --nocapture
+          args: --release --locked --manifest-path ./forge/Cargo.toml -- --nocapture
 
   fmt:
     name: Rustfmt

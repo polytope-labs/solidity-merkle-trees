@@ -17,7 +17,7 @@ hex = "0.4.3"
 ckb-merkle-mountain-range = { git = "https://github.com/polytope-labs/merkle-mountain-range", branch = "seun/simplified-mmr" }
 
 trie-db = "0.24.0"
-tokio = { version = "1.17.0", features = ["macros"] }
+tokio = { version = "1.17.0", features = ["macros", "rt-multi-thread"] }
 patricia-merkle-trie = { package = "ethereum-trie", git = "https://github.com/polytope-labs/ethereum-trie", branch = "main" }
 primitive-types = "0.12.1"
 codec = { package = "parity-scale-codec", version = "3.4.0" }
