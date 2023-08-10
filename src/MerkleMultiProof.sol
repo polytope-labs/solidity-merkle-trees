@@ -3,7 +3,6 @@ pragma solidity ^0.8.17;
 
 import "openzeppelin/utils/math/Math.sol";
 
-
 /// @title A representation of a Merkle tree node
 struct Node {
     // Distance of the node to the leftmost node
@@ -26,11 +25,7 @@ library MerkleMultiProof {
      * @param leaves A list of the leaves along with their k-indices to prove
      * @return boolean if the calculated root matches the provides root node
      */
-    function VerifyProof(bytes32 root, Node[][] memory proof, Node[] memory leaves)
-        internal
-        pure
-        returns (bool)
-    {
+    function VerifyProof(bytes32 root, Node[][] memory proof, Node[] memory leaves) internal pure returns (bool) {
         return root == CalculateRoot(proof, leaves);
     }
 
@@ -54,11 +49,7 @@ library MerkleMultiProof {
     /// @param proof A list of the merkle nodes along with their k-indices that are needed to re-calculate root node.
     /// @param leaves A list of the leaves along with their k-indices to prove
     /// @return Hash of root node, value is a bytes32 type
-    function CalculateRoot(Node[][] memory proof, Node[] memory leaves)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function CalculateRoot(Node[][] memory proof, Node[] memory leaves) internal pure returns (bytes32) {
         // holds the output from hashing a previous layer
         Node[] memory next_layer = new Node[](0);
 
@@ -87,9 +78,7 @@ library MerkleMultiProof {
                 } else {
                     Node memory node;
                     node.k_index = div_floor(current_layer[index].k_index, 2);
-                    node.node = _optimizedHash(
-                            current_layer[index].node,
-                            current_layer[index + 1].node);
+                    node.node = _optimizedHash(current_layer[index].node, current_layer[index + 1].node);
                     next_layer[p] = node;
                     unchecked {
                         p++;
@@ -109,11 +98,7 @@ library MerkleMultiProof {
     /// @param proof A list of the merkle nodes that are needed to re-calculate root node.
     /// @param leaves A list of the leaves to prove
     /// @return Hash of root node, value is a bytes32 type
-    function CalculateRootSorted(Node[][] memory proof, Node[] memory leaves)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function CalculateRootSorted(Node[][] memory proof, Node[] memory leaves) internal pure returns (bytes32) {
         // holds the output from hashing a previous layer
         Node[] memory next_layer = new Node[](0);
 
@@ -181,10 +166,7 @@ library MerkleMultiProof {
     /// @dev compares the k-index of each node and sort in increasing order
     /// @param arr1 leftmost index in arr
     /// @param arr2 highest index in arr
-    function mergeSort(
-        Node[] memory arr1,
-        Node[] memory arr2
-    ) internal pure returns (Node[] memory) {
+    function mergeSort(Node[] memory arr1, Node[] memory arr2) internal pure returns (Node[] memory) {
         // merge the two arrays
         uint256 i = 0;
         uint256 j = 0;
@@ -232,10 +214,7 @@ library MerkleMultiProof {
     /// @notice compute the keccak256 hash of two nodes
     /// @param node1 hash of one of the two nodes
     /// @param node2 hash of the other of the two nodes
-    function _optimizedHash(
-        bytes32 node1,
-        bytes32 node2
-    ) internal pure returns(bytes32 hash) {
+    function _optimizedHash(bytes32 node1, bytes32 node2) internal pure returns (bytes32 hash) {
         assembly {
             // use EVM scratch space, its memory safe
             mstore(0x0, node1)

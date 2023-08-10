@@ -2,6 +2,7 @@
 pragma solidity ^0.8.17;
 
 import "./MerkleMultiProof.sol";
+import "forge-std/Test.sol";
 
 /// @title A representation of a MerkleMountainRange leaf
 struct MmrLeaf {
@@ -31,12 +32,11 @@ library MerkleMountainRange {
     /// @param proof a list of nodes required for the proof to be verified
     /// @param leaves a list of mmr leaves to prove
     /// @return boolean if the calculated root matches the provides root node
-    function VerifyProof(
-        bytes32 root,
-        bytes32[] memory proof,
-        MmrLeaf[] memory leaves,
-        uint256 mmrSize
-    ) internal pure returns (bool) {
+    function VerifyProof(bytes32 root, bytes32[] memory proof, MmrLeaf[] memory leaves, uint256 mmrSize)
+        internal
+        pure
+        returns (bool)
+    {
         return root == CalculateRoot(proof, leaves, mmrSize);
     }
 
@@ -46,21 +46,22 @@ library MerkleMountainRange {
     /// @param leaves a list of mmr leaves to prove
     /// @param mmrSize the size of the merkle tree
     /// @return bytes32 hash of the computed root node
-    function CalculateRoot(
-        bytes32[] memory proof,
-        MmrLeaf[] memory leaves,
-        uint256 mmrSize
-    ) internal pure returns (bytes32) {
+    function CalculateRoot(bytes32[] memory proof, MmrLeaf[] memory leaves, uint256 mmrSize)
+        internal
+        pure
+        returns (bytes32)
+    {
         // special handle the only 1 leaf MMR
         if (mmrSize == 1 && leaves.length == 1 && leaves[0].mmr_pos == 0) {
             return leaves[0].hash;
         }
 
         uint256[] memory peaks = getPeaks(mmrSize);
-        Iterator memory peakRoots = Iterator(0, new bytes32[](peaks.length));
+        uint256 length = peaks.length;
+        Iterator memory peakRoots = Iterator(0, new bytes32[](length));
         Iterator memory proofIter = Iterator(0, proof);
 
-        for (uint256 p = 0; p < peaks.length; p++) {
+        for (uint256 p = 0; p < length; p++) {
             uint256 peak = peaks[p];
             MmrLeaf[] memory peakLeaves = new MmrLeaf[](0);
             if (leaves.length > 0) {
@@ -101,19 +102,20 @@ library MerkleMountainRange {
     /// @param proofIter   a list of node hashes to traverse to compute the peak root hash
     /// @param peak    index of the peak node
     /// @return peakRoot a tuple containing the peak root hash, and the peak root position in the merkle
-    function CalculatePeakRoot(
-        MmrLeaf[] memory peakLeaves,
-        Iterator memory proofIter,
-        uint256 peak
-    ) internal pure returns (bytes32)  {
+    function CalculatePeakRoot(MmrLeaf[] memory peakLeaves, Iterator memory proofIter, uint256 peak)
+        internal
+        pure
+        returns (bytes32)
+    {
         uint256[] memory current_layer;
         Node[] memory leaves;
         (leaves, current_layer) = mmrLeafToNode(peakLeaves);
         uint256 height = posToHeight(uint64(peak));
+
         Node[][] memory layers = new Node[][](height);
 
         for (uint256 i = 0; i < height; i++) {
-            uint256 nodelength = 2**(height-i);
+            uint256 nodelength = 2 ** (height - i);
             if (current_layer.length == nodelength) {
                 break;
             }
@@ -121,8 +123,9 @@ library MerkleMountainRange {
             uint256[] memory siblings = siblingIndices(current_layer);
             uint256[] memory diff = difference(siblings, current_layer);
 
-            layers[i] = new Node[](diff.length);
-            for (uint256 j = 0; j < diff.length; j++) {
+            uint256 length = diff.length;
+            layers[i] = new Node[](length);
+            for (uint256 j = 0; j < length; j++) {
                 layers[i][j] = Node(diff[j], next(proofIter));
             }
 
@@ -140,11 +143,14 @@ library MerkleMountainRange {
      * @return uint256[] a new array with difference
      */
     function difference(uint256[] memory left, uint256[] memory right) internal pure returns (uint256[] memory) {
-        uint256[] memory diff = new uint256[](left.length);
+        uint256 length = left.length;
+        uint256 rightLength = right.length;
+
+        uint256[] memory diff = new uint256[](length);
         uint256 d = 0;
-        for (uint256 i = 0; i < left.length; i++) {
+        for (uint256 i = 0; i < length; i++) {
             bool found = false;
-            for (uint256 j = 0; j < right.length; j++) {
+            for (uint256 j = 0; j < rightLength; j++) {
                 if (left[i] == right[j]) {
                     found = true;
                     break;
@@ -157,14 +163,13 @@ library MerkleMountainRange {
             }
         }
 
-        uint256[] memory out = new uint256[](d);
-        uint256 k = 0;
-        while (k < d) {
-            out[k] = diff[k];
-            ++k;
+        // resize array?, sigh solidity.
+        uint256 excess = length - d;
+        assembly {
+            mstore(diff, sub(mload(diff), excess))
         }
 
-        return out;
+        return diff;
     }
 
     /**
@@ -174,9 +179,10 @@ library MerkleMountainRange {
      * @return uint256[] a list of sibling indices
      */
     function siblingIndices(uint256[] memory indices) internal pure returns (uint256[] memory) {
-        uint256[] memory siblings = new uint256[](indices.length);
+        uint256 length = indices.length;
+        uint256[] memory siblings = new uint256[](length);
 
-        for (uint256 i = 0; i < indices.length; i++) {
+        for (uint256 i = 0; i < length; i++) {
             uint256 index = indices[i];
             if (index == 0) {
                 siblings[i] = index + 1;
@@ -213,11 +219,10 @@ library MerkleMountainRange {
         }
 
         // resize array?, sigh solidity.
-        while (k < length) {
-            assembly { mstore(parents, sub(mload(parents), 1)) }
-            unchecked {
-                k++;
-            }
+        uint256 excess = length - k;
+
+        assembly {
+            mstore(parents, sub(mload(parents), excess))
         }
 
         return parents;
@@ -230,9 +235,10 @@ library MerkleMountainRange {
      */
     function mmrLeafToNode(MmrLeaf[] memory leaves) internal pure returns (Node[] memory, uint256[] memory) {
         uint256 i = 0;
-        Node[] memory nodes = new Node[](leaves.length);
-        uint256[] memory indices = new uint256[](leaves.length);
-        while (i < leaves.length) {
+        uint256 length = leaves.length;
+        Node[] memory nodes = new Node[](length);
+        uint256[] memory indices = new uint256[](length);
+        while (i < length) {
             nodes[i] = Node(leaves[i].k_index, leaves[i].hash);
             indices[i] = leaves[i].k_index;
             ++i;
@@ -248,12 +254,14 @@ library MerkleMountainRange {
      * @param peak the peak index of the root of the subtree
      * @return A tuple of 2 arrays of mountain merkle leaves. Index 1 and 2 represent left and right of the peak respectively
      */
-    function leavesForPeak(
-        MmrLeaf[] memory leaves,
-        uint256 peak
-    ) internal pure returns (MmrLeaf[] memory, MmrLeaf[] memory) {
+    function leavesForPeak(MmrLeaf[] memory leaves, uint256 peak)
+        internal
+        pure
+        returns (MmrLeaf[] memory, MmrLeaf[] memory)
+    {
         uint256 p = 0;
-        for (;p < leaves.length; p++) {
+        uint256 length = leaves.length;
+        for (; p < length; p++) {
             if (peak < leaves[p].mmr_pos) {
                 break;
             }
@@ -261,16 +269,17 @@ library MerkleMountainRange {
 
         uint256 len = p == 0 ? 0 : p;
         MmrLeaf[] memory left = new MmrLeaf[](len);
-        MmrLeaf[] memory right = new MmrLeaf[](leaves.length - len);
+        MmrLeaf[] memory right = new MmrLeaf[](length - len);
 
         uint256 i = 0;
-        while (i < left.length) {
+        uint256 leftLength = left.length;
+        while (i < leftLength) {
             left[i] = leaves[i];
             ++i;
         }
 
         uint256 j = 0;
-        while (i < leaves.length) {
+        while (i < length) {
             right[j] = leaves[i];
             ++i;
             ++j;
@@ -289,7 +298,9 @@ library MerkleMountainRange {
         uint256 height;
         uint256 pos;
         (height, pos) = leftPeakHeightPos(mmrSize);
-        uint256[] memory positions = new uint256[](height);
+        // worst case
+        uint256 maxHeight = 64;
+        uint256[] memory positions = new uint256[](maxHeight);
         uint256 p = 0;
         positions[p] = pos;
         p++;
@@ -305,18 +316,18 @@ library MerkleMountainRange {
             height = _height;
             pos = _pos;
             positions[p] = pos;
-            ++p;
+            unchecked {
+                ++p;
+            }
         }
 
-        // copy array to new one, sigh solidity.
-        uint256 i = 0;
-        uint256[] memory out = new uint256[](p);
-        while (i < p) {
-            out[i] = positions[i];
-            ++i;
+        // resize array?, sigh solidity.
+        uint256 excess = maxHeight - p;
+        assembly {
+            mstore(positions, sub(mload(positions), excess))
         }
 
-        return out;
+        return positions;
     }
 
     function getRightPeak(uint256 height, uint256 pos, uint256 mmrSize) internal pure returns (uint256, uint256) {
@@ -381,13 +392,12 @@ library MerkleMountainRange {
     function countLeadingZeros(uint64 num) internal pure returns (uint64) {
         uint64 size = 64;
         uint64 count = 0;
-        uint64  msb = uint64(1 << (size - 1));
+        uint64 msb = uint64(1 << (size - 1));
         for (uint64 i = 0; i < size; i++) {
             if (((num << i) & msb) != 0) {
                 break;
             }
             ++count;
-
         }
 
         return count;
@@ -400,7 +410,7 @@ library MerkleMountainRange {
     function countOnes(uint64 num) internal pure returns (uint64) {
         uint64 count = 0;
 
-        while (num !=  0) {
+        while (num != 0) {
             num &= (num - 1);
             ++count;
         }
@@ -415,7 +425,7 @@ library MerkleMountainRange {
         }
     }
 
-    function next(Iterator memory iterator) internal pure returns (bytes32)  {
+    function next(Iterator memory iterator) internal pure returns (bytes32) {
         bytes32 data = iterator.data[iterator.offset];
         unchecked {
             ++iterator.offset;
@@ -424,7 +434,7 @@ library MerkleMountainRange {
         return data;
     }
 
-    function previous(Iterator memory iterator) internal pure returns (bytes32)  {
+    function previous(Iterator memory iterator) internal pure returns (bytes32) {
         bytes32 data = iterator.data[iterator.offset];
         unchecked {
             --iterator.offset;
@@ -442,13 +452,25 @@ library MerkleMountainRange {
     function trailingZeros(uint64 x) internal pure returns (uint64) {
         uint64 n = 0;
 
-        if (x == 0) return(32);
+        if (x == 0) return (32);
 
         n = 1;
-        if ((x & 0x0000FFFF) == 0) {n = n +16; x = x >>16;}
-        if ((x & 0x000000FF) == 0) {n = n + 8; x = x >> 8;}
-        if ((x & 0x0000000F) == 0) {n = n + 4; x = x >> 4;}
-        if ((x & 0x00000003) == 0) {n = n + 2; x = x >> 2;}
+        if ((x & 0x0000FFFF) == 0) {
+            n = n + 16;
+            x = x >> 16;
+        }
+        if ((x & 0x000000FF) == 0) {
+            n = n + 8;
+            x = x >> 8;
+        }
+        if ((x & 0x0000000F) == 0) {
+            n = n + 4;
+            x = x >> 4;
+        }
+        if ((x & 0x00000003) == 0) {
+            n = n + 2;
+            x = x >> 2;
+        }
         return n - (x & 1);
     }
 

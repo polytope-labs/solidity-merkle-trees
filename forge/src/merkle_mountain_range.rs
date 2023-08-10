@@ -225,18 +225,12 @@ pub async fn test_mmr(count: u32, proof_elem: Vec<u32>) {
     let store = MemStore::default();
     let mut mmr = MMR::<_, MergeKeccak, _>::new(0, &store);
 
-    let positions: Vec<u64> = (0u32..count)
-        .map(|i| mmr.push(NumberHash::from(i)).unwrap())
-        .collect();
+    let positions: Vec<u64> =
+        (0u32..count).map(|i| mmr.push(NumberHash::from(i)).unwrap()).collect();
 
     let root = mmr.get_root().expect("get root");
     let proof = mmr
-        .gen_proof(
-            proof_elem
-                .iter()
-                .map(|elem| dbg!(positions[*elem as usize]))
-                .collect(),
-        )
+        .gen_proof(proof_elem.iter().map(|elem| positions[*elem as usize]).collect())
         .expect("gen proof");
     mmr.commit().expect("commit changes");
 
@@ -304,6 +298,16 @@ async fn test_mmr_last_elem_proof() {
 }
 
 #[tokio::test]
+async fn test_failing_case() {
+    let elem = vec![
+        85, 120, 113, 104, 109, 6, 101, 97, 41, 95, 15, 52, 19, 82, 33, 102, 114, 70, 53, 32, 107,
+        65, 59, 80, 72, 36, 64, 22, 16, 38, 57, 106, 74, 76, 28, 81, 117, 83, 61, 122, 1, 12, 14,
+        63, 20, 46, 4, 24, 111, 90, 2, 29, 126,
+    ];
+    test_mmr(127, elem).await;
+}
+
+#[tokio::test]
 async fn test_mmr_1_elem() {
     test_mmr(1, vec![0]).await;
 }
@@ -335,7 +339,6 @@ async fn test_mmr_3_leaves_merkle_proof() {
     test_mmr(100, vec![3, 5, 13]).await;
 }
 
-// don't send duplicate leaves lol
 #[tokio::test]
 async fn test_gen_proof_with_duplicate_leaves() {
     test_mmr(10, vec![5, 5]).await;
@@ -364,4 +367,3 @@ proptest! {
         runtime.block_on(test_mmr(count, leaves));
     }
 }
-

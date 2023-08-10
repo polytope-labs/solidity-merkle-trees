@@ -220,7 +220,7 @@ where
     )?;
 
     println!("Gas used {func}: {:#?}", result.gas_used);
-    println!("Logs {func}: {:#?}", result.logs);
+    // println!("Logs {func}: {:#?}", result.logs);
 
     Ok(result.result)
 }
