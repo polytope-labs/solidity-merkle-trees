@@ -24,7 +24,7 @@ use std::{
 
 static PROJECT: Lazy<Project> = Lazy::new(|| {
     let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    root = PathBuf::from(root.parent().unwrap().clone());
+    root = PathBuf::from(root.parent().unwrap());
     let mut paths = ProjectPathsConfig::builder().root(root.clone()).build().unwrap();
     {
         // manually insert openzeppelin to remmapings. forge isn't autodetecting.
