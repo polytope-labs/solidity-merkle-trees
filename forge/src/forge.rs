@@ -159,6 +159,14 @@ pub async fn single_runner<'a>(
     runner: &'a mut MultiContractRunner,
     contract_name: &'static str,
 ) -> (ContractRunner<'a>, Address) {
+    use tracing_subscriber::FmtSubscriber;
+    use tracing::Level;
+
+    let subscriber = FmtSubscriber::builder()
+        .with_max_level(Level::TRACE)
+        .finish();
+    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
+
     let db = Backend::spawn(runner.fork.take()).await;
 
     let names = runner.contracts.iter().map(|(id, _)| id.name.clone()).collect::<Vec<_>>();
@@ -192,6 +200,8 @@ pub async fn single_runner<'a>(
     );
 
     let setup = single_runner.setup(true);
+
+    dbg!(single_runner.errors);
     let TestSetup { address, .. } = setup;
 
     (single_runner, address)
