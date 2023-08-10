@@ -57,7 +57,7 @@ fn proof_data() -> ([u8; 32], Vec<Vec<u8>>, Vec<u8>) {
     (root, proof, key)
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_decode_nibbled_branch() {
     let mut runner = runner();
 
@@ -94,7 +94,7 @@ async fn test_decode_nibbled_branch() {
     }
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_decode_leaf() {
     let leaves: Vec<Vec<u8>> = vec![
         vec![95, 14, 123, 144, 18, 9, 107, 65, 196, 235, 58, 175, 148, 127, 110, 164, 41, 8, 0, 0],
@@ -136,7 +136,7 @@ async fn test_decode_leaf() {
 
 static D: &'static [u8; 3] = &[0x01u8, 0x23, 0x45];
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_nibble_slice_ops_basics() {
     let mut runner = runner();
 
@@ -201,7 +201,7 @@ async fn test_nibble_slice_ops_basics() {
     }
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_nibble_slice_ops_mid() {
     let mut runner = runner();
     let nibble = execute::<_, Token>(
@@ -254,7 +254,7 @@ async fn test_nibble_slice_ops_mid() {
     }
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_nibble_slice_ops_shared() {
     let mut runner = runner();
     let n = Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::zero())]);
@@ -374,7 +374,7 @@ async fn test_nibble_slice_ops_shared() {
     assert_eq!(result, Uint::from(0));
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_merkle_patricia_trie() {
     let (root, proof, key) = proof_data();
 
@@ -396,7 +396,7 @@ async fn test_merkle_patricia_trie() {
     assert_eq!(timestamp, 1_677_168_798_005)
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_merkle_patricia_trie_ethereum_verify_transaction_trie_single_node() {
     let mut runner = runner();
 
@@ -414,7 +414,7 @@ async fn test_merkle_patricia_trie_ethereum_verify_transaction_trie_single_node(
     assert_eq!(result[0].1,hex!("01f89301808080808080f847f84580f842a00000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000000080a08c7939f0e613736150a05565fcddda959b22c44ddac6c6aed8ec59e1462a0498a0166d30e3763829d64fca3d38601e65ba6f0e94f7e3c544381ae5e9e9b12dacd0").to_vec())
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_merkle_patricia_trie_ethereum_verify_transaction_trie_multi_node() {
     let mut runner = runner();
 
@@ -438,7 +438,7 @@ async fn test_merkle_patricia_trie_ethereum_verify_transaction_trie_multi_node()
     assert_eq!(result[0].1,hex!("01f89301808080808080f847f84580f842a00000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000000080a08c7939f0e613736150a05565fcddda959b22c44ddac6c6aed8ec59e1462a0498a0166d30e3763829d64fca3d38601e65ba6f0e94f7e3c544381ae5e9e9b12dacd0").to_vec())
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_merkle_patricia_trie_ethereum_verify_state_trie_single_node() {
     let mut runner = runner();
 
@@ -456,7 +456,7 @@ async fn test_merkle_patricia_trie_ethereum_verify_state_trie_single_node() {
     assert_eq!(result[0].1, hex!("f8448080a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470").to_vec())
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_merkle_patricia_trie_ethereum_verify_state_trie_multi_node() {
     let mut runner = runner();
 
@@ -477,7 +477,7 @@ async fn test_merkle_patricia_trie_ethereum_verify_state_trie_multi_node() {
     assert_eq!(result[0].1,hex!("f8448080a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470").to_vec())
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_merkle_patricia_trie_ethereum_verify_receipt_trie_single_node() {
     let mut runner = runner();
 
@@ -495,7 +495,7 @@ async fn test_merkle_patricia_trie_ethereum_verify_receipt_trie_single_node() {
     assert_eq!(result[0].1, hex!("f90107c1010180b9010000000000000000000081000000000000000000000000000000000002000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000028000000000040000080000000400000000000000000000000000000000000000000000000000000000000000000000010000010000000000000000000000000000000001400000000000000008000000000000000000000000000000000f79422341ae42d6dd7384bc8584e50419ea3ac75b83fa004491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f80f87694e7fb22dfef11920312e4989a3a2b81e2ebf05986b8407f1fef85c4b037150d3675218e0cdb7cf38fea354759471e309f3354918a442fd85629c7eaae9ea4a10234fed31bc0aeda29b2683ebe0c1882499d272621f6b69e2d690516512020171c1ec870f6ff45398cc8609250326be89915fb538e7b").to_vec());
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_merkle_patricia_trie_ethereum_verify_receipt_trie_multi_node() {
     let mut runner = runner();
 
@@ -515,7 +515,7 @@ async fn test_merkle_patricia_trie_ethereum_verify_receipt_trie_multi_node() {
     assert_eq!(result[0].1, hex!("f90107c1010180b9010000000000000000000081000000000000000000000000000000000002000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000028000000000040000080000000400000000000000000000000000000000000000000000000000000000000000000000010000010000000000000000000000000000000001400000000000000008000000000000000000000000000000000f79422341ae42d6dd7384bc8584e50419ea3ac75b83fa004491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f80f87694e7fb22dfef11920312e4989a3a2b81e2ebf05986b8407f1fef85c4b037150d3675218e0cdb7cf38fea354759471e309f3354918a442fd85629c7eaae9ea4a10234fed31bc0aeda29b2683ebe0c1882499d272621f6b69e2d690516512020171c1ec870f6ff45398cc8609250326be89915fb538e7b").to_vec());
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_merkle_patricia_trie_ethereum_verify_storage_trie_single_node() {
     let mut runner = runner();
 
@@ -546,7 +546,7 @@ async fn test_merkle_patricia_trie_ethereum_verify_storage_trie_single_node() {
     assert_eq!(result[0].1, hex!("80").to_vec());
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_merkle_patricia_trie_ethereum_verify_storage_trie_multi_node() {
     let mut runner = runner();
 
@@ -567,7 +567,7 @@ async fn test_merkle_patricia_trie_ethereum_verify_storage_trie_multi_node() {
     assert_eq!(result[0].1, hex!("830dbba0").to_vec());
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_merkle_patricia_trie_ethereum_verify_storage_trie() {
     //from ethereum-triedb repository
     let key = hex!("3483bb4c3738deb88e49108e7a5bd83c14ad65b5ba598e2932551dc9b9ad1879").to_vec();

@@ -19,7 +19,7 @@ use proptest::{prop_compose, proptest};
 
 type MmrLeaf = (u64, u64, [u8; 32]);
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_mmr_utils() {
     let mut runner = runner();
 
@@ -272,32 +272,32 @@ pub async fn test_mmr(count: u32, proof_elem: Vec<u32>) {
     assert_eq!(root_hash, calculated);
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_mmr_3_peaks() {
     test_mmr(11, vec![5]).await;
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_mmr_2_peaks() {
     test_mmr(10, vec![5]).await;
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_mmr_1_peak() {
     test_mmr(8, vec![5]).await;
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_mmr_first_elem_proof() {
     test_mmr(11, vec![0]).await;
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_mmr_last_elem_proof() {
     test_mmr(11, vec![10]).await;
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_failing_case() {
     let elem = vec![
         85, 120, 113, 104, 109, 6, 101, 97, 41, 95, 15, 52, 19, 82, 33, 102, 114, 70, 53, 32, 107,
@@ -307,31 +307,31 @@ async fn test_failing_case() {
     test_mmr(127, elem).await;
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_mmr_1_elem() {
     test_mmr(1, vec![0]).await;
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_mmr_2_elems() {
     test_mmr(2, vec![0]).await;
     test_mmr(2, vec![1]).await;
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_mmr_2_leaves_merkle_proof() {
     test_mmr(11, vec![3, 7]).await;
     test_mmr(11, vec![3, 4]).await;
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_mmr_2_sibling_leaves_merkle_proof() {
     test_mmr(11, vec![4, 5]).await;
     test_mmr(11, vec![5, 6]).await;
     test_mmr(11, vec![6, 7]).await;
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_mmr_3_leaves_merkle_proof() {
     test_mmr(11, vec![4, 5, 6]).await;
     test_mmr(11, vec![3, 5, 7]).await;
@@ -339,7 +339,7 @@ async fn test_mmr_3_leaves_merkle_proof() {
     test_mmr(100, vec![3, 5, 13]).await;
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_gen_proof_with_duplicate_leaves() {
     test_mmr(10, vec![5, 5]).await;
 }

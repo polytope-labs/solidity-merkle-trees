@@ -9,7 +9,7 @@ use hex_literal::hex;
 use primitive_types::{H256, U256};
 use rs_merkle::{merkelize_sorted, MerkleTree};
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn multi_merkle_proof() {
     let leaves = vec![
         hex!("9aF1Ca5941148eB6A3e9b9C741b69738292C533f").to_vec(),
