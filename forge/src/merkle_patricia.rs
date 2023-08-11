@@ -477,6 +477,22 @@ async fn test_merkle_patricia_trie_layout_v0() {
         .unwrap();
         assert_eq!(result[0].1, value.unwrap());
     }
+
+    // non-membership proof
+    let result = execute::<_, Vec<(Vec<u8>, Vec<u8>)>>(
+        &mut runner,
+        "MerklePatriciaTest",
+        "VerifyKeys",
+        (
+            Token::FixedBytes(root.as_bytes().to_vec()),
+            Token::Array(proof.clone().into_iter().map(Token::Bytes).collect()),
+            Token::Array(vec![Token::Bytes(H256::random().as_bytes().to_vec())]),
+        ),
+    )
+        .await
+        .unwrap();
+
+    assert_eq!(result[0].1.len(), 0);
 }
 
 #[tokio::test(flavor = "multi_thread")]
