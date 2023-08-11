@@ -2,9 +2,9 @@ pragma solidity ^0.8.17;
 
 import "../Node.sol";
 import "../Bytes.sol";
-import { NibbleSliceOps } from "../NibbleSlice.sol";
+import {NibbleSliceOps} from "../NibbleSlice.sol";
 
-import { ScaleCodec } from "./ScaleCodec.sol";
+import {ScaleCodec} from "./ScaleCodec.sol";
 import "openzeppelin/utils/Strings.sol";
 
 // SPDX-License-Identifier: Apache2
@@ -48,7 +48,7 @@ library SubstrateTrieDB {
             if (i & (0x07 << 5) == ALT_HASHING_LEAF_PREFIX_MASK) {
                 node.nibbleSize = decodeSize(i, input, 3);
                 node.isHashedLeaf = true;
-            }  else if (i & (0x0F << 4) == ALT_HASHING_BRANCH_WITH_MASK) {
+            } else if (i & (0x0F << 4) == ALT_HASHING_BRANCH_WITH_MASK) {
                 node.nibbleSize = decodeSize(i, input, 4);
                 node.isNibbledHashedValueBranch = true;
             } else {
@@ -66,7 +66,7 @@ library SubstrateTrieDB {
         ByteSlice memory input = node.data;
 
         bool padding = node.nibbleSize % NIBBLE_PER_BYTE != 0;
-        if (padding && (padLeft(uint8(input.data[input.offset])) != 0 )) {
+        if (padding && (padLeft(uint8(input.data[input.offset])) != 0)) {
             revert("Bad Format!");
         }
         uint256 nibbleLen = ((node.nibbleSize + (NibbleSliceOps.NIBBLE_PER_BYTE - 1)) / NibbleSliceOps.NIBBLE_PER_BYTE);
@@ -74,7 +74,6 @@ library SubstrateTrieDB {
 
         bytes memory bitmapBytes = Bytes.read(input, BITMAP_LENGTH);
         uint16 bitmap = uint16(ScaleCodec.decodeUint256(bitmapBytes));
-
 
         NodeHandleOption memory valueHandle;
         if (node.isNibbledHashedValueBranch) {
@@ -94,7 +93,7 @@ library SubstrateTrieDB {
             if (valueAt(bitmap, i)) {
                 childHandle.isSome = true;
                 uint256 len = ScaleCodec.decodeUintCompact(input);
-//                revert(string.concat("node index: ", Strings.toString(len)));
+                //                revert(string.concat("node index: ", Strings.toString(len)));
                 if (len == HASH_lENGTH) {
                     childHandle.value.isHash = true;
                     childHandle.value.hash = Bytes.toBytes32(Bytes.read(input, HASH_lENGTH));
@@ -161,6 +160,6 @@ library SubstrateTrieDB {
     }
 
     function valueAt(uint16 bitmap, uint256 i) internal pure returns (bool) {
-        return bitmap  & (uint16(1) << uint16(i)) != 0;
+        return bitmap & (uint16(1) << uint16(i)) != 0;
     }
 }

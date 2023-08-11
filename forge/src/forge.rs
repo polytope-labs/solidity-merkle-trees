@@ -12,7 +12,10 @@ use forge::{
     ContractRunner, MultiContractRunner, MultiContractRunnerBuilder,
 };
 use foundry_config::{fs_permissions::PathPermission, Config, FsPermissions};
-use foundry_evm::executor::{Backend, EvmError, ExecutorBuilder};
+use foundry_evm::{
+    executor::{Backend, EvmError, ExecutorBuilder, SpecId},
+    Address,
+};
 use once_cell::sync::Lazy;
 use std::{
     fmt::Debug,
@@ -21,12 +24,13 @@ use std::{
 
 static PROJECT: Lazy<Project> = Lazy::new(|| {
     let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    root = PathBuf::from(root.parent().unwrap().clone());
+    root = PathBuf::from(root.parent().unwrap());
     let mut paths = ProjectPathsConfig::builder().root(root.clone()).build().unwrap();
     {
         // manually insert openzeppelin to remmapings. forge isn't autodetecting.
         root.push("lib/openzeppelin-contracts/contracts");
         paths.remappings.push(Remapping {
+            context: None,
             name: "openzeppelin/".to_string(),
             path: root.to_str().unwrap().to_string(),
         });
@@ -81,12 +85,8 @@ fn runner_with_config(mut config: Config) -> MultiContractRunner {
     base_runner()
         .with_cheats_config(CheatsConfig::new(&config, &EVM_OPTS))
         .sender(config.sender)
-        .build(
-            &PROJECT.paths.root,
-            (*COMPILED).clone(),
-            EVM_OPTS.evm_env_blocking().unwrap(),
-            EVM_OPTS.clone(),
-        )
+        .evm_spec(SpecId::SHANGHAI)
+        .build(&PROJECT.paths.root, (*COMPILED).clone(), EVM_OPTS.local_evm_env(), EVM_OPTS.clone())
         .unwrap()
 }
 
@@ -97,7 +97,7 @@ pub fn runner() -> MultiContractRunner {
     runner_with_config(config)
 }
 
-pub fn execute<T, R>(
+pub async fn execute<T, R>(
     runner: &mut MultiContractRunner,
     contract_name: &'static str,
     fn_name: &'static str,
@@ -107,17 +107,14 @@ where
     T: Tokenize,
     R: Detokenize + Debug,
 {
-    let db = Backend::spawn(runner.fork.take());
+    let db = Backend::spawn(runner.fork.take()).await;
 
-    let names = runner.contracts.iter().map(|(id, _)| id.name.clone()).collect::<Vec<_>>();
-
-    println!("names: {:?}", names);
-
-    let (_, (abi, deploy_code, libs)) = runner
+    let (id, (abi, deploy_code, libs)) = runner
         .contracts
         .iter()
         .find(|(id, (abi, _, _))| id.name == contract_name && abi.functions.contains_key(fn_name))
         .unwrap();
+    let identifier = id.identifier();
 
     let function = abi.functions.get(fn_name).unwrap().first().unwrap().clone();
 
@@ -131,6 +128,7 @@ where
         .build(db.clone());
 
     let mut single_runner = ContractRunner::new(
+        &identifier,
         executor,
         abi,
         deploy_code.clone(),
@@ -140,7 +138,7 @@ where
         libs,
     );
 
-    let setup = single_runner.setup(false).unwrap();
+    let setup = single_runner.setup(true);
     let TestSetup { address, .. } = setup;
 
     let result = single_runner.executor.execute_test::<R, _, _>(
@@ -153,7 +151,79 @@ where
     )?;
 
     println!("Gas used {fn_name}: {:#?}", result.gas_used);
-    println!("Logs {fn_name}: {:#?}", result.logs);
+    // println!("Logs {fn_name}: {:#?}", result.logs);
+
+    Ok(result.result)
+}
+
+pub async fn single_runner<'a>(
+    runner: &'a mut MultiContractRunner,
+    contract_name: &'static str,
+) -> (ContractRunner<'a>, Address) {
+    let db = Backend::spawn(runner.fork.take()).await;
+
+    let names = runner.contracts.iter().map(|(id, _)| id.name.clone()).collect::<Vec<_>>();
+
+    println!("names: {:?}", names);
+
+    let (id, (abi, deploy_code, libs)) = runner
+        .contracts
+        .iter()
+        .find(|(id, (_, _, _))| id.name == contract_name)
+        .unwrap();
+
+    let executor = ExecutorBuilder::default()
+        .with_cheatcodes(runner.cheats_config.clone())
+        .with_config(runner.env.clone())
+        .with_spec(runner.evm_spec)
+        .with_gas_limit(runner.evm_opts.gas_limit())
+        .set_tracing(runner.evm_opts.verbosity >= 3)
+        .set_coverage(runner.coverage)
+        .build(db.clone());
+
+    let mut single_runner = ContractRunner::new(
+        &id.name,
+        executor,
+        abi,
+        deploy_code.clone(),
+        runner.evm_opts.initial_balance,
+        runner.sender,
+        runner.errors.as_ref(),
+        libs,
+    );
+
+    let setup = single_runner.setup(true);
+
+    dbg!(single_runner.errors);
+    let TestSetup { address, .. } = setup;
+
+    (single_runner, address)
+}
+
+/// Execute using the single [`ContractRunner`]
+pub fn execute_single<T, R>(
+    contract: &mut ContractRunner,
+    address: Address,
+    func: &str,
+    args: T,
+) -> Result<R, EvmError>
+where
+    T: Tokenize,
+    R: Detokenize + Debug,
+{
+    let function = contract.contract.functions.get(func).unwrap().first().unwrap().clone();
+
+    let result = contract.executor.execute_test::<R, _, _>(
+        contract.sender,
+        address,
+        function,
+        args,
+        0.into(),
+        contract.errors,
+    )?;
+
+    println!("Gas used {func}: {:#?}", result.gas_used);
+    // println!("Logs {func}: {:#?}", result.logs);
 
     Ok(result.result)
 }

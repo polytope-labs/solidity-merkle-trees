@@ -8,17 +8,13 @@ import "./Bytes.sol";
 /// This is an enum for the different node types.
 struct NodeKind {
     bool isEmpty;
-
     bool isLeaf;
     bool isHashedLeaf;
-
     bool isNibbledValueBranch;
     bool isNibbledHashedValueBranch;
     bool isNibbledBranch;
-
     bool isExtension;
     bool isBranch;
-
     uint256 nibbleSize;
     ByteSlice data;
 }
@@ -26,7 +22,6 @@ struct NodeKind {
 struct NodeHandle {
     bool isHash;
     bytes32 hash;
-
     bool isInline;
     bytes inLine;
 }

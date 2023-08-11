@@ -1,9 +1,9 @@
 #![allow(unused_parens)]
 
-mod forge;
-mod merkle_mountain_range;
-mod merkle_multi_proof;
-mod merkle_patricia;
+pub mod forge;
+pub mod merkle_mountain_range;
+pub mod merkle_multi_proof;
+pub mod merkle_patricia;
 
 pub use crate::forge::{execute, runner};
 use ckb_merkle_mountain_range::{Error, Merge};
