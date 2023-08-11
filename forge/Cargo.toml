@@ -27,7 +27,7 @@ libfuzzer-sys = "0.4.6"
 proptest = "1.2.0"
 rand = "0.8.5"
 sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
-beefy-merkle-tree = { package = "binary-merkle-tree", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
+beefy-merkle-tree = { package = "binary-merkle-tree", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v1.0.0" }
 
 # Prevent this from interfering with workspaces
 [workspace]
