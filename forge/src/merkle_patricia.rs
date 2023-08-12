@@ -397,6 +397,7 @@ async fn test_merkle_patricia_trie() {
     )
     .await
     .unwrap();
+    dbg!(&result);
     let timestamp = <u64>::decode(&mut &result[0].1[..]).unwrap();
     assert_eq!(timestamp, 1_677_168_798_005)
 }
@@ -489,8 +490,8 @@ async fn test_merkle_patricia_trie_layout_v0() {
             Token::Array(vec![Token::Bytes(H256::random().as_bytes().to_vec())]),
         ),
     )
-        .await
-        .unwrap();
+    .await
+    .unwrap();
 
     assert_eq!(result[0].1.len(), 0);
 }
