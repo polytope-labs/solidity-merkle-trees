@@ -5,9 +5,14 @@ use crate::forge::{execute, runner};
 use codec::Decode;
 use ethers::abi::{Token, Uint};
 use hex_literal::hex;
+use primitive_types::H256;
 use sp_core::KeccakHasher;
-use sp_trie::NodeCodec;
-use trie_db::NodeCodec as NodeCodecT;
+use sp_trie::{LayoutV0, MemoryDB, NodeCodec, StorageProof};
+use std::collections::HashSet;
+use trie_db::{
+    DBValue, Hasher, NodeCodec as NodeCodecT, Recorder, Trie, TrieDBBuilder, TrieDBMutBuilder,
+    TrieLayout, TrieMut,
+};
 
 type Slice = (
     Vec<u8>, // data;
@@ -392,8 +397,103 @@ async fn test_merkle_patricia_trie() {
     )
     .await
     .unwrap();
+    dbg!(&result);
     let timestamp = <u64>::decode(&mut &result[0].1[..]).unwrap();
     assert_eq!(timestamp, 1_677_168_798_005)
+}
+
+fn generate_proof<L: TrieLayout>(
+) -> (<L::Hash as Hasher>::Out, Vec<Vec<u8>>, Vec<(Vec<u8>, Option<DBValue>)>) {
+    let keys = (0..10).map(|_| H256::random().as_bytes().to_vec()).collect::<Vec<_>>();
+
+    let values = (0..10).map(|_| H256::random().as_bytes().to_vec()).collect::<Vec<_>>();
+
+    let entries = keys.clone().into_iter().zip(values.clone().into_iter()).collect::<Vec<_>>();
+    // Populate DB with full trie from entries.
+    let (db, root) = {
+        let mut db = <MemoryDB<L::Hash>>::default();
+        let mut root = Default::default();
+        {
+            let mut trie = TrieDBMutBuilder::<L>::new(&mut db, &mut root).build();
+            for (key, value) in &entries {
+                trie.insert(key, value).unwrap();
+            }
+        }
+        (db, root)
+    };
+
+    // Generate proof for the given keys..
+    let proof = {
+        let mut recorder = Recorder::<L>::new();
+        let trie_db = TrieDBBuilder::<L>::new(&db, &root).with_recorder(&mut recorder).build();
+
+        for (key, expected) in &entries {
+            let value = trie_db.get(key).unwrap().unwrap();
+            assert_eq!(&value, expected);
+        }
+
+        let proof = recorder.drain().into_iter().map(|f| f.data).collect::<HashSet<_>>();
+        {
+            let mdb = StorageProof::new(proof.clone()).into_memory_db::<L::Hash>();
+            let trie_db = TrieDBBuilder::<L>::new(&mdb, &root).build();
+            for (key, expected) in &entries {
+                let value = trie_db.get(key).unwrap().unwrap();
+                assert_eq!(&value, expected);
+            }
+        }
+
+        proof.into_iter().collect::<Vec<_>>()
+    };
+
+    let trie = TrieDBBuilder::<L>::new(&db, &root).build();
+    let items = keys
+        .into_iter()
+        .map(|key| {
+            let value = trie.get(&key).unwrap();
+            (key, value)
+        })
+        .collect();
+
+    (root, proof, items)
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_merkle_patricia_trie_layout_v0() {
+    let (root, proof, entries) = generate_proof::<LayoutV0<KeccakHasher>>();
+
+    let mut runner = runner();
+
+    for (key, value) in entries {
+        let result = execute::<_, Vec<(Vec<u8>, Vec<u8>)>>(
+            &mut runner,
+            "MerklePatriciaTest",
+            "VerifyKeys",
+            (
+                Token::FixedBytes(root.as_bytes().to_vec()),
+                Token::Array(proof.clone().into_iter().map(Token::Bytes).collect()),
+                Token::Array(vec![Token::Bytes(key.to_vec())]),
+            ),
+        )
+        .await
+        .unwrap();
+        assert_eq!(result[0].1, value.unwrap());
+    }
+
+    // non-membership proof
+    let result = execute::<_, Vec<(Vec<u8>, Vec<u8>)>>(
+        &mut runner,
+        "MerklePatriciaTest",
+        "VerifyKeys",
+        (
+            Token::FixedBytes(root.as_bytes().to_vec()),
+            Token::Array(proof.clone().into_iter().map(Token::Bytes).collect()),
+            Token::Array(vec![Token::Bytes(H256::random().as_bytes().to_vec())]),
+        ),
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(result[0].1.len(), 0);
 }
 
 #[tokio::test(flavor = "multi_thread")]

@@ -194,7 +194,6 @@ pub async fn single_runner<'a>(
 
     let setup = single_runner.setup(true);
 
-    dbg!(single_runner.errors);
     let TestSetup { address, .. } = setup;
 
     (single_runner, address)
