@@ -58,57 +58,57 @@ contract MerkleMountainRangeTest is Test {
         assertTrue(isValid);
     }
 
-    function countZeroes(uint64 num) public view returns (uint256) {
+    function countZeroes(uint64 num) public pure returns (uint256) {
         return MerkleMountainRange.countZeroes(num);
     }
 
-    function countLeadingZeros(uint64 num) public view returns (uint256) {
+    function countLeadingZeros(uint64 num) public pure returns (uint256) {
         return MerkleMountainRange.countLeadingZeros(num);
     }
 
-    function countOnes(uint64 num) public view returns (uint256) {
+    function countOnes(uint64 num) public pure returns (uint256) {
         return MerkleMountainRange.countOnes(num);
     }
 
-    function posToHeight(uint64 num) public view returns (uint256) {
+    function posToHeight(uint64 num) public pure returns (uint256) {
         return MerkleMountainRange.posToHeight(num);
     }
 
-    function getPeaks(uint64 num) public view returns (uint256[] memory) {
+    function getPeaks(uint64 num) public pure returns (uint256[] memory) {
         return MerkleMountainRange.getPeaks(num);
     }
 
     function leavesForPeak(MmrLeaf[] memory leaves, uint64 peak)
         public
-        view
+        pure
         returns (MmrLeaf[] memory, MmrLeaf[] memory)
     {
         return MerkleMountainRange.leavesForPeak(leaves, peak);
     }
 
-    function difference(uint256[] memory left, uint256[] memory right) public view returns (uint256[] memory) {
+    function difference(uint256[] memory left, uint256[] memory right) public pure returns (uint256[] memory) {
         return MerkleMountainRange.difference(left, right);
     }
 
-    function siblingIndices(uint256[] memory indices) public view returns (uint256[] memory) {
+    function siblingIndices(uint256[] memory indices) public pure returns (uint256[] memory) {
         return MerkleMountainRange.siblingIndices(indices);
     }
 
-    function mmrLeafToNode(MmrLeaf[] memory leaves) public view returns (Node[] memory, uint256[] memory) {
+    function mmrLeafToNode(MmrLeaf[] memory leaves) public pure returns (Node[] memory, uint256[] memory) {
         return MerkleMountainRange.mmrLeafToNode(leaves);
     }
 
-    function leafIndexToPos(uint64 index) public view returns (uint64) {
+    function leafIndexToPos(uint64 index) public pure returns (uint64) {
         return MerkleMountainRange.leafIndexToPos(index);
     }
 
-    function leafIndexToMmrSize(uint64 index) public view returns (uint64) {
+    function leafIndexToMmrSize(uint64 index) public pure returns (uint64) {
         return MerkleMountainRange.leafIndexToMmrSize(index);
     }
 
     function CalculateRoot(bytes32[] memory proof, MmrLeaf[] memory leaves, uint256 mmrSize)
         public
-        view
+        pure
         returns (bytes32)
     {
         return MerkleMountainRange.CalculateRoot(proof, leaves, mmrSize);

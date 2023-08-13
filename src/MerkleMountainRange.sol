@@ -33,7 +33,7 @@ library MerkleMountainRange {
     /// @param leaves a list of mmr leaves to prove
     /// @return boolean if the calculated root matches the provides root node
     function VerifyProof(bytes32 root, bytes32[] memory proof, MmrLeaf[] memory leaves, uint256 mmrSize)
-        internal
+        public
         pure
         returns (bool)
     {
@@ -47,7 +47,7 @@ library MerkleMountainRange {
     /// @param mmrSize the size of the merkle tree
     /// @return bytes32 hash of the computed root node
     function CalculateRoot(bytes32[] memory proof, MmrLeaf[] memory leaves, uint256 mmrSize)
-        internal
+        public
         pure
         returns (bytes32)
     {
