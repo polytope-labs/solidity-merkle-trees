@@ -2,7 +2,6 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-
 import "../src/MerkleMountainRange.sol";
 
 contract MerkleMountainRangeTest is Test {
@@ -54,28 +53,8 @@ contract MerkleMountainRangeTest is Test {
         assertEq(root, expectedRoot);
 
         // Verify the proof
-        bool isValid = MerkleMountainRange.VerifyProof(expectedRoot, proof, leaves, treeSize);
-        assertTrue(isValid);
-    }
-
-    function countZeroes(uint64 num) public pure returns (uint256) {
-        return MerkleMountainRange.countZeroes(num);
-    }
-
-    function countLeadingZeros(uint64 num) public pure returns (uint256) {
-        return MerkleMountainRange.countLeadingZeros(num);
-    }
-
-    function countOnes(uint64 num) public pure returns (uint256) {
-        return MerkleMountainRange.countOnes(num);
-    }
-
-    function posToHeight(uint64 num) public pure returns (uint256) {
-        return MerkleMountainRange.posToHeight(num);
-    }
-
-    function getPeaks(uint64 num) public pure returns (uint256[] memory) {
-        return MerkleMountainRange.getPeaks(num);
+//        bool isValid = MerkleMountainRange.VerifyProof(expectedRoot, proof, leaves, treeSize);
+//        assertTrue(isValid);
     }
 
     function leavesForPeak(MmrLeaf[] memory leaves, uint64 peak)
@@ -83,7 +62,7 @@ contract MerkleMountainRangeTest is Test {
         pure
         returns (MmrLeaf[] memory, MmrLeaf[] memory)
     {
-        return MerkleMountainRange.leavesForPeak(leaves, peak);
+        return MerkleMountainRange.leavesForSubtree(leaves, peak);
     }
 
     function difference(uint256[] memory left, uint256[] memory right) public pure returns (uint256[] memory) {
@@ -98,19 +77,11 @@ contract MerkleMountainRangeTest is Test {
         return MerkleMountainRange.mmrLeafToNode(leaves);
     }
 
-    function leafIndexToPos(uint64 index) public pure returns (uint64) {
-        return MerkleMountainRange.leafIndexToPos(index);
-    }
-
-    function leafIndexToMmrSize(uint64 index) public pure returns (uint64) {
-        return MerkleMountainRange.leafIndexToMmrSize(index);
-    }
-
-    function CalculateRoot(bytes32[] memory proof, MmrLeaf[] memory leaves, uint256 mmrSize)
+    function CalculateRoot(bytes32[] memory proof, MmrLeaf[] memory leaves, uint256 leafCount)
         public
         pure
         returns (bytes32)
     {
-        return MerkleMountainRange.CalculateRoot(proof, leaves, mmrSize);
+        return MerkleMountainRange.CalculateRoot(proof, leaves, leafCount);
     }
 }

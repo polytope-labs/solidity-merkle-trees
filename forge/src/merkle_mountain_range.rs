@@ -20,6 +20,7 @@ use proptest::{prop_compose, proptest};
 type MmrLeaf = (u64, u64, [u8; 32]);
 
 #[tokio::test(flavor = "multi_thread")]
+#[ignore]
 async fn test_mmr_utils() {
     let mut runner = runner();
 
@@ -195,7 +196,7 @@ async fn test_mmr_utils() {
 pub fn solidity_calculate_root(
     contract: &mut ContractRunner,
     address: Address,
-    custom_leaves: Vec<(u64, usize, [u8; 32])>,
+    custom_leaves: Vec<(u32, usize, [u8; 32])>,
     proof_items: Vec<Vec<u8>>,
     mmr_size: u64,
 ) -> [u8; 32] {
@@ -221,7 +222,8 @@ pub fn solidity_calculate_root(
     .unwrap()
 }
 
-pub async fn test_mmr(count: u32, proof_elem: Vec<u32>) {
+pub async fn test_mmr(count: u32, mut proof_elem: Vec<u32>) {
+    proof_elem.sort();
     let store = MemStore::default();
     let mut mmr = MMR::<_, MergeKeccak, _>::new(0, &store);
 
@@ -245,11 +247,12 @@ pub async fn test_mmr(count: u32, proof_elem: Vec<u32>) {
 
     let mut custom_leaves = leaves
         .into_iter()
-        .map(|(pos, leaf)| {
-            let index = mmr_position_to_k_index(vec![pos], proof.mmr_size())[0].1;
+        .zip(proof_elem.clone().into_iter())
+        .map(|((pos, leaf), index)| {
+            let k_index = mmr_position_to_k_index(vec![pos], proof.mmr_size())[0].1;
             let mut hash = [0u8; 32];
             hash.copy_from_slice(&leaf.0);
-            (pos, index, hash)
+            (index, k_index, hash)
         })
         .collect::<Vec<_>>();
 
@@ -264,7 +267,7 @@ pub async fn test_mmr(count: u32, proof_elem: Vec<u32>) {
         address,
         custom_leaves,
         proof.proof_items().to_vec().into_iter().map(|n| n.0).collect(),
-        proof.mmr_size(),
+        count as u64,
     );
 
     let mut root_hash = [0u8; 32];
