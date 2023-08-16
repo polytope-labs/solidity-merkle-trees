@@ -65,7 +65,7 @@ library MerkleMountainRange {
         uint256 current_subtree = 0;
         for (uint256 p = 0; p < length; p++) {
             uint256 height = subtrees[p];
-            current_subtree += 2**height;
+            current_subtree += 2 ** height;
 
             MmrLeaf[] memory subtreeLeaves = new MmrLeaf[](0);
             if (leaves.length > 0) {
@@ -101,18 +101,18 @@ library MerkleMountainRange {
         return peakRoots.data[0];
     }
 
-    function subtreeHeights(uint256 leavesLength) internal pure returns (uint256[] memory)  {
+    function subtreeHeights(uint256 leavesLength) internal pure returns (uint256[] memory) {
         uint256 maxSubtrees = 64;
         uint256[] memory indices = new uint256[](maxSubtrees);
         uint256 i = 0;
         uint256 current = leavesLength;
-        for (; i < maxSubtrees; i ++) {
+        for (; i < maxSubtrees; i++) {
             if (current == 0) {
                 break;
             }
             uint256 log = Math.log2(current);
             indices[i] = log;
-            current = current - 2**log;
+            current = current - 2 ** log;
         }
 
         // resize array?, sigh solidity.
