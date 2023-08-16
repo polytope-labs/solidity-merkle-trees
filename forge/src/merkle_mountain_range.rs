@@ -5,12 +5,7 @@ use crate::{
     forge::{execute_single, single_runner},
     runner, MergeKeccak, NumberHash, Token,
 };
-use ckb_merkle_mountain_range::{
-    helper::{get_peaks, pos_height_in_tree},
-    leaf_index_to_mmr_size, leaf_index_to_pos, mmr_position_to_k_index,
-    util::MemStore,
-    MMR,
-};
+use ckb_merkle_mountain_range::{mmr_position_to_k_index, util::MemStore, MMR};
 use forge::ContractRunner;
 use foundry_evm::Address;
 use hex_literal::hex;
@@ -22,54 +17,6 @@ type MmrLeaf = (u64, u64, [u8; 32]);
 #[tokio::test(flavor = "multi_thread")]
 async fn test_mmr_utils() {
     let mut runner = runner();
-
-    let leading_zeros = execute::<_, U256>(
-        &mut runner,
-        "MerkleMountainRangeTest",
-        "countLeadingZeros",
-        (Token::Uint(U256::from(17))),
-    )
-    .await
-    .unwrap();
-
-    assert_eq!(leading_zeros.as_u32(), 17u64.leading_zeros());
-
-    let count_zeros = execute::<_, U256>(
-        &mut runner,
-        "MerkleMountainRangeTest",
-        "countZeroes",
-        (Token::Uint(U256::from(17))),
-    )
-    .await
-    .unwrap();
-
-    assert_eq!(count_zeros.as_u32(), 17u64.count_zeros());
-
-    let count_ones = execute::<_, U256>(
-        &mut runner,
-        "MerkleMountainRangeTest",
-        "countOnes",
-        (Token::Uint(U256::from(17))),
-    )
-    .await
-    .unwrap();
-
-    assert_eq!(count_ones.as_u32(), 17u64.count_ones());
-
-    {
-        for pos in [45, 98, 200, 412] {
-            let height = execute::<_, U256>(
-                &mut runner,
-                "MerkleMountainRangeTest",
-                "posToHeight",
-                (Token::Uint(U256::from(pos))),
-            )
-            .await
-            .unwrap();
-
-            assert_eq!(height.as_u32(), pos_height_in_tree(pos));
-        }
-    }
 
     {
         let left = vec![3, 4].into_iter().map(|n| Token::Uint(U256::from(n))).collect();
@@ -145,57 +92,12 @@ async fn test_mmr_utils() {
         assert_eq!(result.0.len(), 3);
         assert_eq!(result.1.len(), 3);
     }
-
-    {
-        for pos in [45, 98, 200, 412] {
-            let peaks = execute::<_, Vec<u64>>(
-                &mut runner,
-                "MerkleMountainRangeTest",
-                "getPeaks",
-                (Token::Uint(U256::from(pos))),
-            )
-            .await
-            .unwrap();
-
-            assert_eq!(peaks, get_peaks(pos));
-        }
-    }
-
-    {
-        for pos in [45, 98, 200, 412] {
-            let peaks = execute::<_, u64>(
-                &mut runner,
-                "MerkleMountainRangeTest",
-                "leafIndexToPos",
-                (Token::Uint(U256::from(pos))),
-            )
-            .await
-            .unwrap();
-
-            assert_eq!(peaks, leaf_index_to_pos(pos));
-        }
-    }
-
-    {
-        for pos in [45, 98, 200, 412] {
-            let peaks = execute::<_, u64>(
-                &mut runner,
-                "MerkleMountainRangeTest",
-                "leafIndexToMmrSize",
-                (Token::Uint(U256::from(pos))),
-            )
-            .await
-            .unwrap();
-
-            assert_eq!(peaks, leaf_index_to_mmr_size(pos));
-        }
-    }
 }
 
 pub fn solidity_calculate_root(
     contract: &mut ContractRunner,
     address: Address,
-    custom_leaves: Vec<(u64, usize, [u8; 32])>,
+    custom_leaves: Vec<(u32, usize, [u8; 32])>,
     proof_items: Vec<Vec<u8>>,
     mmr_size: u64,
 ) -> [u8; 32] {
@@ -221,7 +123,8 @@ pub fn solidity_calculate_root(
     .unwrap()
 }
 
-pub async fn test_mmr(count: u32, proof_elem: Vec<u32>) {
+pub async fn test_mmr(count: u32, mut proof_elem: Vec<u32>) {
+    proof_elem.sort();
     let store = MemStore::default();
     let mut mmr = MMR::<_, MergeKeccak, _>::new(0, &store);
 
@@ -245,11 +148,12 @@ pub async fn test_mmr(count: u32, proof_elem: Vec<u32>) {
 
     let mut custom_leaves = leaves
         .into_iter()
-        .map(|(pos, leaf)| {
-            let index = mmr_position_to_k_index(vec![pos], proof.mmr_size())[0].1;
+        .zip(proof_elem.clone().into_iter())
+        .map(|((pos, leaf), index)| {
+            let k_index = mmr_position_to_k_index(vec![pos], proof.mmr_size())[0].1;
             let mut hash = [0u8; 32];
             hash.copy_from_slice(&leaf.0);
-            (pos, index, hash)
+            (index, k_index, hash)
         })
         .collect::<Vec<_>>();
 
@@ -264,7 +168,7 @@ pub async fn test_mmr(count: u32, proof_elem: Vec<u32>) {
         address,
         custom_leaves,
         proof.proof_items().to_vec().into_iter().map(|n| n.0).collect(),
-        proof.mmr_size(),
+        count as u64,
     );
 
     let mut root_hash = [0u8; 32];
