@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache2
 pragma solidity ^0.8.17;
 
-import "openzeppelin/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 /// @title A representation of a Merkle tree node
 struct Node {

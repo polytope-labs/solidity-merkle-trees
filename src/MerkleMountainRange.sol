@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 import "./MerkleMultiProof.sol";
-import "openzeppelin/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "forge-std/Test.sol";
 
 /// @title A representation of a MerkleMountainRange leaf
@@ -34,7 +34,7 @@ library MerkleMountainRange {
     /// @param leaves a list of mmr leaves to prove
     /// @return boolean if the calculated root matches the provides root node
     function VerifyProof(bytes32 root, bytes32[] memory proof, MmrLeaf[] memory leaves, uint256 mmrSize)
-        public
+        internal
         pure
         returns (bool)
     {
@@ -48,7 +48,7 @@ library MerkleMountainRange {
     /// @param leafCount the size of the merkle tree
     /// @return bytes32 hash of the computed root node
     function CalculateRoot(bytes32[] memory proof, MmrLeaf[] memory leaves, uint256 leafCount)
-        public
+        internal
         pure
         returns (bytes32)
     {

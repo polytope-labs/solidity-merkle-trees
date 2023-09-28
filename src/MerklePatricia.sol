@@ -37,7 +37,7 @@ library MerklePatricia {
      * @return bytes[] a list of values corresponding to the supplied keys.
      */
     function VerifySubstrateProof(bytes32 root, bytes[] memory proof, bytes[] memory keys)
-        public
+        internal
         pure
         returns (StorageValue[] memory)
     {
@@ -106,7 +106,7 @@ library MerklePatricia {
      * @return bytes[], a list of values corresponding to the supplied keys.
      */
     function ReadChildProofCheck(bytes32 root, bytes[] memory proof, bytes[] memory keys, bytes memory childInfo)
-        public
+        internal
         pure
         returns (StorageValue[] memory)
     {
@@ -131,7 +131,7 @@ library MerklePatricia {
      * @return bytes[] a list of values corresponding to the supplied keys.
      */
     function VerifyEthereumProof(bytes32 root, bytes[] memory proof, bytes[] memory keys)
-        public
+        internal
         pure
         returns (StorageValue[] memory)
     {

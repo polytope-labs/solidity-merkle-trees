@@ -5,7 +5,6 @@ import "../Bytes.sol";
 import {NibbleSliceOps} from "../NibbleSlice.sol";
 
 import {ScaleCodec} from "./ScaleCodec.sol";
-import "openzeppelin/utils/Strings.sol";
 
 // SPDX-License-Identifier: Apache2
 
