@@ -35,7 +35,7 @@ library MerkleMountainRange {
     /// @param leaves a list of mmr leaves to prove
     /// @return boolean if the calculated root matches the provides root node
     function VerifyProof(bytes32 root, bytes32[] memory proof, MmrLeaf[] memory leaves, uint256 mmrSize)
-        internal
+        public
         pure
         returns (bool)
     {
@@ -49,7 +49,7 @@ library MerkleMountainRange {
     /// @param leafCount the size of the merkle tree
     /// @return bytes32 hash of the computed root node
     function CalculateRoot(bytes32[] memory proof, MmrLeaf[] memory leaves, uint256 leafCount)
-        internal
+        public
         pure
         returns (bytes32)
     {
@@ -102,7 +102,7 @@ library MerkleMountainRange {
         return peakRoots.data[0];
     }
 
-    function subtreeHeights(uint256 leavesLength) internal pure returns (uint256[] memory) {
+    function subtreeHeights(uint256 leavesLength) public pure returns (uint256[] memory) {
         uint256 maxSubtrees = 64;
         uint256[] memory indices = new uint256[](maxSubtrees);
         uint256 i = 0;
@@ -131,7 +131,7 @@ library MerkleMountainRange {
     /// @param height    Height of the subtree
     /// @return peakRoot a tuple containing the peak root hash, and the peak root position in the merkle
     function CalculateSubtreeRoot(MmrLeaf[] memory peakLeaves, Iterator memory proofIter, uint256 height)
-        internal
+        public
         pure
         returns (bytes32)
     {
@@ -168,7 +168,7 @@ library MerkleMountainRange {
      * @param right a list of hashes to compare
      * @return uint256[] a new array with difference
      */
-    function difference(uint256[] memory left, uint256[] memory right) internal pure returns (uint256[] memory) {
+    function difference(uint256[] memory left, uint256[] memory right) public pure returns (uint256[] memory) {
         uint256 length = left.length;
         uint256 rightLength = right.length;
 
@@ -204,7 +204,7 @@ library MerkleMountainRange {
      * @param indices a list of proof nodes indices
      * @return uint256[] a list of sibling indices
      */
-    function siblingIndices(uint256[] memory indices) internal pure returns (uint256[] memory) {
+    function siblingIndices(uint256[] memory indices) public pure returns (uint256[] memory) {
         uint256 length = indices.length;
         uint256[] memory siblings = new uint256[](length);
 
@@ -224,11 +224,11 @@ library MerkleMountainRange {
 
     /**
      * @notice Compute Parent Indices
-     * @dev Used internally to calculate the indices of the parent nodes of the provided proof nodes
+     * @dev Used publicly to calculate the indices of the parent nodes of the provided proof nodes
      * @param indices a list of indices of proof nodes in a merkle mountain
      * @return uint256[] a list of parent indices for each index provided
      */
-    function parentIndices(uint256[] memory indices) internal pure returns (uint256[] memory) {
+    function parentIndices(uint256[] memory indices) public pure returns (uint256[] memory) {
         uint256 length = indices.length;
         uint256[] memory parents = new uint256[](length);
         uint256 k = 0;
@@ -259,7 +259,7 @@ library MerkleMountainRange {
      * @param leaves list of merkle mountain range leaf
      * @return A tuple with the list of merkle nodes and the list of nodes at 0 and 1 respectively
      */
-    function mmrLeafToNode(MmrLeaf[] memory leaves) internal pure returns (Node[] memory, uint256[] memory) {
+    function mmrLeafToNode(MmrLeaf[] memory leaves) public pure returns (Node[] memory, uint256[] memory) {
         uint256 i = 0;
         uint256 length = leaves.length;
         Node[] memory nodes = new Node[](length);
@@ -281,7 +281,7 @@ library MerkleMountainRange {
      * @return A tuple of 2 arrays of mountain merkle leaves. Index 1 and 2 represent left and right of the peak respectively
      */
     function leavesForSubtree(MmrLeaf[] memory leaves, uint256 leafIndex)
-        internal
+        public
         pure
         returns (MmrLeaf[] memory, MmrLeaf[] memory)
     {
@@ -314,14 +314,14 @@ library MerkleMountainRange {
         return (left, right);
     }
 
-    function push(Iterator memory iterator, bytes32 data) internal pure {
+    function push(Iterator memory iterator, bytes32 data) public pure {
         iterator.data[iterator.offset] = data;
         unchecked {
             ++iterator.offset;
         }
     }
 
-    function next(Iterator memory iterator) internal pure returns (bytes32) {
+    function next(Iterator memory iterator) public pure returns (bytes32) {
         bytes32 data = iterator.data[iterator.offset];
         unchecked {
             ++iterator.offset;
@@ -330,7 +330,7 @@ library MerkleMountainRange {
         return data;
     }
 
-    function previous(Iterator memory iterator) internal pure returns (bytes32) {
+    function previous(Iterator memory iterator) public pure returns (bytes32) {
         bytes32 data = iterator.data[iterator.offset];
         unchecked {
             --iterator.offset;

@@ -25,19 +25,19 @@ library MerkleMultiProof {
      * @param leaves A list of the leaves along with their k-indices to prove
      * @return boolean if the calculated root matches the provides root node
      */
-    function VerifyProof(bytes32 root, Node[][] memory proof, Node[] memory leaves) internal pure returns (bool) {
+    function VerifyProof(bytes32 root, Node[][] memory proof, Node[] memory leaves) public pure returns (bool) {
         return root == CalculateRoot(proof, leaves);
     }
 
     /**
-     * @notice Verify a Merkle Multi Proof whose internal nodes are sorted
+     * @notice Verify a Merkle Multi Proof whose public nodes are sorted
      * @param root hash of the root node of the merkle tree
      * @param proof A list of the merkle nodes along with their k-indices that are needed to re-calculate root node.
      * @param leaves A list of the leaves along with their k-indices to prove
      * @return boolean if the calculated root matches the provides root node
      */
     function VerifyProofSorted(bytes32 root, Node[][] memory proof, Node[] memory leaves)
-        internal
+        public
         pure
         returns (bool)
     {
@@ -49,7 +49,7 @@ library MerkleMultiProof {
     /// @param proof A list of the merkle nodes along with their k-indices that are needed to re-calculate root node.
     /// @param leaves A list of the leaves along with their k-indices to prove
     /// @return Hash of root node, value is a bytes32 type
-    function CalculateRoot(Node[][] memory proof, Node[] memory leaves) internal pure returns (bytes32) {
+    function CalculateRoot(Node[][] memory proof, Node[] memory leaves) public pure returns (bytes32) {
         // holds the output from hashing a previous layer
         Node[] memory next_layer = new Node[](0);
 
@@ -98,7 +98,7 @@ library MerkleMultiProof {
     /// @param proof A list of the merkle nodes that are needed to re-calculate root node.
     /// @param leaves A list of the leaves to prove
     /// @return Hash of root node, value is a bytes32 type
-    function CalculateRootSorted(Node[][] memory proof, Node[] memory leaves) internal pure returns (bytes32) {
+    function CalculateRootSorted(Node[][] memory proof, Node[] memory leaves) public pure returns (bytes32) {
         // holds the output from hashing a previous layer
         Node[] memory next_layer = new Node[](0);
 
@@ -147,11 +147,11 @@ library MerkleMultiProof {
         return next_layer[0].node;
     }
 
-    function div_floor(uint256 x, uint256 y) internal pure returns (uint256) {
+    function div_floor(uint256 x, uint256 y) public pure returns (uint256) {
         return x / y;
     }
 
-    function div_ceil(uint256 x, uint256 y) internal pure returns (uint256) {
+    function div_ceil(uint256 x, uint256 y) public pure returns (uint256) {
         uint256 result = x / y;
         if (x % y != 0) {
             unchecked {
@@ -162,11 +162,11 @@ library MerkleMultiProof {
         return result;
     }
 
-    /// @notice an internal function to merge two arrays and sort them at the same time.
+    /// @notice an public function to merge two arrays and sort them at the same time.
     /// @dev compares the k-index of each node and sort in increasing order
     /// @param arr1 leftmost index in arr
     /// @param arr2 highest index in arr
-    function mergeSort(Node[] memory arr1, Node[] memory arr2) internal pure returns (Node[] memory) {
+    function mergeSort(Node[] memory arr1, Node[] memory arr2) public pure returns (Node[] memory) {
         // merge the two arrays
         uint256 i = 0;
         uint256 j = 0;
@@ -214,7 +214,7 @@ library MerkleMultiProof {
     /// @notice compute the keccak256 hash of two nodes
     /// @param node1 hash of one of the two nodes
     /// @param node2 hash of the other of the two nodes
-    function _optimizedHash(bytes32 node1, bytes32 node2) internal pure returns (bytes32 hash) {
+    function _optimizedHash(bytes32 node1, bytes32 node2) public pure returns (bytes32 hash) {
         assembly {
             // use EVM scratch space, its memory safe
             mstore(0x0, node1)
@@ -226,7 +226,7 @@ library MerkleMultiProof {
     /// @notice compute the height of the tree whose total number of leaves is given, it accounts for unbalanced trees.
     /// @param leavesCount number of leaves in the tree
     /// @return height of the tree
-    function TreeHeight(uint256 leavesCount) internal pure returns (uint256) {
+    function TreeHeight(uint256 leavesCount) public pure returns (uint256) {
         uint256 height = Math.log2(leavesCount, Math.Rounding.Up);
         if (!isPowerOfTwo(leavesCount)) {
             unchecked {
@@ -237,7 +237,7 @@ library MerkleMultiProof {
         return height;
     }
 
-    function isPowerOfTwo(uint256 x) internal pure returns (bool) {
+    function isPowerOfTwo(uint256 x) public pure returns (bool) {
         if (x == 0) {
             return false;
         }
