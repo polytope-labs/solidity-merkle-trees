@@ -31,7 +31,7 @@ static PROJECT: Lazy<Project> = Lazy::new(|| {
         root.push("lib/openzeppelin-contracts/contracts");
         paths.remappings.push(Remapping {
             context: None,
-            name: "@openzeppelin/contracts/".to_string(),
+            name: "openzeppelin/".to_string(),
             path: root.to_str().unwrap().to_string(),
         });
     }
