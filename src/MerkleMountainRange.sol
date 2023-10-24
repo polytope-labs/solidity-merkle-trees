@@ -31,7 +31,7 @@ library MerkleMountainRange {
     /// @param root hash of the Merkle's root node
     /// @param proof a list of nodes required for the proof to be verified
     /// @param leaves a list of mmr leaves to prove
-    /// @return boolean if the calculated root matches the provides root node
+    /// @return boolean if the calculated root matches the provided root node
     function VerifyProof(bytes32 root, bytes32[] memory proof, MmrLeaf[] memory leaves, uint256 mmrSize)
         public
         pure
@@ -61,8 +61,8 @@ library MerkleMountainRange {
         Iterator memory peakRoots = Iterator(0, new bytes32[](length));
         Iterator memory proofIter = Iterator(0, proof);
 
-        uint256 current_subtree = 0;
-        for (uint256 p = 0; p < length; p++) {
+        uint256 current_subtree;
+        for (uint256 p; p < length;) {
             uint256 height = subtrees[p];
             current_subtree += 2 ** height;
 
@@ -81,6 +81,10 @@ library MerkleMountainRange {
                 push(peakRoots, subtreeLeaves[0].hash);
             } else {
                 push(peakRoots, CalculateSubtreeRoot(subtreeLeaves, proofIter, height));
+            }
+
+            unchecked {
+                ++p;
             }
         }
 
@@ -103,15 +107,19 @@ library MerkleMountainRange {
     function subtreeHeights(uint256 leavesLength) internal pure returns (uint256[] memory) {
         uint256 maxSubtrees = 64;
         uint256[] memory indices = new uint256[](maxSubtrees);
-        uint256 i = 0;
+        uint256 i;
         uint256 current = leavesLength;
-        for (; i < maxSubtrees; i++) {
+        for (; i < maxSubtrees;) {
             if (current == 0) {
                 break;
             }
             uint256 log = Math.log2(current);
             indices[i] = log;
             current = current - 2 ** log;
+
+            unchecked {
+                ++j;
+            }
         }
 
         // resize array?, sigh solidity.
@@ -138,7 +146,7 @@ library MerkleMountainRange {
         (leaves, current_layer) = mmrLeafToNode(peakLeaves);
 
         Node[][] memory layers = new Node[][](height);
-        for (uint256 i = 0; i < height; i++) {
+        for (uint256 i; i < height;) {
             uint256 nodelength = 2 ** (height - i);
             if (current_layer.length == nodelength) {
                 break;
@@ -149,11 +157,19 @@ library MerkleMountainRange {
 
             uint256 length = diff.length;
             layers[i] = new Node[](length);
-            for (uint256 j = 0; j < length; j++) {
+            for (uint256 j; j < length;) {
                 layers[i][j] = Node(diff[j], next(proofIter));
+
+                unchecked {
+                    ++j;
+                }
             }
 
             current_layer = parentIndices(siblings);
+
+            unchecked {
+                ++i;
+            }
         }
 
         return MerkleMultiProof.CalculateRoot(layers, leaves);
@@ -171,19 +187,27 @@ library MerkleMountainRange {
         uint256 rightLength = right.length;
 
         uint256[] memory diff = new uint256[](length);
-        uint256 d = 0;
-        for (uint256 i = 0; i < length; i++) {
-            bool found = false;
-            for (uint256 j = 0; j < rightLength; j++) {
+        uint256 d;
+        for (uint256 i; i < length;) {
+            bool found;
+            for (uint256 j; j < rightLength;) {
                 if (left[i] == right[j]) {
                     found = true;
                     break;
+                }
+
+                unchecked {
+                    ++j;
                 }
             }
 
             if (!found) {
                 diff[d] = left[i];
                 d++;
+            }
+
+            unchecked {
+                ++i;
             }
         }
 
@@ -206,7 +230,7 @@ library MerkleMountainRange {
         uint256 length = indices.length;
         uint256[] memory siblings = new uint256[](length);
 
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i; i < length;) {
             uint256 index = indices[i];
             if (index == 0) {
                 siblings[i] = index + 1;
@@ -214,6 +238,10 @@ library MerkleMountainRange {
                 siblings[i] = index + 1;
             } else {
                 siblings[i] = index - 1;
+            }
+
+            unchecked {
+                ++i;
             }
         }
 
@@ -229,9 +257,9 @@ library MerkleMountainRange {
     function parentIndices(uint256[] memory indices) internal pure returns (uint256[] memory) {
         uint256 length = indices.length;
         uint256[] memory parents = new uint256[](length);
-        uint256 k = 0;
+        uint256 k;
 
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i; i < length; i++) {
             uint256 index = indices[i] / 2;
             if (k > 0 && parents[k - 1] == index) {
                 continue;
@@ -258,7 +286,7 @@ library MerkleMountainRange {
      * @return A tuple with the list of merkle nodes and the list of nodes at 0 and 1 respectively
      */
     function mmrLeafToNode(MmrLeaf[] memory leaves) internal pure returns (Node[] memory, uint256[] memory) {
-        uint256 i = 0;
+        uint256 i;
         uint256 length = leaves.length;
         Node[] memory nodes = new Node[](length);
         uint256[] memory indices = new uint256[](length);
@@ -272,7 +300,7 @@ library MerkleMountainRange {
     }
 
     /**
-     * @notice Get a meountain peak's leaves
+     * @notice Get a mountain peak's leaves
      * @notice this splits the leaves into either side of the peak [left & right]
      * @param leaves a list of mountain merkle leaves, for a subtree
      * @param leafIndex the index of the leaf of the next subtree
@@ -283,7 +311,7 @@ library MerkleMountainRange {
         pure
         returns (MmrLeaf[] memory, MmrLeaf[] memory)
     {
-        uint256 p = 0;
+        uint256 p;
         uint256 length = leaves.length;
         for (; p < length; p++) {
             if (leafIndex <= leaves[p].leaf_index) {
@@ -295,14 +323,14 @@ library MerkleMountainRange {
         MmrLeaf[] memory left = new MmrLeaf[](len);
         MmrLeaf[] memory right = new MmrLeaf[](length - len);
 
-        uint256 i = 0;
+        uint256 i;
         uint256 leftLength = left.length;
         while (i < leftLength) {
             left[i] = leaves[i];
             ++i;
         }
 
-        uint256 j = 0;
+        uint256 j;
         while (i < length) {
             right[j] = leaves[i];
             ++i;
