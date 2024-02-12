@@ -43,7 +43,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --release --locked --manifest-path ./forge/Cargo.toml -- --nocapture
+          args: --release --locked --manifest-path ./integration-tests/Cargo.toml -- --nocapture
 
   fmt:
     name: Rustfmt
@@ -58,4 +58,4 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: fmt
-          args: --manifest-path ./forge/Cargo.toml --all -- --check
+          args: --manifest-path ./integration-tests/Cargo.toml --all -- --check
