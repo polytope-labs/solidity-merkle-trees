@@ -8,7 +8,7 @@ cargo-fuzz = true
 
 [dependencies]
 forge-testsuite = { git = "https://github.com/polytope-labs/forge-testsuite", rev = "ffd80776b9fe743f162108b02742267aff02a60a" }
-patricia-merkle-trie = { package = "ethereum-trie", git = "https://github.com/polytope-labs/hyperbridge", branch = "main" }
+patricia-merkle-trie = { package = "patricia-merkle-trie", git = "https://github.com/polytope-labs/hyperbridge", branch = "main" }
 solidity-merkle-trees-test = { path = "../" }
 
 #trie-db = "0.24.0"
