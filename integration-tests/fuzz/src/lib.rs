@@ -1,7 +1,7 @@
 #![allow(dead_code, unused_imports)]
 
 use patricia_merkle_trie::{MemoryDB, StorageProof};
-use solidity_merkle_trees_test::{execute, runner, Token};
+use solidity_merkle_trees_test::{Token};
 use sp_core::KeccakHasher;
 use sp_trie::LayoutV0;
 use std::collections::HashSet;
@@ -150,23 +150,29 @@ pub fn fuzz_that_verify_rejects_invalid_proofs(input: &[u8]) {
         }
     }
 
-    let mut runner = runner();
-    for (key, value) in items {
-        let result = execute::<_, Vec<(Vec<u8>, Vec<u8>)>>(
-            &mut runner,
-            "MerklePatriciaTest",
-            "VerifyKeys",
-            (
-                Token::FixedBytes(root.as_ref().to_vec()),
-                Token::Array(proof.clone().into_iter().map(Token::Bytes).collect()),
-                Token::Array(vec![Token::Bytes(key.to_vec())]),
-            ),
-        )
-        .unwrap();
-        let result = if result[0].1.len() == 0 { None } else { Some(result[0].1.clone()) };
+    let runtime = tokio::runtime::Runtime::new().unwrap();
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = forge_testsuite::Runner::new(PathBuf::from(&base_dir));
 
-        assert_ne!(result, value);
-    }
+    runtime.block_on(async move {
+        let mut contract = runner.deploy("MerklePatriciaTest").await;
+        for (key, value) in items {
+            let result = contract.call::<_, Vec<(Vec<u8>, Vec<u8>)>>(
+                "VerifyKeys",
+                (
+                    Token::FixedBytes(root.as_ref().to_vec()),
+                    Token::Array(proof.clone().into_iter().map(Token::Bytes).collect()),
+                    Token::Array(vec![Token::Bytes(key.to_vec())]),
+                ),
+            )
+            .await
+            .unwrap();
+            let result = if result[0].1.len() == 0 { None } else { Some(result[0].1.clone()) };
+    
+            assert_ne!(result, value);
+        }
+    });
+
 }
 
 pub fn fuzz_that_verify_accepts_valid_proofs(input: &[u8]) {
@@ -188,20 +194,25 @@ pub fn fuzz_that_verify_accepts_valid_proofs(input: &[u8]) {
         return
     }
 
-    let mut runner = runner();
-    for (key, value) in items {
-        let result = execute::<_, Vec<(Vec<u8>, Vec<u8>)>>(
-            &mut runner,
-            "MerklePatriciaTest",
-            "VerifyKeys",
-            (
-                Token::FixedBytes(root.as_ref().to_vec()),
-                Token::Array(proof.clone().into_iter().map(Token::Bytes).collect()),
-                Token::Array(vec![Token::Bytes(key.to_vec())]),
-            ),
-        )
-        .unwrap();
-        let result = if result[0].1.len() == 0 { None } else { Some(result[0].1.clone()) };
-        assert_eq!(result, value)
-    }
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = forge_testsuite::Runner::new(PathBuf::from(&base_dir));
+    let runtime = tokio::runtime::Runtime::new().unwrap();
+
+    runtime.block_on(async move {
+        let mut contract = runner.deploy("MerklePatriciaTest").await;
+        for (key, value) in items {
+            let result = contract.call::<_, Vec<(Vec<u8>, Vec<u8>)>>(
+                "VerifyKeys",
+                (
+                    Token::FixedBytes(root.as_ref().to_vec()),
+                    Token::Array(proof.clone().into_iter().map(Token::Bytes).collect()),
+                    Token::Array(vec![Token::Bytes(key.to_vec())]),
+                ),
+            )
+            .await
+            .unwrap();
+            let result = if result[0].1.len() == 0 { None } else { Some(result[0].1.clone()) };
+            assert_eq!(result, value)
+        }
+    });
 }

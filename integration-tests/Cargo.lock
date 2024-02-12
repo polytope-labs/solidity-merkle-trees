@@ -2096,7 +2096,7 @@ dependencies = [
 [[package]]
 name = "forge-testsuite"
 version = "0.1.0"
-source = "git+https://github.com/polytope-labs/forge-testsuite?rev=71701dc172efe46132a4e28654b6e8fa1aff88bc#71701dc172efe46132a4e28654b6e8fa1aff88bc"
+source = "git+https://github.com/polytope-labs/forge-testsuite?rev=ffd80776b9fe743f162108b02742267aff02a60a#ffd80776b9fe743f162108b02742267aff02a60a"
 dependencies = [
  "ethers",
  "ethers-solc",
@@ -5038,6 +5038,7 @@ name = "solidity-merkle-trees-fuzz"
 version = "0.1.0"
 dependencies = [
  "ethereum-trie",
+ "forge-testsuite",
  "libfuzzer-sys",
  "solidity-merkle-trees-test",
  "sp-core 17.0.0",
