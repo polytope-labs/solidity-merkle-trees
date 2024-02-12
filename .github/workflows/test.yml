@@ -40,10 +40,10 @@ jobs:
           forge test -vvv
         id: test
 
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --release --locked --manifest-path ./integration-tests/Cargo.toml -- --nocapture
+      - uses: cargo test
+        run: |
+          cd ./integration-tests
+          cargo test --release -- --nocapture
 
   fmt:
     name: Rustfmt
