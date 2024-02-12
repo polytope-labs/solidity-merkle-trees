@@ -40,7 +40,7 @@ jobs:
           forge test -vvv
         id: test
 
-      - uses: cargo test
+      - name: cargo test
         run: |
           cd ./integration-tests
           cargo test --release -- --nocapture
