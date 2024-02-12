@@ -16,3 +16,4 @@ target/
 artifacts/
 corpus/
 
+.idea/
