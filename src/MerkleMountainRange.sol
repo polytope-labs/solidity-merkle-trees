@@ -118,7 +118,7 @@ library MerkleMountainRange {
             current = current - 2 ** log;
 
             unchecked {
-                ++j;
+                ++i;
             }
         }
 
