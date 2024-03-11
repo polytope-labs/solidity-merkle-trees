@@ -17,3 +17,5 @@ artifacts/
 corpus/
 
 .idea/
+
+integration-tests/proptest-regressions/

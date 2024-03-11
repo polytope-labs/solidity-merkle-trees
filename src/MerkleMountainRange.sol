@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache2
-pragma solidity ^0.8.17;
+pragma solidity 0.8.17;
 
 import "./MerkleMultiProof.sol";
 import "openzeppelin/utils/math/Math.sol";
@@ -33,7 +33,7 @@ library MerkleMountainRange {
     /// @param leaves a list of mmr leaves to prove
     /// @return boolean if the calculated root matches the provided root node
     function VerifyProof(bytes32 root, bytes32[] memory proof, MmrLeaf[] memory leaves, uint256 mmrSize)
-        public
+        internal
         pure
         returns (bool)
     {
@@ -47,7 +47,7 @@ library MerkleMountainRange {
     /// @param leafCount the size of the merkle tree
     /// @return bytes32 hash of the computed root node
     function CalculateRoot(bytes32[] memory proof, MmrLeaf[] memory leaves, uint256 leafCount)
-        public
+        internal
         pure
         returns (bytes32)
     {
