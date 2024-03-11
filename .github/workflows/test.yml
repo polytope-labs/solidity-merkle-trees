@@ -43,6 +43,7 @@ jobs:
       - name: cargo test
         run: |
           forge build
+          git submodule update --init --recursive
           cd ./integration-tests
           cargo test --release -- --nocapture
 
