@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
 import "../src/MerkleMountainRange.sol";
 
 contract MerkleMountainRangeTest is Test {
+
+    function setUp() public {}
+
     // This unit test showcases how to use the MMR contract
     // to verify a proof generated from the counterpart Rust library.
     function testMerkleMountainRange() public {

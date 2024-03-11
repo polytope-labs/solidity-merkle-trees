@@ -1,35 +1,29 @@
 #![cfg(test)]
 
-use crate::{
-    execute,
-    forge::{execute_single, single_runner},
-    runner, MergeKeccak, NumberHash, Token,
-};
+use crate::{MergeKeccak, NumberHash, Token};
 use ckb_merkle_mountain_range::{mmr_position_to_k_index, util::MemStore, MMR};
-use forge::ContractRunner;
-use foundry_evm::Address;
+use forge_testsuite::{Contract, Runner};
 use hex_literal::hex;
 use primitive_types::U256;
 use proptest::{prop_compose, proptest};
+use std::{env, path::PathBuf};
 
 type MmrLeaf = (u64, u64, [u8; 32]);
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_mmr_utils() {
-    let mut runner = runner();
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerkleMountainRangeTest").await;
 
     {
         let left = vec![3, 4].into_iter().map(|n| Token::Uint(U256::from(n))).collect();
         let right = vec![2, 5].into_iter().map(|n| Token::Uint(U256::from(n))).collect();
 
-        let height = execute::<_, Vec<u64>>(
-            &mut runner,
-            "MerkleMountainRangeTest",
-            "difference",
-            (Token::Array(left), Token::Array(right)),
-        )
-        .await
-        .unwrap();
+        let height = contract
+            .call::<_, Vec<u64>>("difference", (Token::Array(left), Token::Array(right)))
+            .await
+            .unwrap();
 
         assert_eq!(height, vec![3, 4]);
     }
@@ -37,14 +31,7 @@ async fn test_mmr_utils() {
     {
         let indices =
             vec![2, 5].into_iter().map(|i| Token::Uint(U256::from(i))).collect::<Vec<_>>();
-        let siblings = execute::<_, Vec<u64>>(
-            &mut runner,
-            "MerkleMountainRangeTest",
-            "siblingIndices",
-            (indices),
-        )
-        .await
-        .unwrap();
+        let siblings = contract.call::<_, Vec<u64>>("siblingIndices", (indices)).await.unwrap();
 
         assert_eq!(siblings, vec![3, 4]);
     }
@@ -68,35 +55,29 @@ async fn test_mmr_utils() {
         })
         .collect::<Vec<_>>();
 
-        let result = execute::<_, (Vec<(u64, [u8; 32])>, Vec<u64>)>(
-            &mut runner,
-            "MerkleMountainRangeTest",
-            "mmrLeafToNode",
-            (leaves.clone()),
-        )
-        .await
-        .unwrap();
+        let result = contract
+            .call::<_, (Vec<(u64, [u8; 32])>, Vec<u64>)>("mmrLeafToNode", (leaves.clone()))
+            .await
+            .unwrap();
 
         assert_eq!(result.0.len(), 6);
         assert_eq!(result.1.len(), 6);
 
-        let result = execute::<_, (Vec<MmrLeaf>, Vec<MmrLeaf>)>(
-            &mut runner,
-            "MerkleMountainRangeTest",
-            "leavesForPeak",
-            (leaves, Token::Uint(U256::from(15))),
-        )
-        .await
-        .unwrap();
+        let result = contract
+            .call::<_, (Vec<MmrLeaf>, Vec<MmrLeaf>)>(
+                "leavesForPeak",
+                (leaves, Token::Uint(U256::from(15))),
+            )
+            .await
+            .unwrap();
 
         assert_eq!(result.0.len(), 3);
         assert_eq!(result.1.len(), 3);
     }
 }
 
-pub fn solidity_calculate_root(
-    contract: &mut ContractRunner,
-    address: Address,
+pub async fn solidity_calculate_root(
+    contract: &mut Contract<'_>,
     custom_leaves: Vec<(u32, usize, [u8; 32])>,
     proof_items: Vec<Vec<u8>>,
     mmr_size: u64,
@@ -114,16 +95,13 @@ pub fn solidity_calculate_root(
 
     let nodes = proof_items.iter().map(|n| Token::FixedBytes(n.clone())).collect::<Vec<_>>();
 
-    execute_single::<_, [u8; 32]>(
-        contract,
-        address,
-        "CalculateRoot",
-        (nodes, token_leaves, Token::Uint(mmr_size.into())),
-    )
-    .unwrap()
+    contract
+        .call::<_, [u8; 32]>("CalculateRoot", (nodes, token_leaves, Token::Uint(mmr_size.into())))
+        .await
+        .unwrap()
 }
 
-pub async fn test_mmr(count: u32, mut proof_elem: Vec<u32>) {
+pub async fn test_mmr(contract: &mut Contract<'_>, count: u32, mut proof_elem: Vec<u32>) {
     proof_elem.sort();
     let store = MemStore::default();
     let mut mmr = MMR::<_, MergeKeccak, _>::new(0, &store);
@@ -160,16 +138,13 @@ pub async fn test_mmr(count: u32, mut proof_elem: Vec<u32>) {
     custom_leaves.dedup_by(|a, b| a.0 == b.0);
     custom_leaves.sort_by(|a, b| a.0.cmp(&b.0));
 
-    let mut runner = runner();
-    let (mut contract, address) = single_runner(&mut runner, "MerkleMountainRangeTest").await;
-
     let calculated = solidity_calculate_root(
-        &mut contract,
-        address,
+        contract,
         custom_leaves,
         proof.proof_items().to_vec().into_iter().map(|n| n.0).collect(),
         count as u64,
-    );
+    )
+    .await;
 
     let mut root_hash = [0u8; 32];
     root_hash.copy_from_slice(&root.0);
@@ -178,74 +153,110 @@ pub async fn test_mmr(count: u32, mut proof_elem: Vec<u32>) {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_mmr_3_peaks() {
-    test_mmr(11, vec![5]).await;
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerkleMountainRangeTest").await;
+    test_mmr(&mut contract, 11, vec![5]).await;
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_mmr_2_peaks() {
-    test_mmr(10, vec![5]).await;
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerkleMountainRangeTest").await;
+    test_mmr(&mut contract, 10, vec![5]).await;
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_mmr_1_peak() {
-    test_mmr(8, vec![5]).await;
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerkleMountainRangeTest").await;
+    test_mmr(&mut contract, 8, vec![5]).await;
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_mmr_first_elem_proof() {
-    test_mmr(11, vec![0]).await;
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerkleMountainRangeTest").await;
+    test_mmr(&mut contract, 11, vec![0]).await;
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_mmr_last_elem_proof() {
-    test_mmr(11, vec![10]).await;
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerkleMountainRangeTest").await;
+    test_mmr(&mut contract, 11, vec![10]).await;
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_failing_case() {
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerkleMountainRangeTest").await;
     let elem = vec![
         85, 120, 113, 104, 109, 6, 101, 97, 41, 95, 15, 52, 19, 82, 33, 102, 114, 70, 53, 32, 107,
         65, 59, 80, 72, 36, 64, 22, 16, 38, 57, 106, 74, 76, 28, 81, 117, 83, 61, 122, 1, 12, 14,
         63, 20, 46, 4, 24, 111, 90, 2, 29, 126,
     ];
-    test_mmr(127, elem).await;
+    test_mmr(&mut contract, 127, elem).await;
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_mmr_1_elem() {
-    test_mmr(1, vec![0]).await;
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerkleMountainRangeTest").await;
+    test_mmr(&mut contract, 1, vec![0]).await;
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_mmr_2_elems() {
-    test_mmr(2, vec![0]).await;
-    test_mmr(2, vec![1]).await;
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerkleMountainRangeTest").await;
+    test_mmr(&mut contract, 2, vec![0]).await;
+    test_mmr(&mut contract, 2, vec![1]).await;
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_mmr_2_leaves_merkle_proof() {
-    test_mmr(11, vec![3, 7]).await;
-    test_mmr(11, vec![3, 4]).await;
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerkleMountainRangeTest").await;
+    test_mmr(&mut contract, 11, vec![3, 7]).await;
+    test_mmr(&mut contract, 11, vec![3, 4]).await;
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_mmr_2_sibling_leaves_merkle_proof() {
-    test_mmr(11, vec![4, 5]).await;
-    test_mmr(11, vec![5, 6]).await;
-    test_mmr(11, vec![6, 7]).await;
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerkleMountainRangeTest").await;
+    test_mmr(&mut contract, 11, vec![4, 5]).await;
+    test_mmr(&mut contract, 11, vec![5, 6]).await;
+    test_mmr(&mut contract, 11, vec![6, 7]).await;
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_mmr_3_leaves_merkle_proof() {
-    test_mmr(11, vec![4, 5, 6]).await;
-    test_mmr(11, vec![3, 5, 7]).await;
-    test_mmr(11, vec![3, 4, 5]).await;
-    test_mmr(100, vec![3, 5, 13]).await;
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerkleMountainRangeTest").await;
+    test_mmr(&mut contract, 11, vec![4, 5, 6]).await;
+    test_mmr(&mut contract, 11, vec![3, 5, 7]).await;
+    test_mmr(&mut contract, 11, vec![3, 4, 5]).await;
+    test_mmr(&mut contract, 100, vec![3, 5, 13]).await;
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_gen_proof_with_duplicate_leaves() {
-    test_mmr(10, vec![5, 5]).await;
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerkleMountainRangeTest").await;
+    test_mmr(&mut contract, 10, vec![5, 5]).await;
 }
 
 prop_compose! {
@@ -268,6 +279,12 @@ proptest! {
         let leaves_count = rng.gen_range(1..count - 1);
         leaves.truncate(leaves_count as usize);
         let runtime = tokio::runtime::Runtime::new().unwrap();
-        runtime.block_on(test_mmr(count, leaves));
+        let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+        let mut runner = Runner::new(PathBuf::from(&base_dir));
+        runtime.block_on(async move {
+            let mut contract = runner.deploy("MerkleMountainRangeTest").await;
+
+            test_mmr(&mut contract, count, leaves).await;
+        });
     }
 }

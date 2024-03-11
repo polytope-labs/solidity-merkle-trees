@@ -1,14 +1,14 @@
 #![cfg(test)]
 #![allow(dead_code, unused_imports)]
 
-use crate::forge::{execute, runner};
 use codec::Decode;
 use ethers::abi::{Token, Uint};
+use forge_testsuite::Runner;
 use hex_literal::hex;
 use primitive_types::H256;
 use sp_core::KeccakHasher;
 use sp_trie::{LayoutV0, MemoryDB, NodeCodec, StorageProof};
-use std::collections::HashSet;
+use std::{collections::HashSet, env, path::PathBuf};
 use trie_db::{
     DBValue, Hasher, NodeCodec as NodeCodecT, Recorder, Trie, TrieDBBuilder, TrieDBMutBuilder,
     TrieLayout, TrieMut,
@@ -64,7 +64,9 @@ fn proof_data() -> ([u8; 32], Vec<Vec<u8>>, Vec<u8>) {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_decode_nibbled_branch() {
-    let mut runner = runner();
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerklePatriciaTest").await;
 
     let (_, proof, _) = proof_data();
 
@@ -73,25 +75,17 @@ async fn test_decode_nibbled_branch() {
 
         println!("{:?}", plan);
 
-        let result = execute::<_, NodeKind>(
-            &mut runner,
-            "MerklePatriciaTest",
-            "decodeNodeKind",
-            (Token::Bytes(item.clone())),
-        )
-        .await
-        .unwrap();
+        let result = contract
+            .call::<_, NodeKind>("decodeNodeKind", (Token::Bytes(item.clone())))
+            .await
+            .unwrap();
 
         assert!(result.5); // isNibbledBranch
 
-        let result = execute::<_, Token>(
-            &mut runner,
-            "MerklePatriciaTest",
-            "decodeNibbledBranch",
-            (Token::Bytes(item.clone())),
-        )
-        .await
-        .unwrap();
+        let result = contract
+            .call::<_, Token>("decodeNibbledBranch", (Token::Bytes(item.clone())))
+            .await
+            .unwrap();
 
         println!("decodeNibbledBranch: {:?}", &result);
 
@@ -108,32 +102,26 @@ async fn test_decode_leaf() {
             214, 144, 122, 134, 1, 0, 0,
         ],
     ];
-    let mut runner = runner();
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerklePatriciaTest").await;
 
     for leaf in leaves {
         let plan = NodeCodec::<KeccakHasher>::decode_plan(&mut &leaf[..]).unwrap().build(&leaf);
 
         println!("{:#?}", plan);
 
-        let result = execute::<_, NodeKind>(
-            &mut runner,
-            "MerklePatriciaTest",
-            "decodeNodeKind",
-            (Token::Bytes(leaf.clone())),
-        )
-        .await
-        .unwrap();
+        let result = contract
+            .call::<_, NodeKind>("decodeNodeKind", (Token::Bytes(leaf.clone())))
+            .await
+            .unwrap();
 
         assert!(result.1); // isLeaf
 
-        let result = execute::<_, Token>(
-            &mut runner,
-            "MerklePatriciaTest",
-            "decodeLeaf",
-            (Token::Bytes(leaf.clone())),
-        )
-        .await
-        .unwrap();
+        let result = contract
+            .call::<_, Token>("decodeLeaf", (Token::Bytes(leaf.clone())))
+            .await
+            .unwrap();
 
         println!("decodeLeaf: {:?}", &result);
     }
@@ -143,238 +131,179 @@ static D: &'static [u8; 3] = &[0x01u8, 0x23, 0x45];
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_nibble_slice_ops_basics() {
-    let mut runner = runner();
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerklePatriciaTest").await;
 
-    let result = execute::<_, Uint>(
-        &mut runner,
-        "MerklePatriciaTest",
-        "nibbleLen",
-        (Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::zero())]),),
-    )
-    .await
-    .unwrap()
-    .as_u32();
-
-    assert_eq!(result, 6);
-
-    let result = execute::<_, bool>(
-        &mut runner,
-        "MerklePatriciaTest",
-        "isNibbleEmpty",
-        (Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::zero())]),),
-    )
-    .await
-    .unwrap();
-
-    assert!(!result);
-
-    let result = execute::<_, bool>(
-        &mut runner,
-        "MerklePatriciaTest",
-        "isNibbleEmpty",
-        (Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::from(6))]),),
-    )
-    .await
-    .unwrap();
-    assert!(result);
-
-    let result = execute::<_, Uint>(
-        &mut runner,
-        "MerklePatriciaTest",
-        "nibbleLen",
-        (Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::from(3))]),),
-    )
-    .await
-    .unwrap()
-    .as_u32();
-    assert_eq!(result, 3);
-
-    for i in 0..3 {
-        let result = execute::<_, Uint>(
-            &mut runner,
-            "MerklePatriciaTest",
-            "nibbleAt",
-            (
-                Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::from(3))]),
-                Token::Uint(Uint::from(i)),
-            ),
+    let result = contract
+        .call::<_, Uint>(
+            "nibbleLen",
+            (Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::zero())]),),
         )
         .await
         .unwrap()
-        .as_usize();
+        .as_u32();
+
+    assert_eq!(result, 6);
+
+    let result = contract
+        .call::<_, bool>(
+            "isNibbleEmpty",
+            (Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::zero())]),),
+        )
+        .await
+        .unwrap();
+
+    assert!(!result);
+
+    let result = contract
+        .call::<_, bool>(
+            "isNibbleEmpty",
+            (Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::from(6))]),),
+        )
+        .await
+        .unwrap();
+    assert!(result);
+
+    let result = contract
+        .call::<_, Uint>(
+            "nibbleLen",
+            (Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::from(3))]),),
+        )
+        .await
+        .unwrap()
+        .as_u32();
+    assert_eq!(result, 3);
+
+    for i in 0..3 {
+        let result = contract
+            .call::<_, Uint>(
+                "nibbleAt",
+                (
+                    Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::from(3))]),
+                    Token::Uint(Uint::from(i)),
+                ),
+            )
+            .await
+            .unwrap()
+            .as_usize();
         assert_eq!(result, i + 3);
     }
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_nibble_slice_ops_mid() {
-    let mut runner = runner();
-    let nibble = execute::<_, Token>(
-        &mut runner,
-        "MerklePatriciaTest",
-        "mid",
-        (
-            Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::zero())]),
-            Token::Uint(Uint::from(2)),
-        ),
-    )
-    .await
-    .unwrap();
-    for i in 0..4 {
-        let result = execute::<_, Uint>(
-            &mut runner,
-            "MerklePatriciaTest",
-            "nibbleAt",
-            (nibble.clone(), Token::Uint(Uint::from(i))),
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerklePatriciaTest").await;
+    let nibble = contract
+        .call::<_, Token>(
+            "mid",
+            (
+                Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::zero())]),
+                Token::Uint(Uint::from(2)),
+            ),
         )
         .await
-        .unwrap()
-        .as_u32();
+        .unwrap();
+    for i in 0..4 {
+        let result = contract
+            .call::<_, Uint>("nibbleAt", (nibble.clone(), Token::Uint(Uint::from(i))))
+            .await
+            .unwrap()
+            .as_u32();
         assert_eq!(result, i as u32 + 2);
     }
 
-    let nibble = execute::<_, Token>(
-        &mut runner,
-        "MerklePatriciaTest",
-        "mid",
-        (
-            Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::zero())]),
-            Token::Uint(Uint::from(3)),
-        ),
-    )
-    .await
-    .unwrap();
-
-    for i in 0..3 {
-        let result = execute::<_, Uint>(
-            &mut runner,
-            "MerklePatriciaTest",
-            "nibbleAt",
-            (nibble.clone(), Token::Uint(Uint::from(i))),
+    let nibble = contract
+        .call::<_, Token>(
+            "mid",
+            (
+                Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::zero())]),
+                Token::Uint(Uint::from(3)),
+            ),
         )
         .await
-        .unwrap()
-        .as_u32();
+        .unwrap();
+
+    for i in 0..3 {
+        let result = contract
+            .call::<_, Uint>("nibbleAt", (nibble.clone(), Token::Uint(Uint::from(i))))
+            .await
+            .unwrap()
+            .as_u32();
         assert_eq!(result, i as u32 + 3);
     }
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_nibble_slice_ops_shared() {
-    let mut runner = runner();
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerklePatriciaTest").await;
     let n = Token::Tuple(vec![Token::Bytes(D.to_vec()), Token::Uint(Uint::zero())]);
 
     let other = &[0x01u8, 0x23, 0x01, 0x23, 0x45, 0x67];
     let m = Token::Tuple(vec![Token::Bytes(other.to_vec()), Token::Uint(Uint::zero())]);
 
-    let result = execute::<_, Uint>(
-        &mut runner,
-        "MerklePatriciaTest",
-        "commonPrefix",
-        (n.clone(), m.clone()),
-    )
-    .await
-    .unwrap();
+    let result = contract.call::<_, Uint>("commonPrefix", (n.clone(), m.clone())).await.unwrap();
     assert_eq!(result, Uint::from(4));
 
-    let result = execute::<_, Uint>(
-        &mut runner,
-        "MerklePatriciaTest",
-        "commonPrefix",
-        (m.clone(), n.clone()),
-    )
-    .await
-    .unwrap();
+    let result = contract.call::<_, Uint>("commonPrefix", (m.clone(), n.clone())).await.unwrap();
     assert_eq!(result, Uint::from(4));
 
-    let m_mid_4 = execute::<_, Token>(
-        &mut runner,
-        "MerklePatriciaTest",
-        "mid",
-        (m.clone(), Token::Uint(Uint::from(4))),
-    )
-    .await
-    .unwrap();
+    let m_mid_4 = contract
+        .call::<_, Token>("mid", (m.clone(), Token::Uint(Uint::from(4))))
+        .await
+        .unwrap();
 
-    let result = execute::<_, bool>(
-        &mut runner,
-        "MerklePatriciaTest",
-        "startsWith",
-        (m_mid_4.clone(), n.clone()),
-    )
-    .await
-    .unwrap();
+    let result = contract
+        .call::<_, bool>("startsWith", (m_mid_4.clone(), n.clone()))
+        .await
+        .unwrap();
 
     assert!(result);
 
-    let result = execute::<_, bool>(
-        &mut runner,
-        "MerklePatriciaTest",
-        "startsWith",
-        (n.clone(), m_mid_4.clone()),
-    )
-    .await
-    .unwrap();
+    let result = contract
+        .call::<_, bool>("startsWith", (n.clone(), m_mid_4.clone()))
+        .await
+        .unwrap();
 
     assert!(!result);
 
-    let result = execute::<_, Uint>(
-        &mut runner,
-        "MerklePatriciaTest",
-        "commonPrefix",
-        (n.clone(), m_mid_4.clone()),
-    )
-    .await
-    .unwrap();
+    let result = contract
+        .call::<_, Uint>("commonPrefix", (n.clone(), m_mid_4.clone()))
+        .await
+        .unwrap();
 
     assert_eq!(result, Uint::from(6));
 
-    let n_mid_1 = execute::<_, Token>(
-        &mut runner,
-        "MerklePatriciaTest",
-        "mid",
-        (n.clone(), Token::Uint(Uint::from(1))),
-    )
-    .await
-    .unwrap();
+    let n_mid_1 = contract
+        .call::<_, Token>("mid", (n.clone(), Token::Uint(Uint::from(1))))
+        .await
+        .unwrap();
 
-    let m_mid_1 = execute::<_, Token>(
-        &mut runner,
-        "MerklePatriciaTest",
-        "mid",
-        (m.clone(), Token::Uint(Uint::from(1))),
-    )
-    .await
-    .unwrap();
+    let m_mid_1 = contract
+        .call::<_, Token>("mid", (m.clone(), Token::Uint(Uint::from(1))))
+        .await
+        .unwrap();
 
-    let m_mid_2 = execute::<_, Token>(
-        &mut runner,
-        "MerklePatriciaTest",
-        "mid",
-        (m.clone(), Token::Uint(Uint::from(2))),
-    )
-    .await
-    .unwrap();
+    let m_mid_2 = contract
+        .call::<_, Token>("mid", (m.clone(), Token::Uint(Uint::from(2))))
+        .await
+        .unwrap();
 
-    let result = execute::<_, Uint>(
-        &mut runner,
-        "MerklePatriciaTest",
-        "commonPrefix",
-        (n_mid_1.clone(), m_mid_1.clone()),
-    )
-    .await
-    .unwrap();
+    let result = contract
+        .call::<_, Uint>("commonPrefix", (n_mid_1.clone(), m_mid_1.clone()))
+        .await
+        .unwrap();
 
     assert_eq!(result, Uint::from(3));
 
-    let result = execute::<_, Uint>(
-        &mut runner,
-        "MerklePatriciaTest",
-        "commonPrefix",
-        (n_mid_1.clone(), m_mid_2.clone()),
-    )
-    .await
-    .unwrap();
+    let result = contract
+        .call::<_, Uint>("commonPrefix", (n_mid_1.clone(), m_mid_2.clone()))
+        .await
+        .unwrap();
 
     assert_eq!(result, Uint::from(0));
 }
@@ -383,20 +312,21 @@ async fn test_nibble_slice_ops_shared() {
 async fn test_merkle_patricia_trie() {
     let (root, proof, key) = proof_data();
 
-    let mut runner = runner();
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerklePatriciaTest").await;
 
-    let result = execute::<_, Vec<(Vec<u8>, Vec<u8>)>>(
-        &mut runner,
-        "MerklePatriciaTest",
-        "VerifyKeys",
-        (
-            Token::FixedBytes(root.to_vec()),
-            Token::Array(proof.clone().into_iter().map(Token::Bytes).collect()),
-            Token::Array(vec![Token::Bytes(key.to_vec())]),
-        ),
-    )
-    .await
-    .unwrap();
+    let result = contract
+        .call::<_, Vec<(Vec<u8>, Vec<u8>)>>(
+            "VerifyKeys",
+            (
+                Token::FixedBytes(root.to_vec()),
+                Token::Array(proof.clone().into_iter().map(Token::Bytes).collect()),
+                Token::Array(vec![Token::Bytes(key.to_vec())]),
+            ),
+        )
+        .await
+        .unwrap();
     dbg!(&result);
     let timestamp = <u64>::decode(&mut &result[0].1[..]).unwrap();
     assert_eq!(timestamp, 1_677_168_798_005)
@@ -461,48 +391,48 @@ fn generate_proof<L: TrieLayout>(
 async fn test_merkle_patricia_trie_layout_v0() {
     let (root, proof, entries) = generate_proof::<LayoutV0<KeccakHasher>>();
 
-    let mut runner = runner();
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerklePatriciaTest").await;
 
     for (key, value) in entries {
-        let result = execute::<_, Vec<(Vec<u8>, Vec<u8>)>>(
-            &mut runner,
-            "MerklePatriciaTest",
-            "VerifyKeys",
-            (
-                Token::FixedBytes(root.as_bytes().to_vec()),
-                Token::Array(proof.clone().into_iter().map(Token::Bytes).collect()),
-                Token::Array(vec![Token::Bytes(key.to_vec())]),
-            ),
-        )
-        .await
-        .unwrap();
+        let result = contract
+            .call::<_, Vec<(Vec<u8>, Vec<u8>)>>(
+                "VerifyKeys",
+                (
+                    Token::FixedBytes(root.as_bytes().to_vec()),
+                    Token::Array(proof.clone().into_iter().map(Token::Bytes).collect()),
+                    Token::Array(vec![Token::Bytes(key.to_vec())]),
+                ),
+            )
+            .await
+            .unwrap();
         assert_eq!(result[0].1, value.unwrap());
     }
 
     // non-membership proof
-    let result = execute::<_, Vec<(Vec<u8>, Vec<u8>)>>(
-        &mut runner,
-        "MerklePatriciaTest",
-        "VerifyKeys",
-        (
-            Token::FixedBytes(root.as_bytes().to_vec()),
-            Token::Array(proof.clone().into_iter().map(Token::Bytes).collect()),
-            Token::Array(vec![Token::Bytes(H256::random().as_bytes().to_vec())]),
-        ),
-    )
-    .await
-    .unwrap();
+    let result = contract
+        .call::<_, Vec<(Vec<u8>, Vec<u8>)>>(
+            "VerifyKeys",
+            (
+                Token::FixedBytes(root.as_bytes().to_vec()),
+                Token::Array(proof.clone().into_iter().map(Token::Bytes).collect()),
+                Token::Array(vec![Token::Bytes(H256::random().as_bytes().to_vec())]),
+            ),
+        )
+        .await
+        .unwrap();
 
     assert_eq!(result[0].1.len(), 0);
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_merkle_patricia_trie_ethereum_verify_transaction_trie_single_node() {
-    let mut runner = runner();
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerklePatriciaTest").await;
 
-    let result = execute::<_, Vec<(Vec<u8>, Vec<u8>)>>(
-        &mut runner,
-        "MerklePatriciaTest",
+    let result = contract.call::<_, Vec<(Vec<u8>, Vec<u8>)>>(
         "VerifyEthereum",
         (Token::FixedBytes(hex!("ecabc214ab6c55e1342e888fa677e2bcc29218a4b248a56fcebf7aa357807b60").to_vec()),
         Token::Array(vec![
@@ -516,11 +446,11 @@ async fn test_merkle_patricia_trie_ethereum_verify_transaction_trie_single_node(
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_merkle_patricia_trie_ethereum_verify_transaction_trie_multi_node() {
-    let mut runner = runner();
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerklePatriciaTest").await;
 
-    let result = execute::<_, Vec<(Vec<u8>, Vec<u8>)>>(
-        &mut runner,
-        "MerklePatriciaTest",
+    let result = contract.call::<_, Vec<(Vec<u8>, Vec<u8>)>>(
         "VerifyEthereum",
         (Token::FixedBytes(hex!("ac39df3a470f95659f9f6f30c4de252479ddd4e6083ba7a7be72d2505b4062e2").to_vec()),
         Token::Array(vec![
@@ -540,11 +470,11 @@ async fn test_merkle_patricia_trie_ethereum_verify_transaction_trie_multi_node()
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_merkle_patricia_trie_ethereum_verify_state_trie_single_node() {
-    let mut runner = runner();
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerklePatriciaTest").await;
 
-    let result = execute::<_, Vec<(Vec<u8>, Vec<u8>)>>(
-        &mut runner,
-        "MerklePatriciaTest",
+    let result = contract.call::<_, Vec<(Vec<u8>, Vec<u8>)>>(
         "VerifyEthereum",
         (Token::FixedBytes(hex!("0ce23f3c809de377b008a4a3ee94a0834aac8bec1f86e28ffe4fdb5a15b0c785").to_vec()),
         Token::Array(vec![
@@ -558,11 +488,11 @@ async fn test_merkle_patricia_trie_ethereum_verify_state_trie_single_node() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_merkle_patricia_trie_ethereum_verify_state_trie_multi_node() {
-    let mut runner = runner();
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerklePatriciaTest").await;
 
-    let result = execute::<_, Vec<(Vec<u8>, Vec<u8>)>>(
-        &mut runner,
-        "MerklePatriciaTest",
+    let result = contract.call::<_, Vec<(Vec<u8>, Vec<u8>)>>(
         "VerifyEthereum",
         (Token::FixedBytes(hex!("4dc3e58e944d713c36c6b9cc58df023b3e578093de16e175faefa8f91727ca6e").to_vec()),
         Token::Array(vec![
@@ -579,11 +509,11 @@ async fn test_merkle_patricia_trie_ethereum_verify_state_trie_multi_node() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_merkle_patricia_trie_ethereum_verify_receipt_trie_single_node() {
-    let mut runner = runner();
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerklePatriciaTest").await;
 
-    let result = execute::<_, Vec<(Vec<u8>, Vec<u8>)>>(
-        &mut runner,
-        "MerklePatriciaTest",
+    let result = contract.call::<_, Vec<(Vec<u8>, Vec<u8>)>>(
         "VerifyEthereum",
         (Token::FixedBytes(hex!("fe815f93891907b401edd491a8601cb732dabe909f0bf74aace83d997e02918f").to_vec()),
         Token::Array(vec![
@@ -597,11 +527,11 @@ async fn test_merkle_patricia_trie_ethereum_verify_receipt_trie_single_node() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_merkle_patricia_trie_ethereum_verify_receipt_trie_multi_node() {
-    let mut runner = runner();
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerklePatriciaTest").await;
 
-    let result = execute::<_, Vec<(Vec<u8>, Vec<u8>)>>(
-        &mut runner,
-        "MerklePatriciaTest",
+    let result = contract.call::<_, Vec<(Vec<u8>, Vec<u8>)>>(
         "VerifyEthereum",
         (Token::FixedBytes(hex!("f541c53ea23ba46707824e91aa5542d84eebefb3d52fc93f1716d60add548737").to_vec()),
         Token::Array(vec![
@@ -617,42 +547,45 @@ async fn test_merkle_patricia_trie_ethereum_verify_receipt_trie_multi_node() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_merkle_patricia_trie_ethereum_verify_storage_trie_single_node() {
-    let mut runner = runner();
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerklePatriciaTest").await;
 
-    let result = execute::<_, Vec<(Vec<u8>, Vec<u8>)>>(
-        &mut runner,
-        "MerklePatriciaTest",
-        "VerifyEthereum",
-        (
-            Token::FixedBytes(
-                hex!("b9d1a401293d84978870a16d07fb2687c2fe446f94302b9b89d1fdfcc17f720e").to_vec(),
-            ),
-            Token::Array(
-                vec![hex!(
+    let result = contract
+        .call::<_, Vec<(Vec<u8>, Vec<u8>)>>(
+            "VerifyEthereum",
+            (
+                Token::FixedBytes(
+                    hex!("b9d1a401293d84978870a16d07fb2687c2fe446f94302b9b89d1fdfcc17f720e")
+                        .to_vec(),
+                ),
+                Token::Array(
+                    vec![hex!(
                     "e4a120290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e5638180"
                 )
-                .to_vec()]
-                .into_iter()
-                .map(Token::Bytes)
-                .collect(),
+                    .to_vec()]
+                    .into_iter()
+                    .map(Token::Bytes)
+                    .collect(),
+                ),
+                Token::Array(vec![Token::Bytes(
+                    hex!("290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563")
+                        .to_vec(),
+                )]),
             ),
-            Token::Array(vec![Token::Bytes(
-                hex!("290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563").to_vec(),
-            )]),
-        ),
-    )
-    .await
-    .unwrap();
+        )
+        .await
+        .unwrap();
     assert_eq!(result[0].1, hex!("80").to_vec());
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_merkle_patricia_trie_ethereum_verify_storage_trie_multi_node() {
-    let mut runner = runner();
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerklePatriciaTest").await;
 
-    let result = execute::<_, Vec<(Vec<u8>, Vec<u8>)>>(
-        &mut runner,
-        "MerklePatriciaTest",
+    let result = contract.call::<_, Vec<(Vec<u8>, Vec<u8>)>>(
         "VerifyEthereum",
         (Token::FixedBytes(hex!("ffb7f68eaf1ef5b5aa838621a8ae0f2317992672da7d572236895557be62dead").to_vec()),
         Token::Array(vec![
@@ -682,20 +615,21 @@ async fn test_merkle_patricia_trie_ethereum_verify_storage_trie() {
         hex!("f86d9d3c3738deb88e49108e7a5bd83c14ad65b5ba598e2932551dc9b9ad1879b84df84b10874ef05b2fe9d8c8a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470").to_vec(),
     ];
     let root = hex!("024c056bc5db60d71c7908c5fad6050646bd70fd772ff222702d577e2af2e56b").to_vec();
-    let mut runner = runner();
+    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
+    let mut runner = Runner::new(PathBuf::from(&base_dir));
+    let mut contract = runner.deploy("MerklePatriciaTest").await;
 
-    let result = execute::<_, Vec<(Vec<u8>, Vec<u8>)>>(
-        &mut runner,
-        "MerklePatriciaTest",
-        "VerifyEthereum",
-        (
-            Token::FixedBytes(root),
-            Token::Array(proof.into_iter().map(Token::Bytes).collect()),
-            Token::Array(vec![Token::Bytes(key)]),
-        ),
-    )
-    .await
-    .unwrap();
+    let result = contract
+        .call::<_, Vec<(Vec<u8>, Vec<u8>)>>(
+            "VerifyEthereum",
+            (
+                Token::FixedBytes(root),
+                Token::Array(proof.into_iter().map(Token::Bytes).collect()),
+                Token::Array(vec![Token::Bytes(key)]),
+            ),
+        )
+        .await
+        .unwrap();
     assert_eq!(
         result[0].1,
         hex!("f84b10874ef05b2fe9d8c8a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470").to_vec()

@@ -1,0 +1,34 @@
+[package]
+name = "solidity-merkle-trees-test"
+version = "0.1.0"
+edition = "2021"
+description = "Integration tests for solidity-merkle-trees"
+authors = ["Polytope Labs <hello@polytope.technology>"]
+
+[dependencies]
+once_cell = "1.17.0"
+hex-literal = "0.4.1"
+hex = "0.4.3"
+trie-db = "0.28.0"
+sp-trie = "29.0.0"
+sp-core = "28.0.0"
+
+tokio = { version = "1.17.0", features = ["macros", "rt-multi-thread"] }
+primitive-types = "0.12.1"
+codec = { package = "parity-scale-codec", version = "3.4.0" }
+libfuzzer-sys = "0.4.6"
+proptest = "1.2.0"
+rand = "0.8.5"
+sp-runtime = "31.0.1"
+binary-merkle-tree = "13.0.0"
+
+ethers = { git = "https://github.com/gakonst/ethers-rs", rev = "594627dc1c3b490ba8f513f8f5e23d11448cbcf8", features = ["ethers-solc"] }
+
+forge-testsuite = { git = "https://github.com/polytope-labs/forge-testsuite", rev = "ffd80776b9fe743f162108b02742267aff02a60a" }
+ckb-merkle-mountain-range = { git = "https://github.com/polytope-labs/merkle-mountain-range", branch = "seun/simplified-mmr" }
+patricia-merkle-trie = { package = "ethereum-trie", git = "https://github.com/polytope-labs/ethereum-trie", branch = "main" }
+rs_merkle = { git = "https://github.com/polytope-labs/rs-merkle", branch = "seun/2d-merkle-proofs" }
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = [".", "fuzz"]

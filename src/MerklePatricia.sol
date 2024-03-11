@@ -1,4 +1,5 @@
-pragma solidity ^0.8.17;
+pragma solidity 0.8.17;
+
 
 import "./trie/Node.sol";
 import "./trie/Option.sol";
@@ -25,10 +26,6 @@ struct StorageValue {
  * @dev refer to research for more info. https://research.polytope.technology/state-(machine)-proofs
  */
 library MerklePatricia {
-    /// @notice libraries in solidity can only have constant variables
-    /// @dev MAX_TRIE_DEPTH, we don't explore deeply nested trie keys.
-    uint256 internal constant MAX_TRIE_DEPTH = 50;
-
     /**
      * @notice Verifies substrate specific merkle patricia proofs.
      * @param root hash of the merkle patricia trie
@@ -53,8 +50,10 @@ library MerklePatricia {
             NibbleSlice memory keyNibbles = NibbleSlice(keys[i], 0);
             NodeKind memory node = SubstrateTrieDB.decodeNodeKind(TrieDB.get(nodes, root));
 
-            // worst case scenario, so we avoid unbounded loops
-            for (uint256 j = 0; j < MAX_TRIE_DEPTH; j++) {
+            // This loop is unbounded so that an adversary cannot insert a deeply nested key in the trie
+            // and successfully convince us of it's non-existence, if we consume the block gas limit while
+            // traversing the trie, then the transaction should revert.
+            for (uint256 j = 1; j > 0; j++) {
                 NodeHandle memory nextNode;
 
                 if (TrieDB.isLeaf(node)) {
@@ -147,8 +146,10 @@ library MerklePatricia {
             NibbleSlice memory keyNibbles = NibbleSlice(keys[i], 0);
             NodeKind memory node = EthereumTrieDB.decodeNodeKind(TrieDB.get(nodes, root));
 
-            // worst case scenario, so we avoid unbounded loops
-            for (uint256 j = 0; j < MAX_TRIE_DEPTH; j++) {
+            // This loop is unbounded so that an adversary cannot insert a deeply nested key in the trie
+            // and successfully convince us of it's non-existence, if we consume the block gas limit while
+            // traversing the trie, then the transaction should revert.
+            for (uint256 j = 1; j > 0; j++) {
                 NodeHandle memory nextNode;
 
                 if (TrieDB.isLeaf(node)) {
