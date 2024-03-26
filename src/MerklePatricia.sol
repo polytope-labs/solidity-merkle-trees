@@ -166,8 +166,9 @@ library MerklePatricia {
                     Extension memory extension = EthereumTrieDB.decodeExtension(node);
                     if (NibbleSliceOps.startsWith(keyNibbles, extension.key)) {
                         // Let's cut the key passed as input
+                        uint256 cutNibble = keyNibbles.offset + NibbleSliceOps.len(extension.key);
                         keyNibbles = NibbleSlice(
-                            NibbleSliceOps.bytesSlice(keyNibbles.data, NibbleSliceOps.len(extension.key)), 0
+                            NibbleSliceOps.bytesSlice(keyNibbles.data, cutNibble / 2), cutNibble % 2
                         );
                         nextNode = extension.node;
                     } else {

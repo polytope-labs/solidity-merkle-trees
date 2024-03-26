@@ -63,8 +63,9 @@ library EthereumTrieDB {
         Extension memory extension;
         RLPReader.RLPItem[] memory decoded = node.data.data.toRlpItem().toList();
         bytes memory data = decoded[1].toBytes();
+        uint8 isOdd = uint8(decoded[0].toBytes()[0] >> 4) & 0x01;
         //Remove the first byte, which is the prefix and not present in the user provided key
-        extension.key = NibbleSlice(Bytes.substr(decoded[0].toBytes(), 1), 0);
+        extension.key = NibbleSlice(Bytes.substr(decoded[0].toBytes(), (isOdd + 1) % 2), isOdd);
         extension.node = NodeHandle(true, Bytes.toBytes32(data), false, new bytes(0));
         return extension;
     }
