@@ -7,7 +7,7 @@ edition = "2021"
 cargo-fuzz = true
 
 [dependencies]
-forge-testsuite = { git = "https://github.com/polytope-labs/forge-testsuite", rev = "ffd80776b9fe743f162108b02742267aff02a60a" }
+forge-testsuite = { git = "https://github.com/polytope-labs/forge-testsuite", rev = "9a4e82498e60b6c90c09be1685dfc80bca057fc2" }
 patricia-merkle-trie = { package = "ethereum-trie", git = "https://github.com/polytope-labs/ethereum-trie", branch = "main" }
 solidity-merkle-trees-test = { path = "../" }
 
@@ -15,10 +15,7 @@ trie-db = "0.24.0"
 sp-trie = "17.0.0"
 sp-core = "17.0.0"
 
-#  trie-db = "0.28.0"
-#  sp-trie = "29.0.0"
-#  sp-core = "28.0.0"
-
+tokio = { version = "1.17.0", features = ["macros", "rt-multi-thread"] }
 libfuzzer-sys = "0.4"
 
 [[bin]]

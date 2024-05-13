@@ -1,4 +1,4 @@
-#![allow(unused_parens)]
+#![allow(unused_parens, dead_code)]
 
 pub mod merkle_mountain_range;
 pub mod merkle_multi_proof;
