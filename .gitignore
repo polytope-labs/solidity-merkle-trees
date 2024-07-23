@@ -19,3 +19,4 @@ corpus/
 .idea/
 
 integration-tests/proptest-regressions/
+node_modules
