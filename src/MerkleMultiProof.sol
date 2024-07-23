@@ -2,14 +2,7 @@
 pragma solidity 0.8.17;
 
 import "openzeppelin/utils/math/Math.sol";
-
-/// @title A representation of a Merkle tree node
-struct Node {
-    // Distance of the node to the leftmost node
-    uint256 k_index;
-    // A hash of the node itself
-    bytes32 node;
-}
+import "./Types.sol";
 
 /**
  * @title A Merkle Multi proof library

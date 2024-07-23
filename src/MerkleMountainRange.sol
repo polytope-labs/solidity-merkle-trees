@@ -1,23 +1,9 @@
 // SPDX-License-Identifier: Apache2
 pragma solidity 0.8.17;
 
-import "./MerkleMultiProof.sol";
 import "openzeppelin/utils/math/Math.sol";
-
-/// @title A representation of a MerkleMountainRange leaf
-struct MmrLeaf {
-    // the leftmost index of a node
-    uint256 k_index;
-    // The position in the tree
-    uint256 leaf_index;
-    // The hash of the position in the tree
-    bytes32 hash;
-}
-
-struct Iterator {
-    uint256 offset;
-    bytes32[] data;
-}
+import "./MerkleMultiProof.sol";
+import "./Types.sol";
 
 /**
  * @title A Merkle Mountain Range proof library

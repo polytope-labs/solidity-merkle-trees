@@ -8,16 +8,9 @@ import "./trie/TrieDB.sol";
 
 import "./trie/substrate/SubstrateTrieDB.sol";
 import "./trie/ethereum/EthereumTrieDB.sol";
+import "./Types.sol";
 
 // SPDX-License-Identifier: Apache2
-
-// Outcome of a successfully verified merkle-patricia proof
-struct StorageValue {
-    // the storage key
-    bytes key;
-    // the encoded value
-    bytes value;
-}
 
 /**
  * @title A Merkle Patricia library
