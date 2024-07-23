@@ -31,6 +31,7 @@ jobs:
 
       - name: Run Forge build
         run: |
+          yarn
           forge --version
           forge build --sizes
         id: build
@@ -42,6 +43,7 @@ jobs:
 
       - name: cargo test
         run: |
+          yarn
           forge build
           git submodule update --init --recursive
           cd ./integration-tests
