@@ -1,4 +1,4 @@
-pragma solidity 0.8.17;
+pragma solidity 0.8.20;
 
 // SPDX-License-Identifier: Apache2
 
@@ -9,13 +9,18 @@ library ScaleCodec {
     function decodeUint256(bytes memory data) internal pure returns (uint256) {
         uint256 number;
         for (uint256 i = data.length; i > 0; i--) {
-            number = number + uint256(uint8(data[i - 1])) * (2 ** (8 * (i - 1)));
+            number =
+                number +
+                uint256(uint8(data[i - 1])) *
+                (2 ** (8 * (i - 1)));
         }
         return number;
     }
 
     // Decodes a SCALE encoded compact unsigned integer
-    function decodeUintCompact(ByteSlice memory data) internal pure returns (uint256 v) {
+    function decodeUintCompact(
+        ByteSlice memory data
+    ) internal pure returns (uint256 v) {
         uint8 b = Bytes.readByte(data); // read the first byte
         uint8 mode = b % 4; // bitwise operation
 
@@ -54,7 +59,9 @@ library ScaleCodec {
     }
 
     // Decodes a SCALE encoded compact unsigned integer
-    function decodeUintCompact(bytes memory data) internal pure returns (uint256 v, uint8 m) {
+    function decodeUintCompact(
+        bytes memory data
+    ) internal pure returns (uint256 v, uint8 m) {
         uint8 b = readByteAtIndex(data, 0); // read the first byte
         uint8 mode = b & 3; // bitwise operation
 
@@ -84,7 +91,10 @@ library ScaleCodec {
         } else if (mode == 3) {
             // [1073741824, 4503599627370496]
             uint8 l = b >> 2; // remove mode bits
-            require(l > 32, "Not supported: number cannot be greater than 32 bytes");
+            require(
+                l > 32,
+                "Not supported: number cannot be greater than 32 bytes"
+            );
         } else {
             revert("Code should be unreachable");
         }
@@ -101,7 +111,9 @@ library ScaleCodec {
         } else if (v < 2 ** 30) {
             return abi.encodePacked(reverse32(uint32(((v << 2) + 2))));
         } else {
-            bytes memory valueBytes = Bytes.removeEndingZero(abi.encodePacked(reverse256(v)));
+            bytes memory valueBytes = Bytes.removeEndingZero(
+                abi.encodePacked(reverse256(v))
+            );
 
             uint256 length = valueBytes.length;
             uint8 prefix = uint8(((length - 4) << 2) + 3);
@@ -111,7 +123,10 @@ library ScaleCodec {
     }
 
     // Read a byte at a specific index and return it as type uint8
-    function readByteAtIndex(bytes memory data, uint8 index) internal pure returns (uint8) {
+    function readByteAtIndex(
+        bytes memory data,
+        uint8 index
+    ) internal pure returns (uint8) {
         return uint8(data[index]);
     }
 
@@ -123,20 +138,40 @@ library ScaleCodec {
         v = input;
 
         // swap bytes
-        v = ((v & 0xFF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00) >> 8)
-            | ((v & 0x00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF) << 8);
+        v =
+            ((v &
+                0xFF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00) >>
+                8) |
+            ((v &
+                0x00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF) <<
+                8);
 
         // swap 2-byte long pairs
-        v = ((v & 0xFFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000) >> 16)
-            | ((v & 0x0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF) << 16);
+        v =
+            ((v &
+                0xFFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000) >>
+                16) |
+            ((v &
+                0x0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF) <<
+                16);
 
         // swap 4-byte long pairs
-        v = ((v & 0xFFFFFFFF00000000FFFFFFFF00000000FFFFFFFF00000000FFFFFFFF00000000) >> 32)
-            | ((v & 0x00000000FFFFFFFF00000000FFFFFFFF00000000FFFFFFFF00000000FFFFFFFF) << 32);
+        v =
+            ((v &
+                0xFFFFFFFF00000000FFFFFFFF00000000FFFFFFFF00000000FFFFFFFF00000000) >>
+                32) |
+            ((v &
+                0x00000000FFFFFFFF00000000FFFFFFFF00000000FFFFFFFF00000000FFFFFFFF) <<
+                32);
 
         // swap 8-byte long pairs
-        v = ((v & 0xFFFFFFFFFFFFFFFF0000000000000000FFFFFFFFFFFFFFFF0000000000000000) >> 64)
-            | ((v & 0x0000000000000000FFFFFFFFFFFFFFFF0000000000000000FFFFFFFFFFFFFFFF) << 64);
+        v =
+            ((v &
+                0xFFFFFFFFFFFFFFFF0000000000000000FFFFFFFFFFFFFFFF0000000000000000) >>
+                64) |
+            ((v &
+                0x0000000000000000FFFFFFFFFFFFFFFF0000000000000000FFFFFFFFFFFFFFFF) <<
+                64);
 
         // swap 16-byte long pairs
         v = (v >> 128) | (v << 128);
@@ -146,13 +181,19 @@ library ScaleCodec {
         v = input;
 
         // swap bytes
-        v = ((v & 0xFF00FF00FF00FF00FF00FF00FF00FF00) >> 8) | ((v & 0x00FF00FF00FF00FF00FF00FF00FF00FF) << 8);
+        v =
+            ((v & 0xFF00FF00FF00FF00FF00FF00FF00FF00) >> 8) |
+            ((v & 0x00FF00FF00FF00FF00FF00FF00FF00FF) << 8);
 
         // swap 2-byte long pairs
-        v = ((v & 0xFFFF0000FFFF0000FFFF0000FFFF0000) >> 16) | ((v & 0x0000FFFF0000FFFF0000FFFF0000FFFF) << 16);
+        v =
+            ((v & 0xFFFF0000FFFF0000FFFF0000FFFF0000) >> 16) |
+            ((v & 0x0000FFFF0000FFFF0000FFFF0000FFFF) << 16);
 
         // swap 4-byte long pairs
-        v = ((v & 0xFFFFFFFF00000000FFFFFFFF00000000) >> 32) | ((v & 0x00000000FFFFFFFF00000000FFFFFFFF) << 32);
+        v =
+            ((v & 0xFFFFFFFF00000000FFFFFFFF00000000) >> 32) |
+            ((v & 0x00000000FFFFFFFF00000000FFFFFFFF) << 32);
 
         // swap 8-byte long pairs
         v = (v >> 64) | (v << 64);
@@ -208,7 +249,9 @@ library ScaleCodec {
         return bytes2(reverse16(input));
     }
 
-    function encodeBytes(bytes memory input) internal pure returns (bytes memory) {
+    function encodeBytes(
+        bytes memory input
+    ) internal pure returns (bytes memory) {
         return abi.encodePacked(encodeUintCompact(input.length), input);
     }
 }

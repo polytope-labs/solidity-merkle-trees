@@ -1,4 +1,4 @@
-pragma solidity 0.8.17;
+pragma solidity 0.8.20;
 
 // SPDX-License-Identifier: Apache2
 
@@ -15,7 +15,10 @@ library NibbleSliceOps {
         return nibble.data.length * NIBBLE_PER_BYTE - nibble.offset;
     }
 
-    function mid(NibbleSlice memory self, uint256 i) internal pure returns (NibbleSlice memory) {
+    function mid(
+        NibbleSlice memory self,
+        uint256 i
+    ) internal pure returns (NibbleSlice memory) {
         return NibbleSlice(self.data, self.offset + i);
     }
 
@@ -23,22 +26,34 @@ library NibbleSliceOps {
         return len(self) == 0;
     }
 
-    function eq(NibbleSlice memory self, NibbleSlice memory other) internal pure returns (bool) {
+    function eq(
+        NibbleSlice memory self,
+        NibbleSlice memory other
+    ) internal pure returns (bool) {
         return len(self) == len(other) && startsWith(self, other);
     }
 
-    function at(NibbleSlice memory self, uint256 i) internal pure returns (uint256) {
+    function at(
+        NibbleSlice memory self,
+        uint256 i
+    ) internal pure returns (uint256) {
         uint256 ix = (self.offset + i) / NIBBLE_PER_BYTE;
         uint256 pad = (self.offset + i) % NIBBLE_PER_BYTE;
         uint8 data = uint8(self.data[ix]);
         return (pad == 1) ? data & 0x0F : data >> BITS_PER_NIBBLE;
     }
 
-    function startsWith(NibbleSlice memory self, NibbleSlice memory other) internal pure returns (bool) {
+    function startsWith(
+        NibbleSlice memory self,
+        NibbleSlice memory other
+    ) internal pure returns (bool) {
         return commonPrefix(self, other) == len(other);
     }
 
-    function commonPrefix(NibbleSlice memory self, NibbleSlice memory other) internal pure returns (uint256) {
+    function commonPrefix(
+        NibbleSlice memory self,
+        NibbleSlice memory other
+    ) internal pure returns (uint256) {
         uint256 self_align = self.offset % NIBBLE_PER_BYTE;
         uint256 other_align = other.offset % NIBBLE_PER_BYTE;
 
@@ -48,7 +63,10 @@ library NibbleSliceOps {
             uint256 first = 0;
 
             if (self_align != 0) {
-                if ((self.data[self_start] & 0x0F) != (other.data[other_start] & 0x0F)) {
+                if (
+                    (self.data[self_start] & 0x0F) !=
+                    (other.data[other_start] & 0x0F)
+                ) {
                     return 0;
                 }
                 ++self_start;
@@ -71,7 +89,10 @@ library NibbleSliceOps {
         }
     }
 
-    function biggestDepth(bytes memory a, bytes memory b) internal pure returns (uint256) {
+    function biggestDepth(
+        bytes memory a,
+        bytes memory b
+    ) internal pure returns (uint256) {
         uint256 upperBound = min(a.length, b.length);
         uint256 i = 0;
         while (i < upperBound) {
@@ -93,7 +114,10 @@ library NibbleSliceOps {
         }
     }
 
-    function bytesSlice(bytes memory _bytes, uint256 _start) internal pure returns (bytes memory) {
+    function bytesSlice(
+        bytes memory _bytes,
+        uint256 _start
+    ) internal pure returns (bytes memory) {
         uint256 bytesLength = _bytes.length;
         uint256 _length = bytesLength - _start;
         require(bytesLength >= _start, "slice_outOfBounds");
@@ -106,13 +130,26 @@ library NibbleSliceOps {
                 tempBytes := mload(0x40) // load free memory pointer
                 let lengthmod := and(_length, 31)
 
-                let mc := add(add(tempBytes, lengthmod), mul(0x20, iszero(lengthmod)))
+                let mc := add(
+                    add(tempBytes, lengthmod),
+                    mul(0x20, iszero(lengthmod))
+                )
                 let end := add(mc, _length)
 
-                for { let cc := add(add(add(_bytes, lengthmod), mul(0x20, iszero(lengthmod))), _start) } lt(mc, end) {
+                for {
+                    let cc := add(
+                        add(
+                            add(_bytes, lengthmod),
+                            mul(0x20, iszero(lengthmod))
+                        ),
+                        _start
+                    )
+                } lt(mc, end) {
                     mc := add(mc, 0x20)
                     cc := add(cc, 0x20)
-                } { mstore(mc, mload(cc)) }
+                } {
+                    mstore(mc, mload(cc))
+                }
 
                 mstore(tempBytes, _length)
 

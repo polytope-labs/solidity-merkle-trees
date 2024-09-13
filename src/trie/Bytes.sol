@@ -1,4 +1,4 @@
-pragma solidity 0.8.17;
+pragma solidity 0.8.20;
 
 // SPDX-License-Identifier: Apache2
 
@@ -17,7 +17,10 @@ library Bytes {
     // Equality means that:
     //  - 'self.length == other.length'
     //  - For 'n' in '[0, self.length)', 'self[n] == other[n]'
-    function equals(bytes memory self, bytes memory other) internal pure returns (bool equal) {
+    function equals(
+        bytes memory self,
+        bytes memory other
+    ) internal pure returns (bool equal) {
         if (self.length != other.length) {
             return false;
         }
@@ -46,7 +49,10 @@ library Bytes {
     // Requires that:
     //  - 'startIndex + len <= self.length'
     // The length of the substring is: 'len'
-    function read(ByteSlice memory self, uint256 len) internal pure returns (bytes memory) {
+    function read(
+        ByteSlice memory self,
+        uint256 len
+    ) internal pure returns (bytes memory) {
         require(self.offset + len <= self.data.length);
         if (len == 0) {
             return "";
@@ -61,7 +67,10 @@ library Bytes {
     // Returns the new copy.
     // Requires that 'startIndex <= self.length'
     // The length of the substring is: 'self.length - startIndex'
-    function substr(bytes memory self, uint256 startIndex) internal pure returns (bytes memory) {
+    function substr(
+        bytes memory self,
+        uint256 startIndex
+    ) internal pure returns (bytes memory) {
         require(startIndex <= self.length);
         uint256 len = self.length - startIndex;
         uint256 addr = Memory.dataPtr(self);
@@ -73,7 +82,11 @@ library Bytes {
     // Requires that:
     //  - 'startIndex + len <= self.length'
     // The length of the substring is: 'len'
-    function substr(bytes memory self, uint256 startIndex, uint256 len) internal pure returns (bytes memory) {
+    function substr(
+        bytes memory self,
+        uint256 startIndex,
+        uint256 len
+    ) internal pure returns (bytes memory) {
         require(startIndex + len <= self.length);
         if (len == 0) {
             return "";
@@ -86,7 +99,10 @@ library Bytes {
     // Returns the concatenated arrays:
     //  [self[0], self[1], ... , self[self.length - 1], other[0], other[1], ... , other[other.length - 1]]
     // The length of the new array is 'self.length + other.length'
-    function concat(bytes memory self, bytes memory other) internal pure returns (bytes memory) {
+    function concat(
+        bytes memory self,
+        bytes memory other
+    ) internal pure returns (bytes memory) {
         bytes memory ret = new bytes(self.length + other.length);
         uint256 src;
         uint256 srcLen;
@@ -95,7 +111,7 @@ library Bytes {
         uint256 src2Len;
         (src2, src2Len) = Memory.fromBytes(other);
         uint256 dest;
-        (dest,) = Memory.fromBytes(ret);
+        (dest, ) = Memory.fromBytes(ret);
         uint256 dest2 = dest + srcLen;
         Memory.copy(src, dest, srcLen);
         Memory.copy(src2, dest2, src2Len);
@@ -109,19 +125,28 @@ library Bytes {
         }
     }
 
-    function toBytes16(bytes memory self, uint256 offset) internal pure returns (bytes16 out) {
+    function toBytes16(
+        bytes memory self,
+        uint256 offset
+    ) internal pure returns (bytes16 out) {
         for (uint256 i = 0; i < 16; i++) {
             out |= bytes16(bytes1(self[offset + i]) & 0xFF) >> (i * 8);
         }
     }
 
-    function toBytes8(bytes memory self, uint256 offset) internal pure returns (bytes8 out) {
+    function toBytes8(
+        bytes memory self,
+        uint256 offset
+    ) internal pure returns (bytes8 out) {
         for (uint256 i = 0; i < 8; i++) {
             out |= bytes8(bytes1(self[offset + i]) & 0xFF) >> (i * 8);
         }
     }
 
-    function toBytes4(bytes memory self, uint256 offset) internal pure returns (bytes4) {
+    function toBytes4(
+        bytes memory self,
+        uint256 offset
+    ) internal pure returns (bytes4) {
         bytes4 out;
 
         for (uint256 i = 0; i < 4; i++) {
@@ -130,7 +155,10 @@ library Bytes {
         return out;
     }
 
-    function toBytes2(bytes memory self, uint256 offset) internal pure returns (bytes2) {
+    function toBytes2(
+        bytes memory self,
+        uint256 offset
+    ) internal pure returns (bytes2) {
         bytes2 out;
 
         for (uint256 i = 0; i < 2; i++) {
@@ -139,7 +167,9 @@ library Bytes {
         return out;
     }
 
-    function removeLeadingZero(bytes memory data) internal pure returns (bytes memory) {
+    function removeLeadingZero(
+        bytes memory data
+    ) internal pure returns (bytes memory) {
         uint256 length = data.length;
 
         uint256 startIndex = 0;
@@ -153,7 +183,9 @@ library Bytes {
         return substr(data, startIndex);
     }
 
-    function removeEndingZero(bytes memory data) internal pure returns (bytes memory) {
+    function removeEndingZero(
+        bytes memory data
+    ) internal pure returns (bytes memory) {
         uint256 length = data.length;
 
         uint256 endIndex = 0;
@@ -167,7 +199,9 @@ library Bytes {
         return substr(data, 0, endIndex + 1);
     }
 
-    function reverse(bytes memory inbytes) internal pure returns (bytes memory) {
+    function reverse(
+        bytes memory inbytes
+    ) internal pure returns (bytes memory) {
         uint256 inlength = inbytes.length;
         bytes memory outbytes = new bytes(inlength);
 

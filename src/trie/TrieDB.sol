@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: Apache2
-pragma solidity 0.8.17;
+pragma solidity 0.8.20;
 
 import "./Node.sol";
 
 library TrieDB {
-    function get(TrieNode[] memory nodes, bytes32 hash) internal pure returns (bytes memory) {
+    function get(
+        TrieNode[] memory nodes,
+        bytes32 hash
+    ) internal pure returns (bytes memory) {
         for (uint256 i = 0; i < nodes.length; i++) {
             if (nodes[i].hash == hash) {
                 return nodes[i].node;
@@ -13,7 +16,10 @@ library TrieDB {
         revert("Incomplete Proof!");
     }
 
-    function load(TrieNode[] memory nodes, NodeHandle memory node) internal pure returns (bytes memory) {
+    function load(
+        TrieNode[] memory nodes,
+        NodeHandle memory node
+    ) internal pure returns (bytes memory) {
         if (node.isInline) {
             return node.inLine;
         } else if (node.isHash) {
@@ -23,8 +29,12 @@ library TrieDB {
         return bytes("");
     }
 
-    function isNibbledBranch(NodeKind memory node) internal pure returns (bool) {
-        return (node.isNibbledBranch || node.isNibbledHashedValueBranch || node.isNibbledValueBranch);
+    function isNibbledBranch(
+        NodeKind memory node
+    ) internal pure returns (bool) {
+        return (node.isNibbledBranch ||
+            node.isNibbledHashedValueBranch ||
+            node.isNibbledValueBranch);
     }
 
     function isExtension(NodeKind memory node) internal pure returns (bool) {
