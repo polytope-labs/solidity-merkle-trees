@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: Apache2
 pragma solidity 0.8.17;
 
-import "openzeppelin/utils/math/Math.sol";
-import "./MerkleMultiProof.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
+
 import "./Types.sol";
+import "./MerkleMultiProof.sol";
 
 /**
  * @title A Merkle Mountain Range proof library
@@ -18,11 +19,12 @@ library MerkleMountainRange {
     /// @param proof a list of nodes required for the proof to be verified
     /// @param leaves a list of mmr leaves to prove
     /// @return boolean if the calculated root matches the provided root node
-    function VerifyProof(bytes32 root, bytes32[] memory proof, MmrLeaf[] memory leaves, uint256 mmrSize)
-        internal
-        pure
-        returns (bool)
-    {
+    function VerifyProof(
+        bytes32 root,
+        bytes32[] memory proof,
+        MmrLeaf[] memory leaves,
+        uint256 mmrSize
+    ) internal pure returns (bool) {
         return root == CalculateRoot(proof, leaves, mmrSize);
     }
 
@@ -32,11 +34,11 @@ library MerkleMountainRange {
     /// @param leaves a list of mmr leaves to prove
     /// @param leafCount the size of the merkle tree
     /// @return bytes32 hash of the computed root node
-    function CalculateRoot(bytes32[] memory proof, MmrLeaf[] memory leaves, uint256 leafCount)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function CalculateRoot(
+        bytes32[] memory proof,
+        MmrLeaf[] memory leaves,
+        uint256 leafCount
+    ) internal pure returns (bytes32) {
         // special handle the only 1 leaf MMR
         if (leafCount == 1 && leaves.length == 1 && leaves[0].leaf_index == 0) {
             return leaves[0].hash;
@@ -48,13 +50,16 @@ library MerkleMountainRange {
         Iterator memory proofIter = Iterator(0, proof);
 
         uint256 current_subtree;
-        for (uint256 p; p < length;) {
+        for (uint256 p; p < length; ) {
             uint256 height = subtrees[p];
             current_subtree += 2 ** height;
 
             MmrLeaf[] memory subtreeLeaves = new MmrLeaf[](0);
             if (leaves.length > 0) {
-                (subtreeLeaves, leaves) = leavesForSubtree(leaves, current_subtree);
+                (subtreeLeaves, leaves) = leavesForSubtree(
+                    leaves,
+                    current_subtree
+                );
             }
 
             if (subtreeLeaves.length == 0) {
@@ -66,7 +71,10 @@ library MerkleMountainRange {
             } else if (subtreeLeaves.length == 1 && height == 0) {
                 push(peakRoots, subtreeLeaves[0].hash);
             } else {
-                push(peakRoots, CalculateSubtreeRoot(subtreeLeaves, proofIter, height));
+                push(
+                    peakRoots,
+                    CalculateSubtreeRoot(subtreeLeaves, proofIter, height)
+                );
             }
 
             unchecked {
@@ -84,18 +92,22 @@ library MerkleMountainRange {
             unchecked {
                 ++peakRoots.offset;
             }
-            peakRoots.data[peakRoots.offset] = keccak256(abi.encodePacked(right, left));
+            peakRoots.data[peakRoots.offset] = keccak256(
+                abi.encodePacked(right, left)
+            );
         }
 
         return peakRoots.data[0];
     }
 
-    function subtreeHeights(uint256 leavesLength) internal pure returns (uint256[] memory) {
+    function subtreeHeights(
+        uint256 leavesLength
+    ) internal pure returns (uint256[] memory) {
         uint256 maxSubtrees = 64;
         uint256[] memory indices = new uint256[](maxSubtrees);
         uint256 i;
         uint256 current = leavesLength;
-        for (; i < maxSubtrees;) {
+        for (; i < maxSubtrees; ) {
             if (current == 0) {
                 break;
             }
@@ -122,17 +134,17 @@ library MerkleMountainRange {
     /// @param proofIter   a list of node hashes to traverse to compute the peak root hash
     /// @param height    Height of the subtree
     /// @return peakRoot a tuple containing the peak root hash, and the peak root position in the merkle
-    function CalculateSubtreeRoot(MmrLeaf[] memory peakLeaves, Iterator memory proofIter, uint256 height)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function CalculateSubtreeRoot(
+        MmrLeaf[] memory peakLeaves,
+        Iterator memory proofIter,
+        uint256 height
+    ) internal pure returns (bytes32) {
         uint256[] memory current_layer;
         Node[] memory leaves;
         (leaves, current_layer) = mmrLeafToNode(peakLeaves);
 
         Node[][] memory layers = new Node[][](height);
-        for (uint256 i; i < height;) {
+        for (uint256 i; i < height; ) {
             uint256 nodelength = 2 ** (height - i);
             if (current_layer.length == nodelength) {
                 break;
@@ -143,7 +155,7 @@ library MerkleMountainRange {
 
             uint256 length = diff.length;
             layers[i] = new Node[](length);
-            for (uint256 j; j < length;) {
+            for (uint256 j; j < length; ) {
                 layers[i][j] = Node(diff[j], next(proofIter));
 
                 unchecked {
@@ -168,15 +180,18 @@ library MerkleMountainRange {
      * @param right a list of hashes to compare
      * @return uint256[] a new array with difference
      */
-    function difference(uint256[] memory left, uint256[] memory right) internal pure returns (uint256[] memory) {
+    function difference(
+        uint256[] memory left,
+        uint256[] memory right
+    ) internal pure returns (uint256[] memory) {
         uint256 length = left.length;
         uint256 rightLength = right.length;
 
         uint256[] memory diff = new uint256[](length);
         uint256 d;
-        for (uint256 i; i < length;) {
+        for (uint256 i; i < length; ) {
             bool found;
-            for (uint256 j; j < rightLength;) {
+            for (uint256 j; j < rightLength; ) {
                 if (left[i] == right[j]) {
                     found = true;
                     break;
@@ -212,11 +227,13 @@ library MerkleMountainRange {
      * @param indices a list of proof nodes indices
      * @return uint256[] a list of sibling indices
      */
-    function siblingIndices(uint256[] memory indices) internal pure returns (uint256[] memory) {
+    function siblingIndices(
+        uint256[] memory indices
+    ) internal pure returns (uint256[] memory) {
         uint256 length = indices.length;
         uint256[] memory siblings = new uint256[](length);
 
-        for (uint256 i; i < length;) {
+        for (uint256 i; i < length; ) {
             uint256 index = indices[i];
             if (index == 0) {
                 siblings[i] = index + 1;
@@ -240,7 +257,9 @@ library MerkleMountainRange {
      * @param indices a list of indices of proof nodes in a merkle mountain
      * @return uint256[] a list of parent indices for each index provided
      */
-    function parentIndices(uint256[] memory indices) internal pure returns (uint256[] memory) {
+    function parentIndices(
+        uint256[] memory indices
+    ) internal pure returns (uint256[] memory) {
         uint256 length = indices.length;
         uint256[] memory parents = new uint256[](length);
         uint256 k;
@@ -271,7 +290,9 @@ library MerkleMountainRange {
      * @param leaves list of merkle mountain range leaf
      * @return A tuple with the list of merkle nodes and the list of nodes at 0 and 1 respectively
      */
-    function mmrLeafToNode(MmrLeaf[] memory leaves) internal pure returns (Node[] memory, uint256[] memory) {
+    function mmrLeafToNode(
+        MmrLeaf[] memory leaves
+    ) internal pure returns (Node[] memory, uint256[] memory) {
         uint256 i;
         uint256 length = leaves.length;
         Node[] memory nodes = new Node[](length);
@@ -292,11 +313,10 @@ library MerkleMountainRange {
      * @param leafIndex the index of the leaf of the next subtree
      * @return A tuple of 2 arrays of mountain merkle leaves. Index 1 and 2 represent left and right of the peak respectively
      */
-    function leavesForSubtree(MmrLeaf[] memory leaves, uint256 leafIndex)
-        internal
-        pure
-        returns (MmrLeaf[] memory, MmrLeaf[] memory)
-    {
+    function leavesForSubtree(
+        MmrLeaf[] memory leaves,
+        uint256 leafIndex
+    ) internal pure returns (MmrLeaf[] memory, MmrLeaf[] memory) {
         uint256 p;
         uint256 length = leaves.length;
         for (; p < length; p++) {
@@ -342,7 +362,9 @@ library MerkleMountainRange {
         return data;
     }
 
-    function previous(Iterator memory iterator) internal pure returns (bytes32) {
+    function previous(
+        Iterator memory iterator
+    ) internal pure returns (bytes32) {
         bytes32 data = iterator.data[iterator.offset];
         unchecked {
             --iterator.offset;

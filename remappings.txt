@@ -1,1 +1,1 @@
-openzeppelin/=node_modules/openzeppelin-solidity/contracts/
+@openzeppelin/=lib/openzeppelin-contracts

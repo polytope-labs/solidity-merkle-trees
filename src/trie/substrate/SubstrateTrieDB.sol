@@ -5,7 +5,7 @@ import "../Bytes.sol";
 import {NibbleSliceOps} from "../NibbleSlice.sol";
 
 import {ScaleCodec} from "./ScaleCodec.sol";
-import "openzeppelin/utils/Strings.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 // SPDX-License-Identifier: Apache2
 
@@ -16,14 +16,18 @@ library SubstrateTrieDB {
     uint8 public constant LEAF_PREFIX_MASK = 0x01 << 6;
     uint8 public constant BRANCH_WITH_MASK = 0x03 << 6;
     uint8 public constant BRANCH_WITHOUT_MASK = 0x02 << 6;
-    uint8 public constant ALT_HASHING_LEAF_PREFIX_MASK = FIRST_PREFIX | (0x01 << 5);
-    uint8 public constant ALT_HASHING_BRANCH_WITH_MASK = FIRST_PREFIX | (0x01 << 4);
+    uint8 public constant ALT_HASHING_LEAF_PREFIX_MASK =
+        FIRST_PREFIX | (0x01 << 5);
+    uint8 public constant ALT_HASHING_BRANCH_WITH_MASK =
+        FIRST_PREFIX | (0x01 << 4);
     uint8 public constant NIBBLE_PER_BYTE = 2;
     uint256 public constant NIBBLE_SIZE_BOUND = uint256(type(uint16).max);
     uint256 public constant BITMAP_LENGTH = 2;
     uint256 public constant HASH_lENGTH = 32;
 
-    function decodeNodeKind(bytes memory encoded) internal pure returns (NodeKind memory) {
+    function decodeNodeKind(
+        bytes memory encoded
+    ) internal pure returns (NodeKind memory) {
         NodeKind memory node;
         ByteSlice memory input = ByteSlice(encoded, 0);
         uint8 i = Bytes.readByte(input);
@@ -61,7 +65,9 @@ library SubstrateTrieDB {
         return node;
     }
 
-    function decodeNibbledBranch(NodeKind memory node) internal pure returns (NibbledBranch memory) {
+    function decodeNibbledBranch(
+        NodeKind memory node
+    ) internal pure returns (NibbledBranch memory) {
         NibbledBranch memory nibbledBranch;
         ByteSlice memory input = node.data;
 
@@ -69,8 +75,13 @@ library SubstrateTrieDB {
         if (padding && (padLeft(uint8(input.data[input.offset])) != 0)) {
             revert("Bad Format!");
         }
-        uint256 nibbleLen = ((node.nibbleSize + (NibbleSliceOps.NIBBLE_PER_BYTE - 1)) / NibbleSliceOps.NIBBLE_PER_BYTE);
-        nibbledBranch.key = NibbleSlice(Bytes.read(input, nibbleLen), node.nibbleSize % NIBBLE_PER_BYTE);
+        uint256 nibbleLen = ((node.nibbleSize +
+            (NibbleSliceOps.NIBBLE_PER_BYTE - 1)) /
+            NibbleSliceOps.NIBBLE_PER_BYTE);
+        nibbledBranch.key = NibbleSlice(
+            Bytes.read(input, nibbleLen),
+            node.nibbleSize % NIBBLE_PER_BYTE
+        );
 
         bytes memory bitmapBytes = Bytes.read(input, BITMAP_LENGTH);
         uint16 bitmap = uint16(ScaleCodec.decodeUint256(bitmapBytes));
@@ -79,7 +90,9 @@ library SubstrateTrieDB {
         if (node.isNibbledHashedValueBranch) {
             valueHandle.isSome = true;
             valueHandle.value.isHash = true;
-            valueHandle.value.hash = Bytes.toBytes32(Bytes.read(input, HASH_lENGTH));
+            valueHandle.value.hash = Bytes.toBytes32(
+                Bytes.read(input, HASH_lENGTH)
+            );
         } else if (node.isNibbledValueBranch) {
             uint256 len = ScaleCodec.decodeUintCompact(input);
             valueHandle.isSome = true;
@@ -96,7 +109,9 @@ library SubstrateTrieDB {
                 //                revert(string.concat("node index: ", Strings.toString(len)));
                 if (len == HASH_lENGTH) {
                     childHandle.value.isHash = true;
-                    childHandle.value.hash = Bytes.toBytes32(Bytes.read(input, HASH_lENGTH));
+                    childHandle.value.hash = Bytes.toBytes32(
+                        Bytes.read(input, HASH_lENGTH)
+                    );
                 } else {
                     childHandle.value.isInline = true;
                     childHandle.value.inLine = Bytes.read(input, len);
@@ -108,7 +123,9 @@ library SubstrateTrieDB {
         return nibbledBranch;
     }
 
-    function decodeLeaf(NodeKind memory node) internal pure returns (Leaf memory) {
+    function decodeLeaf(
+        NodeKind memory node
+    ) internal pure returns (Leaf memory) {
         Leaf memory leaf;
         ByteSlice memory input = node.data;
 
@@ -116,7 +133,9 @@ library SubstrateTrieDB {
         if (padding && padLeft(uint8(input.data[input.offset])) != 0) {
             revert("Bad Format!");
         }
-        uint256 nibbleLen = (node.nibbleSize + (NibbleSliceOps.NIBBLE_PER_BYTE - 1)) / NibbleSliceOps.NIBBLE_PER_BYTE;
+        uint256 nibbleLen = (node.nibbleSize +
+            (NibbleSliceOps.NIBBLE_PER_BYTE - 1)) /
+            NibbleSliceOps.NIBBLE_PER_BYTE;
         bytes memory nibbleBytes = Bytes.read(input, nibbleLen);
         leaf.key = NibbleSlice(nibbleBytes, node.nibbleSize % NIBBLE_PER_BYTE);
 
@@ -134,7 +153,11 @@ library SubstrateTrieDB {
         return leaf;
     }
 
-    function decodeSize(uint8 first, ByteSlice memory encoded, uint8 prefixMask) internal pure returns (uint256) {
+    function decodeSize(
+        uint8 first,
+        ByteSlice memory encoded,
+        uint8 prefixMask
+    ) internal pure returns (uint256) {
         uint8 maxValue = uint8(255 >> prefixMask);
         uint256 result = uint256(first & maxValue);
 
