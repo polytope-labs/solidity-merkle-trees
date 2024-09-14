@@ -1,4 +1,4 @@
-pragma solidity 0.8.17;
+pragma solidity ^0.8.17;
 
 import "./trie/Node.sol";
 import "./trie/Option.sol";

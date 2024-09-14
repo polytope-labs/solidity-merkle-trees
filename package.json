@@ -1,6 +1,6 @@
 {
   "name": "@polytope-labs/solidity-merkle-trees",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "The most advanced solidity library for merkle (multi) proof verification of different kinds of merkle trees",
   "author": "Polytope Labs <hello@polytope.technology>",
   "license": "Apache-2.0",
@@ -28,6 +28,8 @@
     "algorithms"
   ],
   "dependencies": {
-    "openzeppelin-solidity": "^4.8.1"
+    "openzeppelin-solidity": "^4.8.1",
+    "prettier": "^3.3.3",
+    "prettier-plugin-solidity": "^1.4.1"
   }
 }

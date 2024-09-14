@@ -2,7 +2,30 @@
 # yarn lockfile v1
 
 
+"@solidity-parser/parser@^0.18.0":
+  version "0.18.0"
+  resolved "https://registry.yarnpkg.com/@solidity-parser/parser/-/parser-0.18.0.tgz#8e77a02a09ecce957255a2f48c9a7178ec191908"
+  integrity sha512-yfORGUIPgLck41qyN7nbwJRAx17/jAIXCTanHOJZhB6PJ1iAk/84b/xlsVKFSyNyLXIj0dhppoE0+CRws7wlzA==
+
 openzeppelin-solidity@^4.8.1:
   version "4.8.1"
   resolved "https://registry.yarnpkg.com/openzeppelin-solidity/-/openzeppelin-solidity-4.8.1.tgz#2ab492a5a53a5520401e94df36e43807de7a3b50"
   integrity sha512-KM0pVpfrCBdifqN2ZeJZFvFuoGz3GmI4Ty/ceKNkcaf7VVWo/rLOfc5EiLh+Ukb5NadNmYo8WMeGhFA8hVWDpg==
+
+prettier-plugin-solidity@^1.4.1:
+  version "1.4.1"
+  resolved "https://registry.yarnpkg.com/prettier-plugin-solidity/-/prettier-plugin-solidity-1.4.1.tgz#8060baf18853a9e34d2e09e47e87b4f19e15afe9"
+  integrity sha512-Mq8EtfacVZ/0+uDKTtHZGW3Aa7vEbX/BNx63hmVg6YTiTXSiuKP0amj0G6pGwjmLaOfymWh3QgXEZkjQbU8QRg==
+  dependencies:
+    "@solidity-parser/parser" "^0.18.0"
+    semver "^7.5.4"
+
+prettier@^3.3.3:
+  version "3.3.3"
+  resolved "https://registry.yarnpkg.com/prettier/-/prettier-3.3.3.tgz#30c54fe0be0d8d12e6ae61dbb10109ea00d53105"
+  integrity sha512-i2tDNA0O5IrMO757lfrdQZCc2jPNDVntV0m/+4whiDfWaTKfMNgR7Qz0NAeGz/nRqF4m5/6CLzbP4/liHt12Ew==
+
+semver@^7.5.4:
+  version "7.6.3"
+  resolved "https://registry.yarnpkg.com/semver/-/semver-7.6.3.tgz#980f7b5550bc175fb4dc09403085627f9eb33143"
+  integrity sha512-oVekP1cKtI+CTDvHWYFUcMtsK/00wmAEfyqKfNdARm8u1wNVhSgaX7A8d4UuIlUI5e84iEwOhs7ZPYRmzU9U6A==
