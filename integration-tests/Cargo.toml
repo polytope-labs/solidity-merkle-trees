@@ -23,7 +23,7 @@ sp-runtime = "31.0.1"
 binary-merkle-tree = "13.0.0"
 
 ethers = { git = "https://github.com/polytope-labs/ethers-rs", rev = "a61f4fd78cd9a417c74a1609e5007e17f0f0ebb4", features = ["ethers-solc"] }
-forge-testsuite = { git = "https://github.com/polytope-labs/forge-testsuite", rev = "9a4e82498e60b6c90c09be1685dfc80bca057fc2" }
+forge-testsuite = { git = "https://github.com/polytope-labs/forge-testsuite", rev = "b2d2ac86444b9d00fec5590d19d3e8213a281e4c" }
 ckb-merkle-mountain-range = { git = "https://github.com/polytope-labs/merkle-mountain-range", branch = "seun/simplified-mmr" }
 patricia-merkle-trie = { package = "ethereum-trie", git = "https://github.com/polytope-labs/ethereum-trie", branch = "main" }
 rs_merkle = { git = "https://github.com/polytope-labs/rs-merkle", branch = "seun/2d-merkle-proofs" }
