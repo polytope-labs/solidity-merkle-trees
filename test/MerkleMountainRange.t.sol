@@ -102,7 +102,8 @@ contract MerkleMountainRangeTest is Test {
     function leavesForPeak(
         MmrLeaf[] memory leaves,
         uint64 peak
-    ) public pure returns (MmrLeaf[] memory, MmrLeaf[] memory) {
+    ) public pure returns (MerkleMountainRange.LeafIterator memory, MerkleMountainRange.LeafIterator memory) {
+        // Use the updated leavesForSubtree that returns iterators
         return MerkleMountainRange.leavesForSubtree(leaves, peak);
     }
 
@@ -120,9 +121,11 @@ contract MerkleMountainRangeTest is Test {
     }
 
     function mmrLeafToNode(
-        MmrLeaf[] memory leaves
+        MmrLeaf[] memory leaves,
+        MerkleMountainRange.LeafIterator memory leafIter
     ) public pure returns (Node[] memory, uint256[] memory) {
-        return MerkleMountainRange.mmrLeafToNode(leaves);
+        // Delegate to the updated mmrLeafToNode function in MerkleMountainRange
+        return MerkleMountainRange.mmrLeafToNode(leaves, leafIter);
     }
 
     function CalculateRoot(

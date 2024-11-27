@@ -13,6 +13,11 @@ import "./MerkleMultiProof.sol";
  * @dev refer to research for more info. https://research.polytope.technology/merkle-mountain-range-multi-proofs
  */
 library MerkleMountainRange {
+    struct LeafIterator {
+        uint256 offset; // Start index of the range
+        uint256 length; // Length of the range
+    }
+
     /// @notice Verify that merkle proof is accurate
     /// @notice This calls CalculateRoot(...) under the hood
     /// @param root hash of the Merkle's root node
@@ -50,17 +55,18 @@ library MerkleMountainRange {
         Iterator memory proofIter = Iterator(0, proof);
 
         uint256 current_subtree;
+        LeafIterator memory leafIter = LeafIterator(0, leaves.length);
+
         for (uint256 p; p < length; ) {
             uint256 height = subtrees[p];
             current_subtree += 2 ** height;
 
-            MmrLeaf[] memory subtreeLeaves = new MmrLeaf[](0);
-            if (leaves.length > 0) {
-                (subtreeLeaves, leaves) = leavesForSubtree(
-                    leaves,
-                    current_subtree
-                );
-            }
+            // Get iterators for the current subtree leaves
+            LeafIterator memory subtreeLeaves = getSubtreeLeaves(
+                leaves,
+                leafIter,
+                current_subtree
+            );
 
             if (subtreeLeaves.length == 0) {
                 if (proofIter.data.length == proofIter.offset) {
@@ -69,11 +75,11 @@ library MerkleMountainRange {
                     push(peakRoots, next(proofIter));
                 }
             } else if (subtreeLeaves.length == 1 && height == 0) {
-                push(peakRoots, subtreeLeaves[0].hash);
+                push(peakRoots, leaves[subtreeLeaves.offset].hash);
             } else {
                 push(
                     peakRoots,
-                    CalculateSubtreeRoot(subtreeLeaves, proofIter, height)
+                    CalculateSubtreeRoot(leaves, subtreeLeaves, proofIter, height)
                 );
             }
 
@@ -98,6 +104,36 @@ library MerkleMountainRange {
         }
 
         return peakRoots.data[0];
+    }
+
+    /// @notice Get a mountain peak's leaves using iterators
+    /// @param leaves A list of mountain merkle leaves for a subtree
+    /// @param leafIter Iterator tracking the current leaf range
+    /// @param current_subtree The index of the current subtree
+    /// @return LeafIterator for the current subtree's leaves
+    function getSubtreeLeaves(
+        MmrLeaf[] memory leaves,
+        LeafIterator memory leafIter,
+        uint256 current_subtree
+    ) internal pure returns (LeafIterator memory) {
+        uint256 end = leafIter.offset + leafIter.length;
+        uint256 newOffset = leafIter.offset;
+
+        for (; newOffset < end; ) {
+            if (current_subtree <= leaves[newOffset].leaf_index) {
+                break;
+            }
+            unchecked {
+                ++newOffset;
+            }
+        }
+
+        uint256 newLength = newOffset - leafIter.offset;
+        LeafIterator memory subtreeIter = LeafIterator(leafIter.offset, newLength);
+        leafIter.offset = newOffset;
+        leafIter.length -= newLength;
+
+        return subtreeIter;
     }
 
     function subtreeHeights(
@@ -129,30 +165,37 @@ library MerkleMountainRange {
         return indices;
     }
 
-    /// @notice calculate root hash of a subtree of the merkle mountain
-    /// @param peakLeaves  a list of nodes to provide proof for
-    /// @param proofIter   a list of node hashes to traverse to compute the peak root hash
-    /// @param height    Height of the subtree
-    /// @return peakRoot a tuple containing the peak root hash, and the peak root position in the merkle
+    /// @notice Calculate root hash of a subtree of the merkle mountain
+    /// @param leaves A list of all MMR leaves
+    /// @param leafIter An iterator representing the range of leaves for the subtree
+    /// @param proofIter A list of node hashes to traverse to compute the peak root hash
+    /// @param height Height of the subtree
+    /// @return bytes32 The computed peak root hash
     function CalculateSubtreeRoot(
-        MmrLeaf[] memory peakLeaves,
+        MmrLeaf[] memory leaves,
+        LeafIterator memory leafIter,
         Iterator memory proofIter,
         uint256 height
     ) internal pure returns (bytes32) {
-        uint256[] memory current_layer;
-        Node[] memory leaves;
-        (leaves, current_layer) = mmrLeafToNode(peakLeaves);
+        // Convert the leaves within the iterator range to nodes
+        (Node[] memory nodes, uint256[] memory current_layer) = mmrLeafToNode(leaves, leafIter);
 
+        // Initialize the layers for MerkleMultiProof
         Node[][] memory layers = new Node[][](height);
+
         for (uint256 i; i < height; ) {
             uint256 nodelength = 2 ** (height - i);
+
+            // If the current layer matches the expected node length, stop
             if (current_layer.length == nodelength) {
                 break;
             }
 
+            // Calculate sibling indices and nodes without siblings
             uint256[] memory siblings = siblingIndices(current_layer);
             uint256[] memory diff = difference(siblings, current_layer);
 
+            // Prepare the next layer of nodes using the diff
             uint256 length = diff.length;
             layers[i] = new Node[](length);
             for (uint256 j; j < length; ) {
@@ -163,6 +206,7 @@ library MerkleMountainRange {
                 }
             }
 
+            // Update the current layer to parent indices
             current_layer = parentIndices(siblings);
 
             unchecked {
@@ -170,7 +214,8 @@ library MerkleMountainRange {
             }
         }
 
-        return MerkleMultiProof.CalculateRoot(layers, leaves);
+        // Use MerkleMultiProof to compute the root of the layers
+        return MerkleMultiProof.CalculateRoot(layers, nodes);
     }
 
     /**
@@ -285,63 +330,53 @@ library MerkleMountainRange {
         return parents;
     }
 
-    /**
-     * @notice Convert Merkle mountain Leaf to a Merkle Node
-     * @param leaves list of merkle mountain range leaf
-     * @return A tuple with the list of merkle nodes and the list of nodes at 0 and 1 respectively
-     */
+    /// @notice Convert a range of MMR leaves to Merkle nodes
+    /// @param leaves A list of all MMR leaves
+    /// @param leafIter An iterator representing the range of leaves to convert
+    /// @return Node[] The list of converted nodes
+    /// @return uint256[] The indices of the nodes
     function mmrLeafToNode(
-        MmrLeaf[] memory leaves
+        MmrLeaf[] memory leaves,
+        LeafIterator memory leafIter
     ) internal pure returns (Node[] memory, uint256[] memory) {
-        uint256 i;
-        uint256 length = leaves.length;
+        uint256 length = leafIter.length;
+        uint256 offset = leafIter.offset;
+
         Node[] memory nodes = new Node[](length);
         uint256[] memory indices = new uint256[](length);
-        while (i < length) {
-            nodes[i] = Node(leaves[i].k_index, leaves[i].hash);
-            indices[i] = leaves[i].k_index;
-            ++i;
+
+        for (uint256 i = 0; i < length; i++) {
+            nodes[i] = Node(leaves[offset + i].k_index, leaves[offset + i].hash);
+            indices[i] = leaves[offset + i].k_index;
         }
 
         return (nodes, indices);
     }
 
     /**
-     * @notice Get a mountain peak's leaves
-     * @notice this splits the leaves into either side of the peak [left & right]
-     * @param leaves a list of mountain merkle leaves, for a subtree
-     * @param leafIndex the index of the leaf of the next subtree
-     * @return A tuple of 2 arrays of mountain merkle leaves. Index 1 and 2 represent left and right of the peak respectively
+     * @notice Get a mountain peak's leaves using iterators
+     * @notice This splits the leaves into either side of the peak [left & right] by setting offsets and lengths
+     * @param leaves A list of mountain merkle leaves for a subtree
+     * @param leafIndex The index of the leaf of the next subtree
+     * @return A tuple of two iterators representing the left and right ranges of the peak leaves
      */
     function leavesForSubtree(
         MmrLeaf[] memory leaves,
         uint256 leafIndex
-    ) internal pure returns (MmrLeaf[] memory, MmrLeaf[] memory) {
+    ) internal pure returns (LeafIterator memory, LeafIterator memory) {
         uint256 p;
         uint256 length = leaves.length;
+
+        // Find the position where leafIndex splits the leaves
         for (; p < length; p++) {
             if (leafIndex <= leaves[p].leaf_index) {
                 break;
             }
         }
 
-        uint256 len = p == 0 ? 0 : p;
-        MmrLeaf[] memory left = new MmrLeaf[](len);
-        MmrLeaf[] memory right = new MmrLeaf[](length - len);
-
-        uint256 i;
-        uint256 leftLength = left.length;
-        while (i < leftLength) {
-            left[i] = leaves[i];
-            ++i;
-        }
-
-        uint256 j;
-        while (i < length) {
-            right[j] = leaves[i];
-            ++i;
-            ++j;
-        }
+        // Create iterators instead of copying into arrays
+        LeafIterator memory left = LeafIterator(0, p);
+        LeafIterator memory right = LeafIterator(p, length - p);
 
         return (left, right);
     }
