@@ -102,9 +102,24 @@ contract MerkleMountainRangeTest is Test {
     function leavesForPeak(
         MmrLeaf[] memory leaves,
         uint64 peak
-    ) public pure returns (MerkleMountainRange.LeafIterator memory, MerkleMountainRange.LeafIterator memory) {
-        // Use the updated leavesForSubtree that returns iterators
-        return MerkleMountainRange.leavesForSubtree(leaves, peak);
+    ) public pure returns (MmrLeaf[] memory, MmrLeaf[] memory) {
+        // Get the iterators for the left and right ranges
+        (MerkleMountainRange.LeafIterator memory leftIter, MerkleMountainRange.LeafIterator memory rightIter) =
+            MerkleMountainRange.leavesForSubtree(leaves, peak);
+
+        // Extract the leaves for the left range
+        MmrLeaf[] memory leftLeaves = new MmrLeaf[](leftIter.length);
+        for (uint256 i = 0; i < leftIter.length; i++) {
+            leftLeaves[i] = leaves[leftIter.offset + i];
+        }
+
+        // Extract the leaves for the right range
+        MmrLeaf[] memory rightLeaves = new MmrLeaf[](rightIter.length);
+        for (uint256 i = 0; i < rightIter.length; i++) {
+            rightLeaves[i] = leaves[rightIter.offset + i];
+        }
+
+        return (leftLeaves, rightLeaves);
     }
 
     function difference(
