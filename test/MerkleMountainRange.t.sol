@@ -136,11 +136,21 @@ contract MerkleMountainRangeTest is Test {
     }
 
     function mmrLeafToNode(
-        MmrLeaf[] memory leaves,
-        MerkleMountainRange.LeafIterator memory leafIter
+        MmrLeaf[] memory leaves
     ) public pure returns (Node[] memory, uint256[] memory) {
-        // Delegate to the updated mmrLeafToNode function in MerkleMountainRange
-        return MerkleMountainRange.mmrLeafToNode(leaves, leafIter);
+        uint256 length = leaves.length;
+
+        // Initialize the arrays for nodes and indices
+        Node[] memory nodes = new Node[](length);
+        uint256[] memory indices = new uint256[](length);
+
+        // Populate the arrays
+        for (uint256 i = 0; i < length; i++) {
+            nodes[i] = Node(leaves[i].k_index, leaves[i].hash);
+            indices[i] = leaves[i].k_index;
+        }
+
+        return (nodes, indices);
     }
 
     function CalculateRoot(
