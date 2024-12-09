@@ -103,7 +103,23 @@ contract MerkleMountainRangeTest is Test {
         MmrLeaf[] memory leaves,
         uint64 peak
     ) public pure returns (MmrLeaf[] memory, MmrLeaf[] memory) {
-        return MerkleMountainRange.leavesForSubtree(leaves, peak);
+        // Get the iterators for the left and right ranges
+        (MerkleMountainRange.LeafIterator memory leftIter, MerkleMountainRange.LeafIterator memory rightIter) =
+            MerkleMountainRange.leavesForSubtree(leaves, peak);
+
+        // Extract the leaves for the left range
+        MmrLeaf[] memory leftLeaves = new MmrLeaf[](leftIter.length);
+        for (uint256 i = 0; i < leftIter.length; i++) {
+            leftLeaves[i] = leaves[leftIter.offset + i];
+        }
+
+        // Extract the leaves for the right range
+        MmrLeaf[] memory rightLeaves = new MmrLeaf[](rightIter.length);
+        for (uint256 i = 0; i < rightIter.length; i++) {
+            rightLeaves[i] = leaves[rightIter.offset + i];
+        }
+
+        return (leftLeaves, rightLeaves);
     }
 
     function difference(
@@ -122,7 +138,19 @@ contract MerkleMountainRangeTest is Test {
     function mmrLeafToNode(
         MmrLeaf[] memory leaves
     ) public pure returns (Node[] memory, uint256[] memory) {
-        return MerkleMountainRange.mmrLeafToNode(leaves);
+        uint256 length = leaves.length;
+
+        // Initialize the arrays for nodes and indices
+        Node[] memory nodes = new Node[](length);
+        uint256[] memory indices = new uint256[](length);
+
+        // Populate the arrays
+        for (uint256 i = 0; i < length; i++) {
+            nodes[i] = Node(leaves[i].k_index, leaves[i].hash);
+            indices[i] = leaves[i].k_index;
+        }
+
+        return (nodes, indices);
     }
 
     function CalculateRoot(
