@@ -41,6 +41,146 @@ library MerkleMultiProof {
         return root == CalculateRootSorted(proof, leaves);
     }
 
+    /**
+     * @notice Calculates the root hash from proof items and leaves
+     * @param proof Array of proof nodes containing position and hash
+     * @param leaves Array of leaf nodes with their positions
+     * @param numLeaves Total number of leaves in the complete tree
+     * @return bytes32 The calculated root hash
+     */
+    function CalculateBalancedRoot(Node[] calldata proof, Node[] calldata leaves, uint256 numLeaves)
+        public
+        pure
+        returns (bytes32)
+    {
+        // Calculate tree height
+        uint256 height = TreeHeight(numLeaves);
+
+        // Initialize tracking variables
+        uint256 p; // proof index
+        uint256 f; // flattened index
+        uint256 l; // leaf index
+
+        // Create flattened array to store intermediate nodes
+        // Size is 2^(height-1) which is max nodes needed for intermediate layers
+        Node[] memory flattened = new Node[](2 ** (height - 1));
+
+        // Process leaves first
+        while (l < leaves.length) {
+            if (leaves[l].k_index % 2 == 0) {
+                // Even position - need right sibling
+                if (p < proof.length && proof[p].k_index == leaves[l].k_index + 1) {
+                    // Sibling is in proof
+                    flattened[f] = Node({
+                        node: keccak256(abi.encodePacked(leaves[l].node, proof[p].node)),
+                        k_index: leaves[l].k_index / 2
+                    });
+                    f++;
+                    p++;
+                } else if (l + 1 < leaves.length && leaves[l + 1].k_index == leaves[l].k_index + 1) {
+                    // Sibling is next leaf
+                    flattened[f] = Node({
+                        node: keccak256(abi.encodePacked(leaves[l].node, leaves[l + 1].node)),
+                        k_index: leaves[l].k_index / 2
+                    });
+                    f++;
+                    l++;
+                } else {
+                    revert("Leaf missing right sibling");
+                }
+            } else {
+                // Odd position - need left sibling
+                if (p < proof.length && proof[p].k_index == leaves[l].k_index - 1) {
+                    // Sibling is in proof
+                    flattened[f] = Node({
+                        node: keccak256(abi.encodePacked(proof[p].node, leaves[l].node)),
+                        k_index: proof[p].k_index / 2
+                    });
+                    f++;
+                    p++;
+                } else if (l + 1 < leaves.length && leaves[l + 1].k_index == leaves[l].k_index - 1) {
+                    // Sibling is next leaf
+                    flattened[f] = Node({
+                        node: keccak256(abi.encodePacked(leaves[l + 1].node, leaves[l].node)),
+                        k_index: leaves[l + 1].k_index / 2
+                    });
+                    f++;
+                    l++;
+                } else {
+                    revert("Leaf missing left sibling");
+                }
+            }
+            l++;
+        }
+
+        // Move up the tree level
+        height--;
+
+        while (flattened[0].k_index != 1) {
+            uint256 r; // read index
+            uint256 w; // write index
+
+            while (r < flattened.length) {
+                if (flattened[r].k_index == 0 || flattened[r].k_index >= 2 ** (height + 1)) {
+                    // End of current layer
+                    if (height != 0) {
+                        height--;
+                    }
+                    r = 0;
+                    w = 0;
+                    break;
+                }
+
+                if (flattened[r].k_index % 2 == 0) {
+                    // Even position - need right sibling
+                    if (p < proof.length && proof[p].k_index == flattened[r].k_index + 1) {
+                        // Sibling in proof
+                        flattened[w] = Node({
+                            node: keccak256(abi.encodePacked(flattened[r].node, proof[p].node)),
+                            k_index: flattened[r].k_index / 2
+                        });
+                        w++;
+                        p++;
+                    } else if (r + 1 < flattened.length && flattened[r + 1].k_index == flattened[r].k_index + 1) {
+                        // Sibling in flattened
+                        flattened[w] = Node({
+                            node: keccak256(abi.encodePacked(flattened[r].node, flattened[r + 1].node)),
+                            k_index: flattened[r].k_index / 2
+                        });
+                        w++;
+                        r++;
+                    } else {
+                        revert("Node missing right sibling");
+                    }
+                } else {
+                    // Odd position - need left sibling
+                    if (p < proof.length && proof[p].k_index == flattened[r].k_index - 1) {
+                        // Sibling in proof
+                        flattened[w] = Node({
+                            node: keccak256(abi.encodePacked(proof[p].node, flattened[r].node)),
+                            k_index: proof[p].k_index / 2
+                        });
+                        w++;
+                        p++;
+                    } else if (r + 1 < flattened.length && flattened[r + 1].k_index == flattened[r].k_index - 1) {
+                        // Sibling in flattened
+                        flattened[w] = Node({
+                            node: keccak256(abi.encodePacked(flattened[r + 1].node, flattened[r].node)),
+                            k_index: flattened[r + 1].k_index / 2
+                        });
+                        w++;
+                        r++;
+                    } else {
+                        revert("Node missing left sibling");
+                    }
+                }
+                r++;
+            }
+        }
+
+        return flattened[0].node;
+    }
+
     /// @notice Calculate the hash of the root node
     /// @dev Use this function to calculate the hash of the root node
     /// @param proof A list of the merkle nodes along with their k-indices that are needed to re-calculate root node.
