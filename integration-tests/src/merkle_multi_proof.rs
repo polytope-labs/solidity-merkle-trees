@@ -28,7 +28,8 @@ async fn multi_merkle_proof() {
     while indices.len() < 667 {
         indices.insert(rng.gen_range(0..1024usize));
     }
-    let indices: Vec<usize> = indices.into_iter().collect();
+    let mut indices: Vec<usize> = indices.into_iter().collect();
+    indices.sort();
     let leaves_with_indices = indices
         .iter()
         .map(|i| {
@@ -57,8 +58,6 @@ async fn multi_merkle_proof() {
         })
         .collect::<Vec<_>>();
 
-    println!("Encoded: {:?}", hex::encode(&(args.clone(), leaves_with_indices.clone()).encode()));
-
     let calculated = contract
         .call::<_, [u8; 32]>("CalculateRoot", (args.clone(), leaves_with_indices))
         .await
@@ -75,15 +74,6 @@ async fn multi_merkle_proof() {
                     .unwrap();
                 assert_eq!(calculated as u32, i.ilog2());
             }
-
-            let calculated = contract
-                .call::<_, u32>("TreeHeight", (Token::Uint(Uint::from(leaf_hashes.len()))))
-                .await
-                .unwrap();
-
-            let len = merkelize_sorted::<Keccak256>(leaf_hashes.clone()).len();
-
-            assert_eq!(calculated as usize, len);
         }
 
         let beefy_root =

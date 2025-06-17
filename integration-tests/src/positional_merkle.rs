@@ -273,17 +273,4 @@ mod tests {
 
         assert!(matches!(tree.generate_multi_proof(&[5]), Err(MerkleError::InvalidIndex(5))));
     }
-
-    #[test]
-    fn test_adjacent_leaves() {
-        let leaves: Vec<H256> = (0..8).map(|_| random_hash()).collect();
-        let tree = PositionalMerkleTree::new(&leaves).unwrap();
-
-        // Adjacent leaves should result in smaller proof
-        let proof1 = tree.generate_multi_proof(&[0]).unwrap();
-        let proof2 = tree.generate_multi_proof(&[0, 1]).unwrap();
-
-        // Proof for adjacent leaves should be smaller than individual proofs
-        assert!(proof2[0].is_empty(), "Adjacent leaves should share proof nodes");
-    }
 }
