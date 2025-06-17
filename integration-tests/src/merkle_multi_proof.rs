@@ -1,7 +1,6 @@
-// #![cfg(test)]
+#![cfg(test)]
 
-use crate::positional_merkle::*;
-use crate::{keccak256, Keccak256, Token};
+use crate::{keccak256, positional_merkle::*, Keccak256, Token};
 use ethers::abi::{AbiEncode, Uint};
 use forge_testsuite::Runner;
 use primitive_types::{H256, U256};
@@ -181,10 +180,9 @@ pub fn calculate_balanced_root(
         let mut w = 0;
 
         while r < flattened.len() {
-            if flattened[r].position == 0
-                || flattened[r].position >= 2u64.pow((h + 1) as u32) as usize
+            if flattened[r].position == 0 ||
+                flattened[r].position >= 2u64.pow((h + 1) as u32) as usize
             {
-                println!("End of layer {h}, {r}");
                 // Moving on up
                 if h != 0 {
                     h -= 1;
@@ -204,8 +202,8 @@ pub fn calculate_balanced_root(
                     flattened[w] = node;
                     w += 1;
                     p += 1;
-                } else if r + 1 < flattened.len()
-                    && flattened[r + 1].position == flattened[r].position + 1
+                } else if r + 1 < flattened.len() &&
+                    flattened[r + 1].position == flattened[r].position + 1
                 {
                     // Next sibling must be in flattened
                     let node = Node {
@@ -231,8 +229,8 @@ pub fn calculate_balanced_root(
                     flattened[w] = node;
                     w += 1;
                     p += 1;
-                } else if r + 1 < flattened.len()
-                    && flattened[r + 1].position == flattened[r].position - 1
+                } else if r + 1 < flattened.len() &&
+                    flattened[r + 1].position == flattened[r].position - 1
                 {
                     // Next sibling must be in flattened
                     let node = Node {
@@ -243,10 +241,9 @@ pub fn calculate_balanced_root(
                     w += 1;
                     r += 1;
                 } else {
-                    return Err(format!(
-                        "Node {} missing left sibling node",
-                        flattened[r].position,
-                    ));
+                    return Err(
+                        format!("Node {} missing left sibling node", flattened[r].position,),
+                    );
                 }
             }
             r += 1;
@@ -258,15 +255,19 @@ pub fn calculate_balanced_root(
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_calculate_balanced_root() {
-    let leaves = (0..1024).map(|_| H256::random().as_bytes().to_vec()).collect::<Vec<_>>();
+    let num_leaves = 1024;
+    let threshold = ((num_leaves * 1) / 3) - 1;
+    // let threshold = 199;
+    dbg!(threshold);
+    let leaves = (0..num_leaves).map(|_| H256::random().as_bytes().to_vec()).collect::<Vec<_>>();
     dbg!(leaves.len());
     let leaf_hashes = leaves.iter().map(keccak256).collect::<Vec<[u8; 32]>>();
 
     let tree = MerkleTree::<Keccak256>::from_leaves(&leaf_hashes);
     let mut rng = rand::thread_rng();
     let mut indices = std::collections::HashSet::new();
-    while indices.len() < 333 {
-        indices.insert(rng.gen_range(0..1024usize));
+    while indices.len() < threshold {
+        indices.insert(rng.gen_range(0..num_leaves));
     }
     let indices: Vec<usize> = indices.into_iter().collect();
 
@@ -330,12 +331,14 @@ async fn test_calculate_balanced_root() {
         .await
         .unwrap();
 
-    println!(
-        "Encoded: {:?}",
-        hex::encode(
-            &(abi_proof.clone(), abi_leaves, Token::Uint(U256::from(leaves.len()))).encode()
-        )
-    );
+    dbg!(H256(calculated));
+
+    // println!(
+    //     "Encoded: {:?}",
+    //     hex::encode(
+    //         &(abi_proof.clone(), abi_leaves, Token::Uint(U256::from(leaves.len()))).encode()
+    //     )
+    // );
 
     assert_eq!(root, H256(calculated));
 }
