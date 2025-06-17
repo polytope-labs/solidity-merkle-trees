@@ -3,6 +3,7 @@
 pub mod merkle_mountain_range;
 pub mod merkle_multi_proof;
 pub mod merkle_patricia;
+pub mod positional_merkle;
 
 use ckb_merkle_mountain_range::{Error, Merge};
 pub use ethers::{abi::Token, types::U256, utils::keccak256};

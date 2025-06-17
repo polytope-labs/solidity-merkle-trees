@@ -24,6 +24,22 @@ contract MerkleMultiProofTest is Test {
         return MerkleMultiProof.CalculateRootSorted(proof, leaves);
     }
 
+    function CalculateBalancedRoot(
+        Node[] memory proof,
+        Node[] memory leaves,
+        uint256 numLeaves
+    ) public view returns (bytes32) {
+        uint256 startGas = gasleft();
+        bytes32 root = MerkleMultiProof.CalculateBalancedRoot(
+            proof,
+            leaves,
+            numLeaves
+        );
+        uint256 gasUsed = startGas - gasleft();
+        console.log(gasUsed);
+        return root;
+    }
+
     function TreeHeight(uint256 leavesCount) public pure returns (uint256) {
         return MerkleMultiProof.TreeHeight(leavesCount);
     }
