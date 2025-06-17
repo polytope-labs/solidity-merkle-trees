@@ -42,17 +42,19 @@ library MerkleMultiProof {
     }
 
     /**
-     * @notice Calculates the root hash from proof items and leaves
+     * @notice Calculates the root hash of a balanced merkle tree.
+     * Because the tree is balanced, we can devise a more efficient algorithm to calculate the root hash.
+     *
      * @param proof Array of proof nodes containing position and hash
      * @param leaves Array of leaf nodes with their positions
      * @param numLeaves Total number of leaves in the complete tree
      * @return bytes32 The calculated root hash
      */
-    function CalculateBalancedRoot(Node[] calldata proof, Node[] calldata leaves, uint256 numLeaves)
-        public
-        pure
-        returns (bytes32)
-    {
+    function CalculateBalancedRoot(
+        Node[] calldata proof,
+        Node[] calldata leaves,
+        uint256 numLeaves
+    ) public pure returns (bytes32) {
         // Calculate tree height
         uint256 height = TreeHeight(numLeaves);
 
@@ -69,18 +71,28 @@ library MerkleMultiProof {
         while (l < leaves.length) {
             if (leaves[l].k_index % 2 == 0) {
                 // Even position - need right sibling
-                if (p < proof.length && proof[p].k_index == leaves[l].k_index + 1) {
+                if (
+                    p < proof.length &&
+                    proof[p].k_index == leaves[l].k_index + 1
+                ) {
                     // Sibling is in proof
                     flattened[f] = Node({
-                        node: keccak256(abi.encodePacked(leaves[l].node, proof[p].node)),
+                        node: keccak256(
+                            abi.encodePacked(leaves[l].node, proof[p].node)
+                        ),
                         k_index: leaves[l].k_index / 2
                     });
                     f++;
                     p++;
-                } else if (l + 1 < leaves.length && leaves[l + 1].k_index == leaves[l].k_index + 1) {
+                } else if (
+                    l + 1 < leaves.length &&
+                    leaves[l + 1].k_index == leaves[l].k_index + 1
+                ) {
                     // Sibling is next leaf
                     flattened[f] = Node({
-                        node: keccak256(abi.encodePacked(leaves[l].node, leaves[l + 1].node)),
+                        node: keccak256(
+                            abi.encodePacked(leaves[l].node, leaves[l + 1].node)
+                        ),
                         k_index: leaves[l].k_index / 2
                     });
                     f++;
@@ -90,18 +102,28 @@ library MerkleMultiProof {
                 }
             } else {
                 // Odd position - need left sibling
-                if (p < proof.length && proof[p].k_index == leaves[l].k_index - 1) {
+                if (
+                    p < proof.length &&
+                    proof[p].k_index == leaves[l].k_index - 1
+                ) {
                     // Sibling is in proof
                     flattened[f] = Node({
-                        node: keccak256(abi.encodePacked(proof[p].node, leaves[l].node)),
+                        node: keccak256(
+                            abi.encodePacked(proof[p].node, leaves[l].node)
+                        ),
                         k_index: proof[p].k_index / 2
                     });
                     f++;
                     p++;
-                } else if (l + 1 < leaves.length && leaves[l + 1].k_index == leaves[l].k_index - 1) {
+                } else if (
+                    l + 1 < leaves.length &&
+                    leaves[l + 1].k_index == leaves[l].k_index - 1
+                ) {
                     // Sibling is next leaf
                     flattened[f] = Node({
-                        node: keccak256(abi.encodePacked(leaves[l + 1].node, leaves[l].node)),
+                        node: keccak256(
+                            abi.encodePacked(leaves[l + 1].node, leaves[l].node)
+                        ),
                         k_index: leaves[l + 1].k_index / 2
                     });
                     f++;
@@ -121,7 +143,10 @@ library MerkleMultiProof {
             uint256 w; // write index
 
             while (r < flattened.length) {
-                if (flattened[r].k_index == 0 || flattened[r].k_index >= 2 ** (height + 1)) {
+                if (
+                    flattened[r].k_index == 0 ||
+                    flattened[r].k_index >= 2 ** (height + 1)
+                ) {
                     // End of current layer
                     if (height != 0) {
                         height--;
@@ -133,18 +158,34 @@ library MerkleMultiProof {
 
                 if (flattened[r].k_index % 2 == 0) {
                     // Even position - need right sibling
-                    if (p < proof.length && proof[p].k_index == flattened[r].k_index + 1) {
+                    if (
+                        p < proof.length &&
+                        proof[p].k_index == flattened[r].k_index + 1
+                    ) {
                         // Sibling in proof
                         flattened[w] = Node({
-                            node: keccak256(abi.encodePacked(flattened[r].node, proof[p].node)),
+                            node: keccak256(
+                                abi.encodePacked(
+                                    flattened[r].node,
+                                    proof[p].node
+                                )
+                            ),
                             k_index: flattened[r].k_index / 2
                         });
                         w++;
                         p++;
-                    } else if (r + 1 < flattened.length && flattened[r + 1].k_index == flattened[r].k_index + 1) {
+                    } else if (
+                        r + 1 < flattened.length &&
+                        flattened[r + 1].k_index == flattened[r].k_index + 1
+                    ) {
                         // Sibling in flattened
                         flattened[w] = Node({
-                            node: keccak256(abi.encodePacked(flattened[r].node, flattened[r + 1].node)),
+                            node: keccak256(
+                                abi.encodePacked(
+                                    flattened[r].node,
+                                    flattened[r + 1].node
+                                )
+                            ),
                             k_index: flattened[r].k_index / 2
                         });
                         w++;
@@ -154,18 +195,34 @@ library MerkleMultiProof {
                     }
                 } else {
                     // Odd position - need left sibling
-                    if (p < proof.length && proof[p].k_index == flattened[r].k_index - 1) {
+                    if (
+                        p < proof.length &&
+                        proof[p].k_index == flattened[r].k_index - 1
+                    ) {
                         // Sibling in proof
                         flattened[w] = Node({
-                            node: keccak256(abi.encodePacked(proof[p].node, flattened[r].node)),
+                            node: keccak256(
+                                abi.encodePacked(
+                                    proof[p].node,
+                                    flattened[r].node
+                                )
+                            ),
                             k_index: proof[p].k_index / 2
                         });
                         w++;
                         p++;
-                    } else if (r + 1 < flattened.length && flattened[r + 1].k_index == flattened[r].k_index - 1) {
+                    } else if (
+                        r + 1 < flattened.length &&
+                        flattened[r + 1].k_index == flattened[r].k_index - 1
+                    ) {
                         // Sibling in flattened
                         flattened[w] = Node({
-                            node: keccak256(abi.encodePacked(flattened[r + 1].node, flattened[r].node)),
+                            node: keccak256(
+                                abi.encodePacked(
+                                    flattened[r + 1].node,
+                                    flattened[r].node
+                                )
+                            ),
                             k_index: flattened[r + 1].k_index / 2
                         });
                         w++;
