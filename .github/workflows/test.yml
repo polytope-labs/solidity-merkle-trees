@@ -20,6 +20,9 @@ jobs:
         with:
           submodules: recursive
       - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.81.0
+          override: true
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
