@@ -64,8 +64,7 @@ library MerkleMultiProof {
         uint256 l; // leaf index
 
         // Create flattened array to store intermediate nodes
-        // Size is 2^(height-1) which is max nodes needed for intermediate layers
-        Node[] memory flattened = new Node[](2 ** (height - 1));
+        Node[] memory flattened = new Node[](leaves.length);
 
         // Process leaves first
         while (l < leaves.length) {
