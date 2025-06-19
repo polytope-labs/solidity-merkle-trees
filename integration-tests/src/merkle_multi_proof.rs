@@ -105,6 +105,7 @@ pub fn calculate_balanced_root(
     let mut p = 0;
     let mut f = 0;
     let mut h = tree_height(num_leaves);
+    dbg!(h);
     let mut flattened = iter::repeat(Node::default())
         .take(2usize.pow((h - 1) as u32))
         .collect::<Vec<_>>();
@@ -132,8 +133,10 @@ pub fn calculate_balanced_root(
                 f += 1;
                 l += 1;
             } else {
-                println!("Proof: {:#?}\n", proof);
-                return Err(format!("{} Leaf missing sibling node", leaves[l].position));
+                let node = Node { hash: leaves[l].hash, position: leaves[l].position / 2 };
+                flattened[f] = node;
+                f += 1;
+                l += 1;
             }
         } else {
             if p < proof.len() && proof[p].position == leaves[l].position - 1 {
@@ -155,8 +158,7 @@ pub fn calculate_balanced_root(
                 f += 1;
                 l += 1;
             } else {
-                println!("Proof: {:#?}\n", proof);
-                return Err(format!("{} Leaf missing sibling node", leaves[l].position));
+                return Err(format!("{} Leaf missing left sibling node", leaves[l].position));
             }
         }
         l += 1;
@@ -170,8 +172,8 @@ pub fn calculate_balanced_root(
         let mut w = 0;
 
         while r < flattened.len() {
-            if flattened[r].position == 0 ||
-                flattened[r].position >= 2u64.pow((h + 1) as u32) as usize
+            if flattened[r].position == 0
+                || flattened[r].position >= 2u64.pow((h + 1) as u32) as usize
             {
                 // Moving on up
                 if h != 0 {
@@ -192,8 +194,8 @@ pub fn calculate_balanced_root(
                     flattened[w] = node;
                     w += 1;
                     p += 1;
-                } else if r + 1 < flattened.len() &&
-                    flattened[r + 1].position == flattened[r].position + 1
+                } else if r + 1 < flattened.len()
+                    && flattened[r + 1].position == flattened[r].position + 1
                 {
                     // Next sibling must be in flattened
                     let node = Node {
@@ -204,10 +206,11 @@ pub fn calculate_balanced_root(
                     w += 1;
                     r += 1;
                 } else {
-                    return Err(format!(
-                        "Node {} missing right sibling node",
-                        flattened[r].position,
-                    ));
+                    let node =
+                        Node { hash: flattened[r].hash, position: flattened[r].position / 2 };
+                    flattened[w] = node;
+                    w += 1;
+                    r += 1;
                 }
             } else {
                 if p < proof.len() && proof[p].position == flattened[r].position - 1 {
@@ -219,8 +222,8 @@ pub fn calculate_balanced_root(
                     flattened[w] = node;
                     w += 1;
                     p += 1;
-                } else if r + 1 < flattened.len() &&
-                    flattened[r + 1].position == flattened[r].position - 1
+                } else if r + 1 < flattened.len()
+                    && flattened[r + 1].position == flattened[r].position - 1
                 {
                     // Next sibling must be in flattened
                     let node = Node {
@@ -231,9 +234,10 @@ pub fn calculate_balanced_root(
                     w += 1;
                     r += 1;
                 } else {
-                    return Err(
-                        format!("Node {} missing left sibling node", flattened[r].position,),
-                    );
+                    return Err(format!(
+                        "Node {} missing left sibling node",
+                        flattened[r].position,
+                    ));
                 }
             }
             r += 1;
@@ -245,7 +249,7 @@ pub fn calculate_balanced_root(
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_calculate_balanced_root() {
-    let num_leaves = 1024;
+    let num_leaves = 600;
     let threshold = ((num_leaves * 1) / 3) - 1;
     // let threshold = 199;
     dbg!(threshold);
@@ -265,6 +269,8 @@ async fn test_calculate_balanced_root() {
         PositionalMerkleTree::new(&leaf_hashes.clone().into_iter().map(H256).collect::<Vec<_>>())
             .unwrap();
 
+    dbg!(positional_tree.root());
+
     let mut proof_items = vec![];
 
     for mut i in positional_tree.generate_multi_proof(&indices).unwrap().into_iter().rev() {
@@ -273,7 +279,8 @@ async fn test_calculate_balanced_root() {
     }
 
     dbg!(proof_items.len());
-    let height = (leaves.len() as f64).log2().ceil() as usize;
+    let height = tree_height(leaves.len() as u64);
+    dbg!(height);
 
     let mut proof_leaves = indices
         .iter()

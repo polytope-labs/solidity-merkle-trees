@@ -42,21 +42,23 @@ library MerkleMultiProof {
     }
 
     /**
-     * @notice Calculates the root hash of a balanced merkle tree.
-     * Because the tree is balanced, we can devise a more efficient algorithm to calculate the root hash.
+     * @notice Calculates the root hash of a merkle tree.
+     * By assigning nodes a global position in the tree, we can devise
+     * a more efficient algorithm to calculate the root hash. Also works
+     * for unbalanced trees.
      *
      * @param proof Array of proof nodes containing position and hash
      * @param leaves Array of leaf nodes with their positions
-     * @param numLeaves Total number of leaves in the complete tree
+     * @param leavesCount Total number of leaves in the complete tree
      * @return bytes32 The calculated root hash
      */
-    function CalculateBalancedRoot(
+    function CalculateRootOptimized(
         Node[] calldata proof,
         Node[] calldata leaves,
-        uint256 numLeaves
+        uint256 leavesCount
     ) public pure returns (bytes32) {
         // Calculate tree height
-        uint256 height = TreeHeight(numLeaves);
+        uint256 height = Math.log2(leavesCount, Math.Rounding.Up);
 
         // Initialize tracking variables
         uint256 p; // proof index
@@ -97,7 +99,13 @@ library MerkleMultiProof {
                     f++;
                     l++;
                 } else {
-                    revert("Leaf missing right sibling");
+                    // tree is likely unbalanced, so promote this leaf to the next level
+                    flattened[f] = Node({
+                        node: leaves[l].node,
+                        k_index: leaves[l].k_index / 2
+                    });
+                    f++;
+                    l++;
                 }
             } else {
                 // Odd position - need left sibling
@@ -190,7 +198,13 @@ library MerkleMultiProof {
                         w++;
                         r++;
                     } else {
-                        revert("Node missing right sibling");
+                        // tree is likely unbalanced, so promote this node to the next level
+                        flattened[w] = Node({
+                            node: flattened[r].node,
+                            k_index: flattened[r].k_index / 2
+                        });
+                        w++;
+                        r++;
                     }
                 } else {
                     // Odd position - need left sibling
@@ -431,25 +445,15 @@ library MerkleMultiProof {
         }
     }
 
-    /// @notice compute the height of the tree whose total number of leaves is given, it accounts for unbalanced trees.
-    /// @param leavesCount number of leaves in the tree
-    /// @return height of the tree
-    function TreeHeight(uint256 leavesCount) internal pure returns (uint256) {
-        uint256 height = Math.log2(leavesCount, Math.Rounding.Up);
-        if (!isPowerOfTwo(leavesCount)) {
-            unchecked {
-                height++;
-            }
-        }
-
-        return height;
-    }
-
+    /// @notice Check if a number is a power of two.
+    /// @dev This is used to determine if a tree level is complete.
+    /// @param x The number to check
+    /// @return bool True if x is a power of two
     function isPowerOfTwo(uint256 x) internal pure returns (bool) {
         if (x == 0) {
             return false;
         }
-
+        // Check if x has exactly one bit set to 1
         return (x & (x - 1)) == 0;
     }
 }
