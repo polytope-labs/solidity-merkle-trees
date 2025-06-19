@@ -93,8 +93,8 @@ library MerkleMultiProof {
      * @return bytes32 The calculated root hash
      */
     function CalculateRootOptimized(
-        Node[] calldata proof,
-        Node[] calldata leaves,
+        Node[] memory proof,
+        Node[] memory leaves,
         uint256 leavesCount
     ) internal pure returns (bytes32) {
         // Calculate tree height
