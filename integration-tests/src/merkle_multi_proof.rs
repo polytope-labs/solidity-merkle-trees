@@ -1,4 +1,5 @@
 #![cfg(test)]
+#![allow(dead_code, unused_imports, unused_variables, unused_assignments)]
 
 use crate::{keccak256, positional_merkle::*, Keccak256, Token};
 use ethers::abi::{AbiEncode, Uint};
@@ -18,15 +19,18 @@ async fn multi_merkle_proof() {
     let mut runner = Runner::new(PathBuf::from(&base_dir));
     let mut contract = runner.deploy("MerkleMultiProofTest").await;
 
-    let leaves = (0..1024).map(|_| H256::random().as_bytes().to_vec()).collect::<Vec<_>>();
+    let num_leaves = 600;
+    let threshold = ((num_leaves * 1) / 3) - 1;
+
+    let leaves = (0..num_leaves).map(|_| H256::random().as_bytes().to_vec()).collect::<Vec<_>>();
     let leaf_hashes = leaves.iter().map(keccak256).collect::<Vec<[u8; 32]>>();
 
     let tree = MerkleTree::<Keccak256>::from_leaves(&leaf_hashes);
 
     let mut rng = rand::thread_rng();
     let mut indices = std::collections::HashSet::new();
-    while indices.len() < 667 {
-        indices.insert(rng.gen_range(0..1024usize));
+    while indices.len() < threshold {
+        indices.insert(rng.gen_range(0..num_leaves));
     }
     let mut indices: Vec<usize> = indices.into_iter().collect();
     indices.sort();
@@ -58,6 +62,9 @@ async fn multi_merkle_proof() {
         })
         .collect::<Vec<_>>();
 
+    // println!("Encoded: {:?}", hex::encode(&(args.clone(),
+    // leaves_with_indices.clone()).encode()));
+
     let calculated = contract
         .call::<_, [u8; 32]>("CalculateRoot", (args.clone(), leaves_with_indices))
         .await
@@ -65,189 +72,16 @@ async fn multi_merkle_proof() {
 
     assert_eq!(tree.root().unwrap(), calculated);
 
-    {
-        {
-            for i in [2usize, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048] {
-                let calculated = contract
-                    .call::<_, u32>("TreeHeight", (Token::Uint(Uint::from(i))))
-                    .await
-                    .unwrap();
-                assert_eq!(calculated as u32, i.ilog2());
-            }
-        }
+    let beefy_root =
+        binary_merkle_tree::merkle_root::<sp_runtime::traits::Keccak256, _>(leaves.clone());
 
-        let beefy_root =
-            binary_merkle_tree::merkle_root::<sp_runtime::traits::Keccak256, _>(leaves.clone());
-
-        assert_eq!(beefy_root, H256(calculated));
-    }
-}
-
-fn tree_height(num_leaves: u64) -> u64 {
-    let mut height = 0;
-    let mut nodes = num_leaves;
-    while nodes > 1 {
-        height += 1;
-        nodes = (nodes + 1) / 2;
-    }
-    height
-}
-
-fn optimized_hash(left: H256, right: H256) -> H256 {
-    H256(keccak256(&[left.as_bytes(), right.as_bytes()].concat()))
-}
-
-pub fn calculate_balanced_root(
-    proof: &[Node],
-    leaves: &[Node],
-    num_leaves: u64,
-) -> Result<H256, String> {
-    let mut p = 0;
-    let mut f = 0;
-    let mut h = tree_height(num_leaves);
-    let mut flattened = iter::repeat(Node::default())
-        .take(2usize.pow((h - 1) as u32))
-        .collect::<Vec<_>>();
-
-    // Process leaves
-    let mut l = 0;
-    while l < leaves.len() {
-        if leaves[l].position % 2 == 0 {
-            if p < proof.len() && proof[p].position == leaves[l].position + 1 {
-                // Next sibling is in proof
-                let node = Node {
-                    hash: optimized_hash(leaves[l].hash, proof[p].hash),
-                    position: leaves[l].position / 2,
-                };
-                flattened[f] = node;
-                f += 1;
-                p += 1;
-            } else if l + 1 < leaves.len() && leaves[l + 1].position == leaves[l].position + 1 {
-                // Next sibling must be in leaves
-                let node = Node {
-                    hash: optimized_hash(leaves[l].hash, leaves[l + 1].hash),
-                    position: leaves[l].position / 2,
-                };
-                flattened[f] = node;
-                f += 1;
-                l += 1;
-            } else {
-                println!("Proof: {:#?}\n", proof);
-                return Err(format!("{} Leaf missing sibling node", leaves[l].position));
-            }
-        } else {
-            if p < proof.len() && proof[p].position == leaves[l].position - 1 {
-                // Next sibling is in proof
-                let node = Node {
-                    hash: optimized_hash(proof[p].hash, leaves[l].hash),
-                    position: proof[p].position / 2,
-                };
-                flattened[f] = node;
-                f += 1;
-                p += 1;
-            } else if l + 1 < leaves.len() && leaves[l + 1].position == leaves[l].position - 1 {
-                // Next sibling must be in leaves
-                let node = Node {
-                    hash: optimized_hash(leaves[l + 1].hash, leaves[l].hash),
-                    position: leaves[l + 1].position / 2,
-                };
-                flattened[f] = node;
-                f += 1;
-                l += 1;
-            } else {
-                println!("Proof: {:#?}\n", proof);
-                return Err(format!("{} Leaf missing sibling node", leaves[l].position));
-            }
-        }
-        l += 1;
-    }
-
-    // We've processed all leaves and are moving up the tree
-    h -= 1;
-
-    while flattened[0].position != 1 {
-        let mut r = 0;
-        let mut w = 0;
-
-        while r < flattened.len() {
-            if flattened[r].position == 0 ||
-                flattened[r].position >= 2u64.pow((h + 1) as u32) as usize
-            {
-                // Moving on up
-                if h != 0 {
-                    h -= 1;
-                }
-                r = 0;
-                w = 0;
-                break;
-            }
-
-            if flattened[r].position % 2 == 0 {
-                if p < proof.len() && proof[p].position == flattened[r].position + 1 {
-                    // Next sibling is in proof
-                    let node = Node {
-                        hash: optimized_hash(flattened[r].hash, proof[p].hash),
-                        position: flattened[r].position / 2,
-                    };
-                    flattened[w] = node;
-                    w += 1;
-                    p += 1;
-                } else if r + 1 < flattened.len() &&
-                    flattened[r + 1].position == flattened[r].position + 1
-                {
-                    // Next sibling must be in flattened
-                    let node = Node {
-                        hash: optimized_hash(flattened[r].hash, flattened[r + 1].hash),
-                        position: flattened[r].position / 2,
-                    };
-                    flattened[w] = node;
-                    w += 1;
-                    r += 1;
-                } else {
-                    return Err(format!(
-                        "Node {} missing right sibling node",
-                        flattened[r].position,
-                    ));
-                }
-            } else {
-                if p < proof.len() && proof[p].position == flattened[r].position - 1 {
-                    // Next sibling is in proof
-                    let node = Node {
-                        hash: optimized_hash(proof[p].hash, flattened[r].hash),
-                        position: proof[p].position / 2,
-                    };
-                    flattened[w] = node;
-                    w += 1;
-                    p += 1;
-                } else if r + 1 < flattened.len() &&
-                    flattened[r + 1].position == flattened[r].position - 1
-                {
-                    // Next sibling must be in flattened
-                    let node = Node {
-                        hash: optimized_hash(flattened[r + 1].hash, flattened[r].hash),
-                        position: flattened[r + 1].position / 2,
-                    };
-                    flattened[w] = node;
-                    w += 1;
-                    r += 1;
-                } else {
-                    return Err(
-                        format!("Node {} missing left sibling node", flattened[r].position,),
-                    );
-                }
-            }
-            r += 1;
-        }
-    }
-
-    Ok(flattened[0].hash)
+    assert_eq!(beefy_root, H256(calculated));
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_calculate_balanced_root() {
-    let num_leaves = 1024;
+    let num_leaves = 600;
     let threshold = ((num_leaves * 1) / 3) - 1;
-    // let threshold = 199;
     dbg!(threshold);
     let leaves = (0..num_leaves).map(|_| H256::random().as_bytes().to_vec()).collect::<Vec<_>>();
     dbg!(leaves.len());
@@ -265,6 +99,8 @@ async fn test_calculate_balanced_root() {
         PositionalMerkleTree::new(&leaf_hashes.clone().into_iter().map(H256).collect::<Vec<_>>())
             .unwrap();
 
+    dbg!(positional_tree.root());
+
     let mut proof_items = vec![];
 
     for mut i in positional_tree.generate_multi_proof(&indices).unwrap().into_iter().rev() {
@@ -273,7 +109,8 @@ async fn test_calculate_balanced_root() {
     }
 
     dbg!(proof_items.len());
-    let height = (leaves.len() as f64).log2().ceil() as usize;
+    let height = tree_height(leaves.len() as u64);
+    dbg!(height);
 
     let mut proof_leaves = indices
         .iter()

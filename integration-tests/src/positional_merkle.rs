@@ -41,6 +41,169 @@ pub struct PositionalMerkleTree {
     first_leaf_pos: usize,
 }
 
+pub fn tree_height(num_leaves: u64) -> u64 {
+    let mut height = 0;
+    let mut nodes = num_leaves;
+    while nodes > 1 {
+        height += 1;
+        nodes = (nodes + 1) / 2;
+    }
+    height
+}
+
+fn optimized_hash(left: H256, right: H256) -> H256 {
+    H256(keccak256(&[left.as_bytes(), right.as_bytes()].concat()))
+}
+
+pub fn calculate_balanced_root(
+    proof: &[Node],
+    leaves: &[Node],
+    num_leaves: u64,
+) -> Result<H256, String> {
+    let mut p = 0;
+    let mut f = 0;
+    let mut h = tree_height(num_leaves);
+    dbg!(h);
+    let mut flattened = std::iter::repeat(Node::default())
+        .take(2usize.pow((h - 1) as u32))
+        .collect::<Vec<_>>();
+
+    // Process leaves
+    let mut l = 0;
+    while l < leaves.len() {
+        if leaves[l].position % 2 == 0 {
+            if p < proof.len() && proof[p].position == leaves[l].position + 1 {
+                // Next sibling is in proof
+                let node = Node {
+                    hash: optimized_hash(leaves[l].hash, proof[p].hash),
+                    position: leaves[l].position / 2,
+                };
+                flattened[f] = node;
+                f += 1;
+                p += 1;
+            } else if l + 1 < leaves.len() && leaves[l + 1].position == leaves[l].position + 1 {
+                // Next sibling must be in leaves
+                let node = Node {
+                    hash: optimized_hash(leaves[l].hash, leaves[l + 1].hash),
+                    position: leaves[l].position / 2,
+                };
+                flattened[f] = node;
+                f += 1;
+                l += 1;
+            } else {
+                let node = Node { hash: leaves[l].hash, position: leaves[l].position / 2 };
+                flattened[f] = node;
+                f += 1;
+                l += 1;
+            }
+        } else {
+            if p < proof.len() && proof[p].position == leaves[l].position - 1 {
+                // Next sibling is in proof
+                let node = Node {
+                    hash: optimized_hash(proof[p].hash, leaves[l].hash),
+                    position: proof[p].position / 2,
+                };
+                flattened[f] = node;
+                f += 1;
+                p += 1;
+            } else if l + 1 < leaves.len() && leaves[l + 1].position == leaves[l].position - 1 {
+                // Next sibling must be in leaves
+                let node = Node {
+                    hash: optimized_hash(leaves[l + 1].hash, leaves[l].hash),
+                    position: leaves[l + 1].position / 2,
+                };
+                flattened[f] = node;
+                f += 1;
+                l += 1;
+            } else {
+                return Err(format!("{} Leaf missing left sibling node", leaves[l].position));
+            }
+        }
+        l += 1;
+    }
+
+    // We've processed all leaves and are moving up the tree
+    h -= 1;
+
+    while flattened[0].position != 1 {
+        let mut r = 0;
+        let mut w = 0;
+
+        while r < flattened.len() {
+            if flattened[r].position == 0 ||
+                flattened[r].position >= 2u64.pow((h + 1) as u32) as usize
+            {
+                // Moving on up
+                if h != 0 {
+                    h -= 1;
+                }
+                r = 0;
+                w = 0;
+                break;
+            }
+
+            if flattened[r].position % 2 == 0 {
+                if p < proof.len() && proof[p].position == flattened[r].position + 1 {
+                    // Next sibling is in proof
+                    let node = Node {
+                        hash: optimized_hash(flattened[r].hash, proof[p].hash),
+                        position: flattened[r].position / 2,
+                    };
+                    flattened[w] = node;
+                    w += 1;
+                    p += 1;
+                } else if r + 1 < flattened.len() &&
+                    flattened[r + 1].position == flattened[r].position + 1
+                {
+                    // Next sibling must be in flattened
+                    let node = Node {
+                        hash: optimized_hash(flattened[r].hash, flattened[r + 1].hash),
+                        position: flattened[r].position / 2,
+                    };
+                    flattened[w] = node;
+                    w += 1;
+                    r += 1;
+                } else {
+                    let node =
+                        Node { hash: flattened[r].hash, position: flattened[r].position / 2 };
+                    flattened[w] = node;
+                    w += 1;
+                    r += 1;
+                }
+            } else {
+                if p < proof.len() && proof[p].position == flattened[r].position - 1 {
+                    // Next sibling is in proof
+                    let node = Node {
+                        hash: optimized_hash(proof[p].hash, flattened[r].hash),
+                        position: proof[p].position / 2,
+                    };
+                    flattened[w] = node;
+                    w += 1;
+                    p += 1;
+                } else if r + 1 < flattened.len() &&
+                    flattened[r + 1].position == flattened[r].position - 1
+                {
+                    // Next sibling must be in flattened
+                    let node = Node {
+                        hash: optimized_hash(flattened[r + 1].hash, flattened[r].hash),
+                        position: flattened[r + 1].position / 2,
+                    };
+                    flattened[w] = node;
+                    w += 1;
+                    r += 1;
+                } else {
+                    return Err(
+                        format!("Node {} missing left sibling node", flattened[r].position,),
+                    );
+                }
+            }
+            r += 1;
+        }
+    }
+
+    Ok(flattened[0].hash)
+}
+
 impl PositionalMerkleTree {
     /// Creates a new merkle tree from a list of leaf hashes
     pub fn new(leaves: &[H256]) -> Result<Self, MerkleError> {
@@ -59,14 +222,7 @@ impl PositionalMerkleTree {
             nodes.insert(position, Node { hash, position });
         }
 
-        // If odd number of leaves, duplicate last leaf for balanced tree
-        if leaf_count % 2 == 1 {
-            let last_leaf = leaves[leaf_count - 1];
-            nodes.insert(
-                first_leaf_pos + leaf_count,
-                Node { hash: last_leaf, position: first_leaf_pos + leaf_count },
-            );
-        }
+        // For unbalanced trees, we don't duplicate leaves
 
         let mut tree = Self { nodes, leaf_count, height, first_leaf_pos };
         tree.build_internal_nodes();
@@ -171,7 +327,15 @@ impl PositionalMerkleTree {
                         let parent_hash = Self::hash_pair(left, right);
                         next_level.insert(parent_pos, parent_hash);
                     },
-                    _ => return Err(MerkleError::InvalidProof("missing sibling node")),
+                    (Some(&single), None) => {
+                        // For unbalanced trees, promote single nodes
+                        next_level.insert(parent_pos, single);
+                    },
+                    (None, Some(&single)) => {
+                        // For unbalanced trees, promote single nodes
+                        next_level.insert(parent_pos, single);
+                    },
+                    _ => return Err(MerkleError::InvalidProof("invalid tree structure")),
                 }
             }
 
@@ -192,11 +356,16 @@ impl PositionalMerkleTree {
                 let left_pos = pos * 2;
                 let right_pos = left_pos + 1;
 
-                if let (Some(left), Some(right)) =
-                    (self.nodes.get(&left_pos), self.nodes.get(&right_pos))
-                {
-                    let hash = Self::hash_pair(left.hash, right.hash);
-                    self.nodes.insert(pos, Node { hash, position: pos });
+                match (self.nodes.get(&left_pos), self.nodes.get(&right_pos)) {
+                    (Some(left), Some(right)) => {
+                        let hash = Self::hash_pair(left.hash, right.hash);
+                        self.nodes.insert(pos, Node { hash, position: pos });
+                    },
+                    (Some(single), None) | (None, Some(single)) => {
+                        // For unbalanced trees, promote single nodes
+                        self.nodes.insert(pos, Node { hash: single.hash, position: pos });
+                    },
+                    _ => {}, // Skip empty branches
                 }
             }
         }
@@ -214,6 +383,48 @@ mod tests {
 
     fn random_hash() -> H256 {
         H256::random()
+    }
+
+    #[test]
+    fn test_unbalanced_tree() {
+        // Create tree with 3 leaves (unbalanced)
+        let leaves: Vec<H256> = (0..3).map(|_| random_hash()).collect();
+        let tree = PositionalMerkleTree::new(&leaves).unwrap();
+
+        // Generate and verify proof for last leaf (which has no sibling)
+        let indices = vec![2];
+        let proof = tree.generate_multi_proof(&indices).unwrap();
+        let leaf_values = vec![leaves[2]];
+
+        assert!(PositionalMerkleTree::verify_multi_proof(
+            tree.root(),
+            &indices,
+            &leaf_values,
+            &proof,
+            tree.height
+        )
+        .unwrap());
+    }
+
+    #[test]
+    fn test_unbalanced_tree_multiple_proofs() {
+        // Create tree with 5 leaves (unbalanced)
+        let leaves: Vec<H256> = (0..5).map(|_| random_hash()).collect();
+        let tree = PositionalMerkleTree::new(&leaves).unwrap();
+
+        // Generate and verify proof for indices including the last leaf
+        let indices = vec![1, 3, 4];
+        let proof = tree.generate_multi_proof(&indices).unwrap();
+        let leaf_values: Vec<H256> = indices.iter().map(|&i| leaves[i]).collect();
+
+        assert!(PositionalMerkleTree::verify_multi_proof(
+            tree.root(),
+            &indices,
+            &leaf_values,
+            &proof,
+            tree.height
+        )
+        .unwrap());
     }
 
     #[test]
