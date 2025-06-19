@@ -96,7 +96,7 @@ library MerkleMultiProof {
         Node[] calldata proof,
         Node[] calldata leaves,
         uint256 leavesCount
-    ) public pure returns (bytes32) {
+    ) internal pure returns (bytes32) {
         // Calculate tree height
         uint256 height = Math.log2(leavesCount, Math.Rounding.Up);
 

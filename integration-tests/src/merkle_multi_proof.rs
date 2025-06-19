@@ -1,4 +1,5 @@
 #![cfg(test)]
+#![allow(dead_code, unused_imports, unused_variables, unused_assignments)]
 
 use crate::{keccak256, positional_merkle::*, Keccak256, Token};
 use ethers::abi::{AbiEncode, Uint};
@@ -18,15 +19,18 @@ async fn multi_merkle_proof() {
     let mut runner = Runner::new(PathBuf::from(&base_dir));
     let mut contract = runner.deploy("MerkleMultiProofTest").await;
 
-    let leaves = (0..1024).map(|_| H256::random().as_bytes().to_vec()).collect::<Vec<_>>();
+    let num_leaves = 600;
+    let threshold = ((num_leaves * 1) / 3) - 1;
+
+    let leaves = (0..num_leaves).map(|_| H256::random().as_bytes().to_vec()).collect::<Vec<_>>();
     let leaf_hashes = leaves.iter().map(keccak256).collect::<Vec<[u8; 32]>>();
 
     let tree = MerkleTree::<Keccak256>::from_leaves(&leaf_hashes);
 
     let mut rng = rand::thread_rng();
     let mut indices = std::collections::HashSet::new();
-    while indices.len() < 667 {
-        indices.insert(rng.gen_range(0..1024usize));
+    while indices.len() < threshold {
+        indices.insert(rng.gen_range(0..num_leaves));
     }
     let mut indices: Vec<usize> = indices.into_iter().collect();
     indices.sort();
@@ -58,6 +62,9 @@ async fn multi_merkle_proof() {
         })
         .collect::<Vec<_>>();
 
+    // println!("Encoded: {:?}", hex::encode(&(args.clone(),
+    // leaves_with_indices.clone()).encode()));
+
     let calculated = contract
         .call::<_, [u8; 32]>("CalculateRoot", (args.clone(), leaves_with_indices))
         .await
@@ -75,7 +82,6 @@ async fn multi_merkle_proof() {
 async fn test_calculate_balanced_root() {
     let num_leaves = 600;
     let threshold = ((num_leaves * 1) / 3) - 1;
-    // let threshold = 199;
     dbg!(threshold);
     let leaves = (0..num_leaves).map(|_| H256::random().as_bytes().to_vec()).collect::<Vec<_>>();
     dbg!(leaves.len());
