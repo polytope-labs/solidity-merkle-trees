@@ -202,7 +202,7 @@ impl PositionalMerkleTree {
                         // For unbalanced trees, promote single nodes
                         self.nodes.insert(pos, Node { hash: single.hash, position: pos });
                     },
-                    _ => {} // Skip empty branches
+                    _ => {}, // Skip empty branches
                 }
             }
         }
@@ -232,14 +232,15 @@ mod tests {
         let indices = vec![2];
         let proof = tree.generate_multi_proof(&indices).unwrap();
         let leaf_values = vec![leaves[2]];
-        
+
         assert!(PositionalMerkleTree::verify_multi_proof(
             tree.root(),
             &indices,
             &leaf_values,
             &proof,
             tree.height
-        ).unwrap());
+        )
+        .unwrap());
     }
 
     #[test]
@@ -252,14 +253,15 @@ mod tests {
         let indices = vec![1, 3, 4];
         let proof = tree.generate_multi_proof(&indices).unwrap();
         let leaf_values: Vec<H256> = indices.iter().map(|&i| leaves[i]).collect();
-        
+
         assert!(PositionalMerkleTree::verify_multi_proof(
             tree.root(),
             &indices,
             &leaf_values,
             &proof,
             tree.height
-        ).unwrap());
+        )
+        .unwrap());
     }
 
     #[test]

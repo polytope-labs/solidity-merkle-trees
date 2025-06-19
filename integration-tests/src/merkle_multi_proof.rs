@@ -172,8 +172,8 @@ pub fn calculate_balanced_root(
         let mut w = 0;
 
         while r < flattened.len() {
-            if flattened[r].position == 0
-                || flattened[r].position >= 2u64.pow((h + 1) as u32) as usize
+            if flattened[r].position == 0 ||
+                flattened[r].position >= 2u64.pow((h + 1) as u32) as usize
             {
                 // Moving on up
                 if h != 0 {
@@ -194,8 +194,8 @@ pub fn calculate_balanced_root(
                     flattened[w] = node;
                     w += 1;
                     p += 1;
-                } else if r + 1 < flattened.len()
-                    && flattened[r + 1].position == flattened[r].position + 1
+                } else if r + 1 < flattened.len() &&
+                    flattened[r + 1].position == flattened[r].position + 1
                 {
                     // Next sibling must be in flattened
                     let node = Node {
@@ -222,8 +222,8 @@ pub fn calculate_balanced_root(
                     flattened[w] = node;
                     w += 1;
                     p += 1;
-                } else if r + 1 < flattened.len()
-                    && flattened[r + 1].position == flattened[r].position - 1
+                } else if r + 1 < flattened.len() &&
+                    flattened[r + 1].position == flattened[r].position - 1
                 {
                     // Next sibling must be in flattened
                     let node = Node {
@@ -234,10 +234,9 @@ pub fn calculate_balanced_root(
                     w += 1;
                     r += 1;
                 } else {
-                    return Err(format!(
-                        "Node {} missing left sibling node",
-                        flattened[r].position,
-                    ));
+                    return Err(
+                        format!("Node {} missing left sibling node", flattened[r].position,),
+                    );
                 }
             }
             r += 1;
