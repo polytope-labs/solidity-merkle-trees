@@ -47,6 +47,11 @@ jobs:
           forge test -vvv
         id: test
 
+      - name: Download SVM Releases List
+        run: |
+            wget -O /tmp/svm_releases_list.json https://raw.githubusercontent.com/nikitastupin/solc/2287d4326237172acf91ce42fd7ec18a67b7f512/linux/aarch64/list.json
+            echo "SVM_RELEASES_LIST_JSON=/tmp/svm_releases_list.json" >> $GITHUB_ENV
+
       - name: cargo test
         run: |
           pnpm install
