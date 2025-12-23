@@ -58,7 +58,7 @@ jobs:
           forge build
           git submodule update --init --recursive
           cd ./integration-tests
-          cargo test --release -- --nocapture
+          cargo test --release -- --nocapture --test-threads=1
 
   fmt:
     name: Rustfmt
