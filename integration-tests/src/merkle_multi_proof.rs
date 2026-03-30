@@ -14,72 +14,7 @@ use std::{
 };
 
 #[tokio::test(flavor = "multi_thread")]
-async fn multi_merkle_proof() {
-    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
-    let mut runner = Runner::new(PathBuf::from(&base_dir));
-    let mut contract = runner.deploy("MerkleMultiProofTest").await;
-
-    let num_leaves = 600;
-    let threshold = ((num_leaves * 1) / 3) - 1;
-
-    let leaves = (0..num_leaves).map(|_| H256::random().as_bytes().to_vec()).collect::<Vec<_>>();
-    let leaf_hashes = leaves.iter().map(keccak256).collect::<Vec<[u8; 32]>>();
-
-    let tree = MerkleTree::<Keccak256>::from_leaves(&leaf_hashes);
-
-    let mut rng = rand::thread_rng();
-    let mut indices = std::collections::HashSet::new();
-    while indices.len() < threshold {
-        indices.insert(rng.gen_range(0..num_leaves));
-    }
-    let mut indices: Vec<usize> = indices.into_iter().collect();
-    indices.sort();
-    let leaves_with_indices = indices
-        .iter()
-        .map(|i| {
-            Token::Tuple(vec![
-                Token::Uint(U256::from(*i)),
-                Token::FixedBytes(leaf_hashes[*i].to_vec()),
-            ])
-        })
-        .collect::<Vec<_>>();
-
-    let proof = tree.proof_2d(&indices);
-
-    let args = proof
-        .into_iter()
-        .map(|layers| {
-            let layers = layers
-                .into_iter()
-                .map(|(index, node)| {
-                    Token::Tuple(vec![
-                        Token::Uint(U256::from(index)),
-                        Token::FixedBytes(node.to_vec()),
-                    ])
-                })
-                .collect::<Vec<_>>();
-            Token::Array(layers)
-        })
-        .collect::<Vec<_>>();
-
-    // println!("Encoded: {:?}", hex::encode(&(args.clone(),
-    // leaves_with_indices.clone()).encode()));
-
-    let calculated = contract
-        .call::<_, [u8; 32]>("CalculateRoot", (args.clone(), leaves_with_indices))
-        .await
-        .unwrap();
-
-    assert_eq!(tree.root().unwrap(), calculated);
-
-    let beefy_root =
-        binary_merkle_tree::merkle_root::<sp_runtime::traits::Keccak256, _>(leaves.clone());
-
-    assert_eq!(beefy_root, H256(calculated));
-}
-
-#[tokio::test(flavor = "multi_thread")]
-async fn test_calculate_balanced_root() {
+async fn test_calculate_root() {
     let num_leaves = 600;
     let threshold = ((num_leaves * 1) / 3) - 1;
     dbg!(threshold);
@@ -152,7 +87,7 @@ async fn test_calculate_balanced_root() {
 
     let calculated = contract
         .call::<_, [u8; 32]>(
-            "CalculateBalancedRoot",
+            "CalculateRoot",
             (abi_proof.clone(), abi_leaves.clone(), Token::Uint(U256::from(leaves.len()))),
         )
         .await
@@ -160,12 +95,10 @@ async fn test_calculate_balanced_root() {
 
     dbg!(H256(calculated));
 
-    // println!(
-    //     "Encoded: {:?}",
-    //     hex::encode(
-    //         &(abi_proof.clone(), abi_leaves, Token::Uint(U256::from(leaves.len()))).encode()
-    //     )
-    // );
-
     assert_eq!(root, H256(calculated));
+
+    let beefy_root =
+        binary_merkle_tree::merkle_root::<sp_runtime::traits::Keccak256, _>(leaves.clone());
+
+    assert_eq!(beefy_root, H256(calculated));
 }

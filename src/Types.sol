@@ -12,7 +12,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.17;
 
 // Outcome of a successfully verified merkle-patricia proof
 struct StorageValue {
@@ -25,18 +25,18 @@ struct StorageValue {
 /// @title A representation of a Merkle tree node
 struct Node {
     // Distance of the node to the leftmost node
-    uint256 k_index;
+    uint256 nodeIndex;
     // A hash of the node itself
     bytes32 node;
 }
 
 /// @title A representation of a MerkleMountainRange leaf
 struct MmrLeaf {
-    // the leftmost index of a node
-    uint256 k_index;
-    // The position in the tree
-    uint256 leaf_index;
-    // The hash of the position in the tree
+    // 1-based tree position of the node within its subtree peak
+    uint256 nodeIndex;
+    // The 0-based index of the leaf in the tree
+    uint256 leafIndex;
+    // The hash of the leaf
     bytes32 hash;
 }
 

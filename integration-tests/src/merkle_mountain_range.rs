@@ -3,77 +3,31 @@
 use crate::{MergeKeccak, NumberHash, Token};
 use ckb_merkle_mountain_range::{mmr_position_to_k_index, util::MemStore, MMR};
 use forge_testsuite::{Contract, Runner};
-use hex_literal::hex;
 use primitive_types::U256;
 use proptest::{prop_compose, proptest};
 use std::{env, path::PathBuf};
 
-type MmrLeaf = (u64, u64, [u8; 32]);
+/// Convert 0-based k_index to 1-based tree position within its subtree peak.
+/// Decomposes leaf_count into peaks (descending powers of 2), finds which peak
+/// the leaf belongs to by its leafIndex, and computes (1 << peak_height) + k_index.
+fn k_index_to_tree_position(k_index: usize, leaf_index: u32, leaf_count: u32) -> usize {
+    let mut remaining = leaf_count;
+    let mut boundary: u32 = 0;
 
-#[tokio::test(flavor = "multi_thread")]
-async fn test_mmr_utils() {
-    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
-    let mut runner = Runner::new(PathBuf::from(&base_dir));
-    let mut contract = runner.deploy("MerkleMountainRangeTest").await;
+    while remaining != 0 {
+        let height = (remaining as f64).log2().floor() as u32;
+        let peak_size = 1u32 << height;
+        boundary += peak_size;
 
-    {
-        let left = vec![3, 4].into_iter().map(|n| Token::Uint(U256::from(n))).collect();
-        let right = vec![2, 5].into_iter().map(|n| Token::Uint(U256::from(n))).collect();
+        if (leaf_index) < boundary {
+            // This leaf belongs to this peak
+            return (1usize << height) + k_index;
+        }
 
-        let height = contract
-            .call::<_, Vec<u64>>("difference", (Token::Array(left), Token::Array(right)))
-            .await
-            .unwrap();
-
-        assert_eq!(height, vec![3, 4]);
+        remaining -= peak_size;
     }
 
-    {
-        let indices =
-            vec![2, 5].into_iter().map(|i| Token::Uint(U256::from(i))).collect::<Vec<_>>();
-        let siblings = contract.call::<_, Vec<u64>>("siblingIndices", (indices)).await.unwrap();
-
-        assert_eq!(siblings, vec![3, 4]);
-    }
-
-    {
-        let leaves = vec![
-            (3, 2, hex!("2b97a4b75a93aa1ac8581fac0f7d4ab42406569409a737bdf9de584903b372c5")),
-            (8, 5, hex!("d279eb4bf22b2aeded31e65a126516215a9d93f83e3e425fdcd1a05ab347e535")),
-            (14, 5, hex!("d279eb4bf22b2aeded31e65a126516215a9d93f83e3e425fdcd1a05ab347e535")),
-            (22, 5, hex!("d279eb4bf22b2aeded31e65a126516215a9d93f83e3e425fdcd1a05ab347e535")),
-            (25, 5, hex!("d279eb4bf22b2aeded31e65a126516215a9d93f83e3e425fdcd1a05ab347e535")),
-            (30, 5, hex!("d279eb4bf22b2aeded31e65a126516215a9d93f83e3e425fdcd1a05ab347e535")),
-        ]
-        .into_iter()
-        .map(|(pos, index, hash)| {
-            Token::Tuple(vec![
-                Token::Uint(U256::from(index)),
-                Token::Uint(U256::from(pos)),
-                Token::FixedBytes(hash.to_vec()),
-            ])
-        })
-        .collect::<Vec<_>>();
-
-        let result = contract
-            .call::<_, (Vec<(u64, [u8; 32])>, Vec<u64>)>("mmrLeafToNode", (leaves.clone()))
-            .await
-            .unwrap();
-
-        assert_eq!(result.0.len(), 6);
-        assert_eq!(result.1.len(), 6);
-
-        let result = contract
-            .call::<_, (Vec<MmrLeaf>, Vec<MmrLeaf>)>(
-                "leavesForPeak",
-                (leaves, Token::Uint(U256::from(15))),
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(result.0.len(), 3);
-        assert_eq!(result.1.len(), 3);
-    }
+    panic!("leaf_index {} not found in MMR with leaf_count {}", leaf_index, leaf_count);
 }
 
 pub async fn solidity_calculate_root(
@@ -129,9 +83,10 @@ pub async fn test_mmr(contract: &mut Contract<'_>, count: u32, mut proof_elem: V
         .zip(proof_elem.clone().into_iter())
         .map(|((pos, leaf), index)| {
             let k_index = mmr_position_to_k_index(vec![pos], proof.mmr_size())[0].1;
+            let node_index = k_index_to_tree_position(k_index, index, count);
             let mut hash = [0u8; 32];
             hash.copy_from_slice(&leaf.0);
-            (index, k_index, hash)
+            (index, node_index, hash)
         })
         .collect::<Vec<_>>();
 

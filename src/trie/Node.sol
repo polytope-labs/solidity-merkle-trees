@@ -14,8 +14,8 @@
 // limitations under the License.
 pragma solidity ^0.8.20;
 
-import "./NibbleSlice.sol";
-import "./Bytes.sol";
+import {NibbleSlice} from "./NibbleSlice.sol";
+import {ByteSlice} from "./Bytes.sol";
 
 /// This is an enum for the different node types.
 struct NodeKind {
