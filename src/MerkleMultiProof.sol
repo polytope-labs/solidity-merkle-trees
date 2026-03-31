@@ -1,19 +1,17 @@
-/* Copyright (C) Polytope Labs Ltd. */
-/* SPDX-License-Identifier: Apache-2.0 */
+// Copyright (C) Polytope Labs Ltd.
+// SPDX-License-Identifier: Apache-2.0
 
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * 	http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 pragma solidity ^0.8.20;
 
 /**
@@ -35,17 +33,17 @@ library MerkleMultiProof {
      *         4   5 6   7
      */
     struct Node {
-        /* 1-based position of the node in the tree */
+        // 1-based position of the node in the tree
         uint256 position;
-        /* A hash of the node itself */
+        // A hash of the node itself
         bytes32 node;
     }
 
-    /* @dev Thrown when a leaf node has no sibling in the proof or leaves array. */
+    // @dev Thrown when a leaf node has no sibling in the proof or leaves array.
     error LeafMissingSibling();
-    /* @dev Thrown when an internal node has no sibling during the tree walk. */
+    // @dev Thrown when an internal node has no sibling during the tree walk.
     error NodeMissingSibling();
-    /* @dev Thrown when leafCount is zero. */
+    // @dev Thrown when leafCount is zero.
     error EmptyTree();
 
     /**
@@ -165,7 +163,7 @@ library MerkleMultiProof {
             l++;
         }
 
-        /* Trim flattened to actual size before processing upper levels */
+        // Trim flattened to actual size before processing upper levels
         assembly {
             mstore(flattened, f)
         }
@@ -252,7 +250,7 @@ library MerkleMultiProof {
                 }
             }
 
-            /* Trim flattened to the number of nodes written this level */
+            // Trim flattened to the number of nodes written this level
             flatLen = w;
             assembly {
                 mstore(flattened, w)
@@ -278,13 +276,13 @@ library MerkleMultiProof {
         }
     }
 
-    /* @dev Compute ceil(log2(x)) */
+    // @dev Compute ceil(log2(x))
     function _ceilLog2(uint256 x) private pure returns (uint256) {
         if (x <= 1) return 0;
         return _log2(x - 1) + 1;
     }
 
-    /* @dev Efficient floor(log2(x)) using bit-shifting */
+    // @dev Efficient floor(log2(x)) using bit-shifting
     function _log2(uint256 x) private pure returns (uint256 r) {
         assembly {
             r := shl(7, lt(0xffffffffffffffffffffffffffffffff, x))

@@ -44,7 +44,7 @@ library EthereumTrieDB {
             node.isEmpty = true;
             return node;
         } else if (numItems == 2) {
-            /* It may be a leaf or extension */
+            // It may be a leaf or extension
             bytes memory key = itemList[0].toBytes();
             uint256 prefix;
             assembly {
@@ -75,7 +75,7 @@ library EthereumTrieDB {
             .toRlpItem()
             .toList();
         bytes memory data = decoded[1].toBytes();
-        /* Remove the first byte, which is the prefix and not present in the user provided key */
+        // Remove the first byte, which is the prefix and not present in the user provided key
         leaf.key = NibbleSlice(Bytes.substr(decoded[0].toBytes(), 1), 0);
         leaf.value = NodeHandle(false, bytes32(0), true, data);
 
@@ -93,7 +93,7 @@ library EthereumTrieDB {
             .toList();
         bytes memory data = decoded[1].toBytes();
         uint8 isOdd = uint8(decoded[0].toBytes()[0] >> 4) & 0x01;
-        /* Remove the first byte, which is the prefix and not present in the user provided key */
+        // Remove the first byte, which is the prefix and not present in the user provided key
         extension.key = NibbleSlice(
             Bytes.substr(decoded[0].toBytes(), (isOdd + 1) % 2),
             isOdd

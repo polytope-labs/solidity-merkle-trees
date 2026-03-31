@@ -1,19 +1,17 @@
-/* Copyright (C) Polytope Labs Ltd. */
-/* SPDX-License-Identifier: Apache-2.0 */
+// Copyright (C) Polytope Labs Ltd.
+// SPDX-License-Identifier: Apache-2.0
 
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * 	http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 pragma solidity ^0.8.20;
 
 library Memory {
@@ -53,7 +51,7 @@ library Memory {
         }
         return equals(addr, addr2, len);
     }
-    /* Returns a memory pointer to the data portion of the provided bytes array. */
+    // Returns a memory pointer to the data portion of the provided bytes array.
 
     function dataPtr(bytes memory bts) internal pure returns (uint256 addr) {
         assembly {
@@ -96,7 +94,7 @@ library Memory {
      * the bytes.
      */
     function copy(uint256 src, uint256 dest, uint256 len) internal pure {
-        /* Copy word-length chunks while possible */
+        // Copy word-length chunks while possible
         for (; len >= WORD_SIZE; len -= WORD_SIZE) {
             assembly {
                 mstore(dest, mload(src))
@@ -105,7 +103,7 @@ library Memory {
             src += WORD_SIZE;
         }
 
-        /* Copy remaining bytes */
+        // Copy remaining bytes
         uint256 mask = len == 0
             ? 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
             : 256 ** (WORD_SIZE - len) - 1;

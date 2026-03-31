@@ -1,19 +1,17 @@
-/* Copyright (C) Polytope Labs Ltd. */
-/* SPDX-License-Identifier: Apache-2.0 */
+// Copyright (C) Polytope Labs Ltd.
+// SPDX-License-Identifier: Apache-2.0
 
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * 	http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 pragma solidity ^0.8.17;
 
 /**
@@ -23,9 +21,9 @@ pragma solidity ^0.8.17;
  * @dev refer to research for more info. https://research.polytope.technology/merkle-mountain-range-multi-proofs
  */
 library MerkleMountainRange {
-    /* @dev Thrown when the proof array is exhausted before all siblings are resolved. */
+    // @dev Thrown when the proof array is exhausted before all siblings are resolved.
     error ProofExhausted();
-    /* @dev Thrown when leafCount is zero. */
+    // @dev Thrown when leafCount is zero.
     error EmptyTree();
 
     /*
@@ -43,20 +41,20 @@ library MerkleMountainRange {
      *   index: 0-based leaf position across the entire MMR
      */
     struct Leaf {
-        /* 0-based index of the leaf across the entire MMR */
+        // 0-based index of the leaf across the entire MMR
         uint256 index;
-        /* A hash of the leaf */
+        // A hash of the leaf
         bytes32 hash;
     }
-    
-    /* @dev Iterator for tracking a contiguous range of leaves in an array */
+
+    // @dev Iterator for tracking a contiguous range of leaves in an array
     struct LeafIterator {
-        /* Start index of the range */
-        uint256 offset; 
-        /* Length of the range */
-        uint256 length; 
-        /* Reference to the underlying leaves array */
-        Leaf[] data; 
+        // Start index of the range
+        uint256 offset;
+        // Length of the range
+        uint256 length;
+        // Reference to the underlying leaves array
+        Leaf[] data;
     }
 
     /*
@@ -64,9 +62,9 @@ library MerkleMountainRange {
      *      consumption of proof elements and accumulation of peak roots.
      */
     struct HashIterator {
-        /* Current position in the array */
+        // Current position in the array
         uint256 offset;
-        /* Reference to the underlying data */
+        // Reference to the underlying data
         bytes32[] data;
     }
 
@@ -114,7 +112,7 @@ library MerkleMountainRange {
     {
         if (leafCount == 0) revert EmptyTree();
 
-        /* special handle the only 1 leaf MMR */
+        // special handle the only 1 leaf MMR
         if (leafCount == 1 && leaves.length == 1 && leaves[0].index == 0) {
             return leaves[0].hash;
         }
@@ -244,7 +242,7 @@ library MerkleMountainRange {
         }
         uint256 len = length;
 
-        /* Walk up the tree, hashing with proof nodes — reuse arrays in-place */
+        // Walk up the tree, hashing with proof nodes — reuse arrays in-place
         while (positions[0] != 1) {
             uint256 nIdx;
             uint256 i;
@@ -253,7 +251,7 @@ library MerkleMountainRange {
                 uint256 pos = positions[i];
 
                 if (i + 1 < len && positions[i + 1] == (pos ^ 1)) {
-                    /* Both siblings known */
+                    // Both siblings known
                     hashes[nIdx] = _hashPair(pos, hashes[i], hashes[i + 1]);
                     positions[nIdx] = pos >> 1;
                     unchecked {
@@ -261,7 +259,7 @@ library MerkleMountainRange {
                     }
                     i += 2;
                 } else {
-                    /* Sibling is a proof node */
+                    // Sibling is a proof node
                     if (proofIter.offset >= proofIter.data.length) revert ProofExhausted();
                     hashes[nIdx] = _hashPair(pos, hashes[i], _next(proofIter));
                     positions[nIdx] = pos >> 1;
@@ -272,7 +270,7 @@ library MerkleMountainRange {
                 }
             }
 
-            /* Shrink arrays to the number of parent nodes written */
+            // Shrink arrays to the number of parent nodes written
             len = nIdx;
             assembly {
                 mstore(positions, nIdx)
@@ -283,7 +281,7 @@ library MerkleMountainRange {
         return hashes[0];
     }
 
-    /* @dev Push a value onto the iterator and advance the offset */
+    // @dev Push a value onto the iterator and advance the offset
     function _push(HashIterator memory iterator, bytes32 data) internal pure {
         iterator.data[iterator.offset] = data;
         unchecked {
@@ -291,7 +289,7 @@ library MerkleMountainRange {
         }
     }
 
-    /* @dev Read the current value and advance the iterator forward */
+    // @dev Read the current value and advance the iterator forward
     function _next(HashIterator memory iterator) internal pure returns (bytes32) {
         bytes32 data = iterator.data[iterator.offset];
         unchecked {
@@ -301,7 +299,7 @@ library MerkleMountainRange {
         return data;
     }
 
-    /* @dev Read the current value and move the iterator backward */
+    // @dev Read the current value and move the iterator backward
     function _previous(HashIterator memory iterator) internal pure returns (bytes32) {
         bytes32 data = iterator.data[iterator.offset];
         unchecked {
@@ -333,7 +331,7 @@ library MerkleMountainRange {
         }
     }
 
-    /* @dev Count the number of set bits (population count). Used to determine the number of peaks in the MMR. */
+    // @dev Count the number of set bits (population count). Used to determine the number of peaks in the MMR.
     function _popcount(uint256 x) private pure returns (uint256 count) {
         while (x != 0) {
             x &= x - 1;
@@ -343,7 +341,7 @@ library MerkleMountainRange {
         }
     }
 
-    /* @dev Efficient floor(log2(x)) using bit-shifting */
+    // @dev Efficient floor(log2(x)) using bit-shifting
     function _log2(uint256 x) private pure returns (uint256 r) {
         assembly {
             r := shl(7, lt(0xffffffffffffffffffffffffffffffff, x))

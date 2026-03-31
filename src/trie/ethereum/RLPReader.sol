@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+// SPDX-License-Identifier: Apache-2.0
 
 /*
  * @author Hamdi Allam hamdi.allam97@gmail.com
@@ -19,8 +19,8 @@ library RLPReader {
     }
 
     struct Iterator {
-        RLPItem item; /* Item that's being iterated over. */
-        uint256 nextPtr; /* Position of the next item in the list. */
+        RLPItem item; // Item that's being iterated over.
+        uint256 nextPtr; // Position of the next item in the list.
     }
 
     /*
@@ -86,7 +86,7 @@ library RLPReader {
     function payloadLocation(RLPItem memory item) internal pure returns (uint256, uint256) {
         uint256 offset = _payloadOffset(item.memPtr);
         uint256 memPtr = item.memPtr + offset;
-        uint256 len = item.len - offset; /* data length */
+        uint256 len = item.len - offset; // data length
         return (memPtr, len);
     }
 
@@ -118,7 +118,7 @@ library RLPReader {
         return result;
     }
 
-    /* @return indicator whether encoded payload is a list. negate this function call for isData. */
+    // @return indicator whether encoded payload is a list. negate this function call for isData.
     function isList(RLPItem memory item) internal pure returns (bool) {
         if (item.len == 0) return false;
 
@@ -163,7 +163,7 @@ library RLPReader {
      * RLPItem conversions into data types *
      */
 
-    /* @returns raw rlp encoding in bytes */
+    // @returns raw rlp encoding in bytes
     function toRlpBytes(RLPItem memory item) internal pure returns (bytes memory) {
         bytes memory result = new bytes(item.len);
         if (result.length == 0) return result;
@@ -177,7 +177,7 @@ library RLPReader {
         return result;
     }
 
-    /* any non-zero byte except "0x80" is considered true */
+    // any non-zero byte except "0x80" is considered true
     function toBoolean(RLPItem memory item) internal pure returns (bool) {
         require(item.len == 1);
         uint256 result;
@@ -200,7 +200,7 @@ library RLPReader {
     }
 
     function toAddress(RLPItem memory item) internal pure returns (address) {
-        /* 1 byte for the length prefix */
+        // 1 byte for the length prefix
         require(item.len == 21);
 
         return address(uint160(toUint(item)));
@@ -215,16 +215,16 @@ library RLPReader {
         assembly {
             result := mload(memPtr)
 
-            /* shift to the correct location if neccesary */
+            // shift to the correct location if neccesary
             if lt(len, 32) { result := div(result, exp(256, sub(32, len))) }
         }
 
         return result;
     }
 
-    /* enforces 32 byte length */
+    // enforces 32 byte length
     function toUintStrict(RLPItem memory item) internal pure returns (uint256) {
-        /* one byte prefix */
+        // one byte prefix
         require(item.len == 33);
 
         uint256 result;
@@ -255,7 +255,7 @@ library RLPReader {
      * Private Helpers
      */
 
-    /* @return number of payload items inside an encoded list. */
+    // @return number of payload items inside an encoded list.
     function numItems(RLPItem memory item) private pure returns (uint256) {
         if (item.len == 0) return 0;
 
@@ -263,14 +263,14 @@ library RLPReader {
         uint256 currPtr = item.memPtr + _payloadOffset(item.memPtr);
         uint256 endPtr = item.memPtr + item.len;
         while (currPtr < endPtr) {
-            currPtr = currPtr + _itemLength(currPtr); /* skip over an item */
+            currPtr = currPtr + _itemLength(currPtr); // skip over an item
             count++;
         }
 
         return count;
     }
 
-    /* @return entire rlp item byte length */
+    // @return entire rlp item byte length
     function _itemLength(uint256 memPtr) private pure returns (uint256) {
         uint256 itemLen;
         uint256 byte0;
@@ -284,11 +284,11 @@ library RLPReader {
             itemLen = byte0 - STRING_SHORT_START + 1;
         } else if (byte0 < LIST_SHORT_START) {
             assembly {
-                let byteLen := sub(byte0, 0xb7) /* # of bytes the actual length is */
-                memPtr := add(memPtr, 1) /* skip over the first byte */
+                let byteLen := sub(byte0, 0xb7) // # of bytes the actual length is
+                memPtr := add(memPtr, 1) // skip over the first byte
 
-                /* 32 byte word size */
-                let dataLen := div(mload(memPtr), exp(256, sub(32, byteLen))) /* right shifting to get the len */
+                // 32 byte word size
+                let dataLen := div(mload(memPtr), exp(256, sub(32, byteLen))) // right shifting to get the len
                 itemLen := add(dataLen, add(byteLen, 1))
             }
         } else if (byte0 < LIST_LONG_START) {
@@ -298,7 +298,7 @@ library RLPReader {
                 let byteLen := sub(byte0, 0xf7)
                 memPtr := add(memPtr, 1)
 
-                let dataLen := div(mload(memPtr), exp(256, sub(32, byteLen))) /* right shifting to the correct length */
+                let dataLen := div(mload(memPtr), exp(256, sub(32, byteLen))) // right shifting to the correct length
                 itemLen := add(dataLen, add(byteLen, 1))
             }
         }
@@ -306,7 +306,7 @@ library RLPReader {
         return itemLen;
     }
 
-    /* @return number of bytes until the data */
+    // @return number of bytes until the data
     function _payloadOffset(uint256 memPtr) private pure returns (uint256) {
         uint256 byte0;
         assembly {
@@ -318,7 +318,7 @@ library RLPReader {
         } else if (byte0 < STRING_LONG_START || (byte0 >= LIST_SHORT_START && byte0 < LIST_LONG_START)) {
             return 1;
         } else if (byte0 < LIST_SHORT_START) {
-            /* being explicit */
+            // being explicit
             return byte0 - (STRING_LONG_START - 1) + 1;
         } else {
             return byte0 - (LIST_LONG_START - 1) + 1;
@@ -333,7 +333,7 @@ library RLPReader {
     function copy(uint256 src, uint256 dest, uint256 len) private pure {
         if (len == 0) return;
 
-        /* copy as many word sizes as possible */
+        // copy as many word sizes as possible
         for (; len >= WORD_SIZE; len -= WORD_SIZE) {
             assembly {
                 mstore(dest, mload(src))
@@ -344,11 +344,11 @@ library RLPReader {
         }
 
         if (len > 0) {
-            /* left over bytes. Mask is used to remove unwanted bytes from the word */
+            // left over bytes. Mask is used to remove unwanted bytes from the word
             uint256 mask = 256 ** (WORD_SIZE - len) - 1;
             assembly {
-                let srcpart := and(mload(src), not(mask)) /* zero out src */
-                let destpart := and(mload(dest), mask) /* retrieve the bytes */
+                let srcpart := and(mload(src), not(mask)) // zero out src
+                let destpart := and(mload(dest), mask) // retrieve the bytes
                 mstore(dest, or(destpart, srcpart))
             }
         }
