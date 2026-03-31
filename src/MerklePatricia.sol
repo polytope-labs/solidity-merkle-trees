@@ -1,17 +1,19 @@
-// Copyright (C) Polytope Labs Ltd.
-// SPDX-License-Identifier: Apache-2.0
+/* Copyright (C) Polytope Labs Ltd. */
+/* SPDX-License-Identifier: Apache-2.0 */
 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// 	http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * 	http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 pragma solidity ^0.8.20;
 
 import {NodeKind, NodeHandle, Extension, Branch, NibbledBranch, ValueOption, NodeHandleOption, Leaf, TrieNode} from "./trie/Node.sol";
@@ -28,11 +30,11 @@ import {EthereumTrieDB} from "./trie/ethereum/EthereumTrieDB.sol";
  * @dev refer to research for more info. https://research.polytope.technology/state-(machine)-proofs
  */
 library MerklePatricia {
-    // Outcome of a successfully verified merkle-patricia proof
+    /* Outcome of a successfully verified merkle-patricia proof */
     struct StorageValue {
-        // the storage key
+        /* the storage key */
         bytes key;
-        // the encoded value
+        /* the encoded value */
         bytes value;
     }
 
@@ -62,9 +64,11 @@ library MerklePatricia {
                 TrieDB.get(nodes, root)
             );
 
-            // This loop is unbounded so that an adversary cannot insert a deeply nested key in the trie
-            // and successfully convince us of it's non-existence, if we consume the block gas limit while
-            // traversing the trie, then the transaction should revert.
+            /*
+             * This loop is unbounded so that an adversary cannot insert a deeply nested key in the trie
+             * and successfully convince us of it's non-existence, if we consume the block gas limit while
+             * traversing the trie, then the transaction should revert.
+             */
             for (uint256 j = 1; j > 0; j++) {
                 NodeHandle memory nextNode;
 
@@ -140,7 +144,7 @@ library MerklePatricia {
         bytes[] memory keys,
         bytes memory childInfo
     ) public pure returns (StorageValue[] memory) {
-        // fetch the child trie root hash;
+        /* fetch the child trie root hash; */
         bytes memory prefix = bytes(":child_storage:default:");
         bytes memory key = bytes.concat(prefix, childInfo);
         bytes[] memory _keys = new bytes[](1);
@@ -179,19 +183,21 @@ library MerklePatricia {
                 TrieDB.get(nodes, root)
             );
 
-            // This loop is unbounded so that an adversary cannot insert a deeply nested key in the trie
-            // and successfully convince us of it's non-existence, if we consume the block gas limit while
-            // traversing the trie, then the transaction should revert.
+            /*
+             * This loop is unbounded so that an adversary cannot insert a deeply nested key in the trie
+             * and successfully convince us of it's non-existence, if we consume the block gas limit while
+             * traversing the trie, then the transaction should revert.
+             */
             for (uint256 j = 1; j > 0; j++) {
                 NodeHandle memory nextNode;
 
                 if (TrieDB.isLeaf(node)) {
                     Leaf memory leaf = EthereumTrieDB.decodeLeaf(node);
-                    // Let's retrieve the offset to be used
+                    /* Let's retrieve the offset to be used */
                     uint256 offset = keyNibbles.offset % 2 == 0
                         ? keyNibbles.offset / 2
                         : keyNibbles.offset / 2 + 1;
-                    // Let's cut the key passed as input
+                    /* Let's cut the key passed as input */
                     keyNibbles = NibbleSlice(
                         NibbleSliceOps.bytesSlice(keyNibbles.data, offset),
                         0
@@ -205,7 +211,7 @@ library MerklePatricia {
                         node
                     );
                     if (NibbleSliceOps.startsWith(keyNibbles, extension.key)) {
-                        // Let's cut the key passed as input
+                        /* Let's cut the key passed as input */
                         uint256 cutNibble = keyNibbles.offset +
                             NibbleSliceOps.len(extension.key);
                         keyNibbles = NibbleSlice(
