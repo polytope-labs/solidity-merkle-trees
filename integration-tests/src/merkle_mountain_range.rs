@@ -11,7 +11,12 @@ use std::{env, path::PathBuf};
 /// Decomposes leaf_count into descending powers-of-two peaks, locates which peak the
 /// leaf belongs to via its leaf_index, derives the k_index from the MMR position, and
 /// returns (1 << peak_height) + k_index.
-fn mmr_position_to_tree_position(mmr_pos: u64, leaf_index: u32, leaf_count: u32, mmr_size: u64) -> usize {
+fn mmr_position_to_tree_position(
+    mmr_pos: u64,
+    leaf_index: u32,
+    leaf_count: u32,
+    mmr_size: u64,
+) -> usize {
     let k_index = mmr_position_to_k_index(vec![mmr_pos], mmr_size)[0].1;
 
     let mut remaining = leaf_count;
