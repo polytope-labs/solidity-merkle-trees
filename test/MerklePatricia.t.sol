@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
-import "forge-std/Test.sol";
-
-import "../src/MerklePatricia.sol";
-import "../src/trie/substrate/SubstrateTrieDB.sol";
-import "../src/trie/substrate/ScaleCodec.sol";
-import "../src/trie/NibbleSlice.sol";
-import "../src/trie/Bytes.sol";
+import {Test} from "forge-std/Test.sol";
+import {MerklePatricia} from "../src/MerklePatricia.sol";
+import {SubstrateTrieDB} from "../src/trie/substrate/SubstrateTrieDB.sol";
+import {NodeKind, NibbledBranch, Leaf} from "../src/trie/Node.sol";
+import {ScaleCodec} from "../src/trie/substrate/ScaleCodec.sol";
+import {NibbleSlice, NibbleSliceOps} from "../src/trie/NibbleSlice.sol";
+import {ByteSlice} from "../src/trie/Bytes.sol";
 
 contract MerklePatriciaTest is Test {
     function testSubstrateMerklePatricia() public pure {
@@ -93,7 +93,7 @@ contract MerklePatriciaTest is Test {
         bytes32 root,
         bytes[] memory proof,
         bytes[] memory keys
-    ) public pure returns (StorageValue[] memory) {
+    ) public pure returns (MerklePatricia.StorageValue[] memory) {
         return MerklePatricia.VerifySubstrateProof(root, proof, keys);
     }
 
@@ -101,7 +101,7 @@ contract MerklePatriciaTest is Test {
         bytes32 root,
         bytes[] memory proof,
         bytes[] memory keys
-    ) public pure returns (StorageValue[] memory) {
+    ) public pure returns (MerklePatricia.StorageValue[] memory) {
         return MerklePatricia.VerifyEthereumProof(root, proof, keys);
     }
 

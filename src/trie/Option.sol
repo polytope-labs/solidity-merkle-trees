@@ -14,7 +14,7 @@
 // limitations under the License.
 pragma solidity ^0.8.20;
 
-import "./Node.sol";
+import {ValueOption, NodeHandleOption} from "./Node.sol";
 
 library Option {
     function isSome(ValueOption memory val) internal pure returns (bool) {

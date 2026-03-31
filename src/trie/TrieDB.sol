@@ -14,7 +14,7 @@
 // limitations under the License.
 pragma solidity ^0.8.20;
 
-import "./Node.sol";
+import {TrieNode, NodeHandle, NodeKind} from "./Node.sol";
 
 library TrieDB {
     function get(

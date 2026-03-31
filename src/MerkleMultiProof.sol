@@ -14,9 +14,6 @@
 // limitations under the License.
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "./Types.sol";
-
 /**
  * @title A Merkle Multi proof library
  * @author Polytope Labs
@@ -24,204 +21,167 @@ import "./Types.sol";
  * @dev refer to research for more info. https://research.polytope.technology/merkle-multi-proofs
  */
 library MerkleMultiProof {
+    /*
+     * @title A representation of a Merkle tree node
+     *
+     * Position numbering (root = 1, children of i are 2i and 2i+1):
+     *
+     *              1
+     *            /   \
+     *           2     3
+     *          / \   / \
+     *         4   5 6   7
+     */
+    struct Node {
+        // 1-based position of the node in the tree
+        uint256 position;
+        // A hash of the node itself
+        bytes32 node;
+    }
+
+    // @dev Thrown when a leaf node has no sibling in the proof or leaves array.
+    error LeafMissingSibling();
+    // @dev Thrown when an internal node has no sibling during the tree walk.
+    error NodeMissingSibling();
+    // @dev Thrown when leafCount is zero.
+    error EmptyTree();
+
     /**
      * @notice Verify a Merkle Multi Proof
      * @param root hash of the root node of the merkle tree
-     * @param proof A list of the merkle nodes along with their k-indices that are needed to re-calculate root node.
-     * @param leaves A list of the leaves along with their k-indices to prove
-     * @return boolean if the calculated root matches the provides root node
+     * @param proof A list of the merkle nodes along with their positions that are needed to re-calculate root node.
+     * @param leaves A list of the leaves along with their positions to prove
+     * @param leafCount Total number of leaves in the complete tree
+     * @return boolean if the calculated root matches the provided root node
      */
     function VerifyProof(
         bytes32 root,
-        Node[][] memory proof,
-        Node[] memory leaves
+        Node[] memory proof,
+        Node[] memory leaves,
+        uint256 leafCount
     ) internal pure returns (bool) {
-        return root == CalculateRoot(proof, leaves);
-    }
-
-    /// @notice Calculate the hash of the root node
-    /// @dev Use this function to calculate the hash of the root node
-    /// @param proof A list of the merkle nodes along with their k-indices that are needed to re-calculate root node.
-    /// @param leaves A list of the leaves along with their k-indices to prove
-    /// @return Hash of root node, value is a bytes32 type
-    function CalculateRoot(
-        Node[][] memory proof,
-        Node[] memory leaves
-    ) internal pure returns (bytes32) {
-        // holds the output from hashing a previous layer
-        Node[] memory next_layer = new Node[](0);
-
-        // merge leaves
-        proof[0] = mergeSort(leaves, proof[0]);
-
-        uint256 proof_length = proof.length;
-        for (uint256 height = 0; height < proof_length; height++) {
-            Node[] memory current_layer = new Node[](0);
-
-            if (next_layer.length == 0) {
-                current_layer = proof[height];
-            } else {
-                current_layer = mergeSort(proof[height], next_layer);
-            }
-
-            next_layer = new Node[](div_ceil(current_layer.length, 2));
-
-            uint256 p = 0;
-            uint256 current_layer_length = current_layer.length;
-            for (uint256 index = 0; index < current_layer_length; index += 2) {
-                if (index + 1 >= current_layer_length) {
-                    Node memory node = current_layer[index];
-                    node.k_index = div_floor(current_layer[index].k_index, 2);
-                    next_layer[p] = node;
-                } else {
-                    Node memory node;
-                    node.k_index = div_floor(current_layer[index].k_index, 2);
-                    node.node = _optimizedHash(
-                        current_layer[index].node,
-                        current_layer[index + 1].node
-                    );
-                    next_layer[p] = node;
-                    unchecked {
-                        p++;
-                    }
-                }
-            }
-        }
-
-        // we should have arrived at the root node
-        require(next_layer.length == 1);
-
-        return next_layer[0].node;
+        return root == CalculateRoot(proof, leaves, leafCount);
     }
 
     /**
      * @notice Calculates the root hash of a merkle tree.
-     * By assigning nodes a global position in the tree, we can devise
-     * a more efficient algorithm to calculate the root hash. Also works
-     * for unbalanced trees.
+     * @dev Walks up the tree level by level, pairing siblings and hashing:
+     *
+     *      Even positions are left children, odd are right.
+     *      Parent = position >> 1. Sibling = position +/- 1.
+     *
+     *      Proving L0 (pos 4) and L2 (pos 6) in a 4-leaf tree:
+     *
+     *               1  ← root
+     *             /   \
+     *            2     3          Level 1: hash(node2, node3)
+     *           / \   / \
+     *          4   5 6   7        Level 2: hash(L0, proof₀), hash(L2, proof₁)
+     *         [L0] P [L2] P
+     *
+     *      Unbalanced trees: unpaired even nodes are promoted to the parent
+     *      level with their hash unchanged (rightmost edge has no sibling).
      *
      * @param proof Array of proof nodes containing position and hash
      * @param leaves Array of leaf nodes with their positions
-     * @param leavesCount Total number of leaves in the complete tree
+     * @param leafCount Total number of leaves in the complete tree
      * @return bytes32 The calculated root hash
      */
-    function CalculateRootOptimized(
+    function CalculateRoot(
         Node[] memory proof,
         Node[] memory leaves,
-        uint256 leavesCount
+        uint256 leafCount
     ) internal pure returns (bytes32) {
-        // Calculate tree height
-        uint256 height = Math.log2(leavesCount, Math.Rounding.Ceil);
+        if (leafCount == 0) revert EmptyTree();
 
-        // Initialize tracking variables
-        uint256 p; // proof index
-        uint256 f; // flattened index
-        uint256 l; // leaf index
+        uint256 height = _ceilLog2(leafCount);
 
-        // Create flattened array to store intermediate nodes
-        Node[] memory flattened = new Node[](leaves.length);
+        uint256 p;
+        uint256 f;
+        uint256 l;
 
-        // Process leaves first
-        while (l < leaves.length) {
-            if (leaves[l].k_index % 2 == 0) {
-                // Even position - need right sibling
+        uint256 leavesLen = leaves.length;
+        uint256 proofLen = proof.length;
+
+        Node[] memory flattened = new Node[](leavesLen);
+
+        while (l < leavesLen) {
+            if ((leaves[l].position & 1) == 0) {
                 if (
-                    p < proof.length &&
-                    proof[p].k_index == leaves[l].k_index + 1
+                    p < proofLen &&
+                    proof[p].position == leaves[l].position + 1
                 ) {
-                    // Sibling is in proof
-                    flattened[f] = Node({
-                        node: _optimizedHash(leaves[l].node, proof[p].node),
-                        k_index: leaves[l].k_index / 2
-                    });
+                    flattened[f].node = _optimizedHash(leaves[l].node, proof[p].node);
+                    flattened[f].position = leaves[l].position >> 1;
                     unchecked {
                         ++f;
                         ++p;
                     }
                 } else if (
-                    l + 1 < leaves.length &&
-                    leaves[l + 1].k_index == leaves[l].k_index + 1
+                    l + 1 < leavesLen &&
+                    leaves[l + 1].position == leaves[l].position + 1
                 ) {
-                    // Sibling is next leaf
-                    flattened[f] = Node({
-                        node: _optimizedHash(
-                            leaves[l].node,
-                            leaves[l + 1].node
-                        ),
-                        k_index: leaves[l].k_index / 2
-                    });
-
+                    flattened[f].node = _optimizedHash(leaves[l].node, leaves[l + 1].node);
+                    flattened[f].position = leaves[l].position >> 1;
                     unchecked {
                         ++f;
                         ++l;
                     }
                 } else {
-                    // tree is likely unbalanced, so promote this leaf to the next level
-                    flattened[f] = Node({
-                        node: leaves[l].node,
-                        k_index: leaves[l].k_index / 2
-                    });
+                    flattened[f].node = leaves[l].node;
+                    flattened[f].position = leaves[l].position >> 1;
                     unchecked {
                         ++f;
                         ++l;
                     }
                 }
             } else {
-                // Odd position - need left sibling
                 if (
-                    p < proof.length &&
-                    proof[p].k_index == leaves[l].k_index - 1
+                    p < proofLen &&
+                    proof[p].position == leaves[l].position - 1
                 ) {
-                    // Sibling is in proof
-                    flattened[f] = Node({
-                        node: _optimizedHash(proof[p].node, leaves[l].node),
-                        k_index: proof[p].k_index / 2
-                    });
-
+                    flattened[f].node = _optimizedHash(proof[p].node, leaves[l].node);
+                    flattened[f].position = proof[p].position >> 1;
                     unchecked {
                         ++f;
                         ++p;
                     }
                 } else if (
-                    l + 1 < leaves.length &&
-                    leaves[l + 1].k_index == leaves[l].k_index - 1
+                    l + 1 < leavesLen &&
+                    leaves[l + 1].position == leaves[l].position - 1
                 ) {
-                    // Sibling is next leaf
-                    flattened[f] = Node({
-                        node: _optimizedHash(
-                            leaves[l + 1].node,
-                            leaves[l].node
-                        ),
-                        k_index: leaves[l + 1].k_index / 2
-                    });
-
+                    flattened[f].node = _optimizedHash(leaves[l + 1].node, leaves[l].node);
+                    flattened[f].position = leaves[l + 1].position >> 1;
                     unchecked {
                         ++f;
                         ++l;
                     }
                 } else {
-                    revert("Leaf missing left sibling");
+                    revert LeafMissingSibling();
                 }
             }
             l++;
         }
 
-        // Move up the tree level
+        // Trim flattened to actual size before processing upper levels
+        assembly {
+            mstore(flattened, f)
+        }
+        uint256 flatLen = f;
 
         unchecked {
             --height;
         }
 
-        while (flattened[0].k_index != 1) {
-            uint256 r; // read index
-            uint256 w; // write index
+        while (flattened[0].position != 1) {
+            uint256 r;
+            uint256 w;
 
-            while (r < flattened.length) {
+            while (r < flatLen) {
                 if (
-                    flattened[r].k_index == 0 ||
-                    flattened[r].k_index >= 2 ** (height + 1)
+                    flattened[r].position == 0 ||
+                    flattened[r].position >= 1 << (height + 1)
                 ) {
-                    // End of current layer
                     if (height != 0) {
                         height--;
                     }
@@ -230,100 +190,58 @@ library MerkleMultiProof {
                     break;
                 }
 
-                if (flattened[r].k_index % 2 == 0) {
-                    // Even position - need right sibling
+                if ((flattened[r].position & 1) == 0) {
                     if (
-                        p < proof.length &&
-                        proof[p].k_index == flattened[r].k_index + 1
+                        p < proofLen &&
+                        proof[p].position == flattened[r].position + 1
                     ) {
-                        // Sibling in proof
-                        flattened[w] = Node({
-                            node: keccak256(
-                                abi.encodePacked(
-                                    flattened[r].node,
-                                    proof[p].node
-                                )
-                            ),
-                            k_index: flattened[r].k_index / 2
-                        });
-
+                        flattened[w].node = _optimizedHash(flattened[r].node, proof[p].node);
+                        flattened[w].position = flattened[r].position >> 1;
                         unchecked {
                             ++w;
                             ++p;
                         }
                     } else if (
-                        r + 1 < flattened.length &&
-                        flattened[r + 1].k_index == flattened[r].k_index + 1
+                        r + 1 < flatLen &&
+                        flattened[r + 1].position == flattened[r].position + 1
                     ) {
-                        // Sibling in flattened
-                        flattened[w] = Node({
-                            node: keccak256(
-                                abi.encodePacked(
-                                    flattened[r].node,
-                                    flattened[r + 1].node
-                                )
-                            ),
-                            k_index: flattened[r].k_index / 2
-                        });
-
+                        flattened[w].node = _optimizedHash(flattened[r].node, flattened[r + 1].node);
+                        flattened[w].position = flattened[r].position >> 1;
                         unchecked {
                             ++w;
                             ++r;
                         }
                     } else {
-                        // tree is likely unbalanced, so promote this node to the next level
-                        flattened[w] = Node({
-                            node: flattened[r].node,
-                            k_index: flattened[r].k_index / 2
-                        });
-
+                        flattened[w].node = flattened[r].node;
+                        flattened[w].position = flattened[r].position >> 1;
                         unchecked {
                             ++w;
                             ++r;
                         }
                     }
                 } else {
-                    // Odd position - need left sibling
                     if (
-                        p < proof.length &&
-                        proof[p].k_index == flattened[r].k_index - 1
+                        p < proofLen &&
+                        proof[p].position == flattened[r].position - 1
                     ) {
-                        // Sibling in proof
-                        flattened[w] = Node({
-                            node: keccak256(
-                                abi.encodePacked(
-                                    proof[p].node,
-                                    flattened[r].node
-                                )
-                            ),
-                            k_index: proof[p].k_index / 2
-                        });
-
+                        flattened[w].node = _optimizedHash(proof[p].node, flattened[r].node);
+                        flattened[w].position = proof[p].position >> 1;
                         unchecked {
                             ++w;
                             ++p;
                         }
                     } else if (
-                        r + 1 < flattened.length &&
-                        flattened[r + 1].k_index == flattened[r].k_index - 1
+                        r + 1 < flatLen &&
+                        flattened[r + 1].position == flattened[r].position - 1
                     ) {
-                        // Sibling in flattened
-                        flattened[w] = Node({
-                            node: keccak256(
-                                abi.encodePacked(
-                                    flattened[r + 1].node,
-                                    flattened[r].node
-                                )
-                            ),
-                            k_index: flattened[r + 1].k_index / 2
-                        });
-
+                        flattened[w].node = _optimizedHash(flattened[r + 1].node, flattened[r].node);
+                        flattened[w].position = flattened[r + 1].position >> 1;
                         unchecked {
                             ++w;
                             ++r;
                         }
                     } else {
-                        revert("Node missing left sibling");
+                        revert NodeMissingSibling();
                     }
                 }
 
@@ -331,102 +249,50 @@ library MerkleMultiProof {
                     ++r;
                 }
             }
+
+            // Trim flattened to the number of nodes written this level
+            flatLen = w;
+            assembly {
+                mstore(flattened, w)
+            }
         }
 
         return flattened[0].node;
     }
 
-    function div_floor(uint256 x, uint256 y) internal pure returns (uint256) {
-        return x / y;
-    }
-
-    function div_ceil(uint256 x, uint256 y) internal pure returns (uint256) {
-        uint256 result = x / y;
-        if (x % y != 0) {
-            unchecked {
-                result += 1;
-            }
-        }
-
-        return result;
-    }
-
-    /// @notice an internal function to merge two arrays and sort them at the same time.
-    /// @dev compares the k-index of each node and sort in increasing order
-    /// @param arr1 leftmost index in arr
-    /// @param arr2 highest index in arr
-    function mergeSort(
-        Node[] memory arr1,
-        Node[] memory arr2
-    ) internal pure returns (Node[] memory) {
-        // merge the two arrays
-        uint256 i = 0;
-        uint256 j = 0;
-        uint256 k = 0;
-        uint256 arr1_length = arr1.length;
-        uint256 arr2_length = arr2.length;
-        uint256 out_len = arr1_length + arr2_length;
-        Node[] memory out = new Node[](out_len);
-
-        while (i < arr1_length && j < arr2_length) {
-            if (arr1[i].k_index < arr2[j].k_index) {
-                out[k] = arr1[i];
-                unchecked {
-                    i++;
-                    k++;
-                }
-            } else {
-                out[k] = arr2[j];
-                unchecked {
-                    j++;
-                    k++;
-                }
-            }
-        }
-
-        while (i < arr1_length) {
-            out[k] = arr1[i];
-            unchecked {
-                i++;
-                k++;
-            }
-        }
-
-        while (j < arr2_length) {
-            out[k] = arr2[j];
-            unchecked {
-                j++;
-                k++;
-            }
-        }
-
-        return out;
-    }
-
-    /// @notice compute the keccak256 hash of two nodes
-    /// @param node1 hash of one of the two nodes
-    /// @param node2 hash of the other of the two nodes
+    /*
+     * @notice Compute the keccak256 hash of two nodes
+     * @param node1 hash of the first node
+     * @param node2 hash of the second node
+     */
     function _optimizedHash(
         bytes32 node1,
         bytes32 node2
     ) internal pure returns (bytes32 hash) {
         assembly {
-            // use EVM scratch space, its memory safe
             mstore(0x0, node1)
             mstore(0x20, node2)
             hash := keccak256(0x0, 0x40)
         }
     }
 
-    /// @notice Check if a number is a power of two.
-    /// @dev This is used to determine if a tree level is complete.
-    /// @param x The number to check
-    /// @return bool True if x is a power of two
-    function isPowerOfTwo(uint256 x) internal pure returns (bool) {
-        if (x == 0) {
-            return false;
+    // @dev Compute ceil(log2(x))
+    function _ceilLog2(uint256 x) private pure returns (uint256) {
+        if (x <= 1) return 0;
+        return _log2(x - 1) + 1;
+    }
+
+    // @dev Efficient floor(log2(x)) using bit-shifting
+    function _log2(uint256 x) private pure returns (uint256 r) {
+        assembly {
+            r := shl(7, lt(0xffffffffffffffffffffffffffffffff, x))
+            r := or(r, shl(6, lt(0xffffffffffffffff, shr(r, x))))
+            r := or(r, shl(5, lt(0xffffffff, shr(r, x))))
+            r := or(r, shl(4, lt(0xffff, shr(r, x))))
+            r := or(r, shl(3, lt(0xff, shr(r, x))))
+            r := or(r, shl(2, lt(0xf, shr(r, x))))
+            r := or(r, shl(1, lt(0x3, shr(r, x))))
+            r := or(r, lt(0x1, shr(r, x)))
         }
-        // Check if x has exactly one bit set to 1
-        return (x & (x - 1)) == 0;
     }
 }

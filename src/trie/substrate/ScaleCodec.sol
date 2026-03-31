@@ -113,8 +113,10 @@ library ScaleCodec {
         return (value, mode);
     }
 
-    // The biggest compact supported uint is 2 ** 536 - 1.
-    // But the biggest value supported by this method is 2 ** 256 - 1(max of uint256)
+    /*
+     * The biggest compact supported uint is 2 ** 536 - 1.
+     * But the biggest value supported by this method is 2 ** 256 - 1(max of uint256)
+     */
     function encodeUintCompact(uint256 v) internal pure returns (bytes memory) {
         if (v < 64) {
             return abi.encodePacked(uint8(v << 2));
@@ -142,9 +144,11 @@ library ScaleCodec {
         return uint8(data[index]);
     }
 
-    // Sources:
-    //   * https://ethereum.stackexchange.com/questions/15350/how-to-convert-an-bytes-to-address-in-solidity/50528
-    //   * https://graphics.stanford.edu/~seander/bithacks.html#ReverseParallel
+    /*
+     * Sources:
+     *   * https://ethereum.stackexchange.com/questions/15350/how-to-convert-an-bytes-to-address-in-solidity/50528
+     *   * https://graphics.stanford.edu/~seander/bithacks.html#ReverseParallel
+     */
 
     function reverse256(uint256 input) internal pure returns (uint256 v) {
         v = input;

@@ -24,11 +24,13 @@ struct ByteSlice {
 library Bytes {
     uint256 internal constant BYTES_HEADER_SIZE = 32;
 
-    // Checks if two `bytes memory` variables are equal. This is done using hashing,
-    // which is much more gas efficient then comparing each byte individually.
-    // Equality means that:
-    //  - 'self.length == other.length'
-    //  - For 'n' in '[0, self.length)', 'self[n] == other[n]'
+    /*
+     * Checks if two `bytes memory` variables are equal. This is done using hashing,
+     * which is much more gas efficient then comparing each byte individually.
+     * Equality means that:
+     *  - 'self.length == other.length'
+     *  - For 'n' in '[0, self.length)', 'self[n] == other[n]'
+     */
     function equals(
         bytes memory self,
         bytes memory other
@@ -56,11 +58,13 @@ library Bytes {
         return b;
     }
 
-    // Copies 'len' bytes from 'self' into a new array, starting at the provided 'startIndex'.
-    // Returns the new copy.
-    // Requires that:
-    //  - 'startIndex + len <= self.length'
-    // The length of the substring is: 'len'
+    /*
+     * Copies 'len' bytes from 'self' into a new array, starting at the provided 'startIndex'.
+     * Returns the new copy.
+     * Requires that:
+     *  - 'startIndex + len <= self.length'
+     * The length of the substring is: 'len'
+     */
     function read(
         ByteSlice memory self,
         uint256 len
@@ -75,10 +79,12 @@ library Bytes {
         return slice;
     }
 
-    // Copies a section of 'self' into a new array, starting at the provided 'startIndex'.
-    // Returns the new copy.
-    // Requires that 'startIndex <= self.length'
-    // The length of the substring is: 'self.length - startIndex'
+    /*
+     * Copies a section of 'self' into a new array, starting at the provided 'startIndex'.
+     * Returns the new copy.
+     * Requires that 'startIndex <= self.length'
+     * The length of the substring is: 'self.length - startIndex'
+     */
     function substr(
         bytes memory self,
         uint256 startIndex
@@ -89,11 +95,13 @@ library Bytes {
         return Memory.toBytes(addr + startIndex, len);
     }
 
-    // Copies 'len' bytes from 'self' into a new array, starting at the provided 'startIndex'.
-    // Returns the new copy.
-    // Requires that:
-    //  - 'startIndex + len <= self.length'
-    // The length of the substring is: 'len'
+    /*
+     * Copies 'len' bytes from 'self' into a new array, starting at the provided 'startIndex'.
+     * Returns the new copy.
+     * Requires that:
+     *  - 'startIndex + len <= self.length'
+     * The length of the substring is: 'len'
+     */
     function substr(
         bytes memory self,
         uint256 startIndex,
@@ -107,10 +115,12 @@ library Bytes {
         return Memory.toBytes(addr + startIndex, len);
     }
 
-    // Combines 'self' and 'other' into a single array.
-    // Returns the concatenated arrays:
-    //  [self[0], self[1], ... , self[self.length - 1], other[0], other[1], ... , other[other.length - 1]]
-    // The length of the new array is 'self.length + other.length'
+    /*
+     * Combines 'self' and 'other' into a single array.
+     * Returns the concatenated arrays:
+     *  [self[0], self[1], ... , self[self.length - 1], other[0], other[1], ... , other[other.length - 1]]
+     * The length of the new array is 'self.length + other.length'
+     */
     function concat(
         bytes memory self,
         bytes memory other

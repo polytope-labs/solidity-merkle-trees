@@ -14,12 +14,10 @@
 // limitations under the License.
 pragma solidity ^0.8.20;
 
-import "../Node.sol";
-import "../Bytes.sol";
-import {NibbleSliceOps} from "../NibbleSlice.sol";
-
+import {NodeKind, NibbledBranch, NodeHandleOption, Leaf, NodeHandle} from "../Node.sol";
+import {Bytes, ByteSlice} from "../Bytes.sol";
+import {NibbleSlice, NibbleSliceOps} from "../NibbleSlice.sol";
 import {ScaleCodec} from "./ScaleCodec.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 
 library SubstrateTrieDB {
     uint8 public constant FIRST_PREFIX = 0x00 << 6;

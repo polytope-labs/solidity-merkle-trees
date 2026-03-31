@@ -14,14 +14,12 @@
 // limitations under the License.
 pragma solidity ^0.8.20;
 
-import "./trie/Node.sol";
-import "./trie/Option.sol";
-import "./trie/NibbleSlice.sol";
-import "./trie/TrieDB.sol";
-
-import "./trie/substrate/SubstrateTrieDB.sol";
-import "./trie/ethereum/EthereumTrieDB.sol";
-import "./Types.sol";
+import {NodeKind, NodeHandle, Extension, Branch, NibbledBranch, ValueOption, NodeHandleOption, Leaf, TrieNode} from "./trie/Node.sol";
+import {Option} from "./trie/Option.sol";
+import {NibbleSlice, NibbleSliceOps} from "./trie/NibbleSlice.sol";
+import {TrieDB} from "./trie/TrieDB.sol";
+import {SubstrateTrieDB} from "./trie/substrate/SubstrateTrieDB.sol";
+import {EthereumTrieDB} from "./trie/ethereum/EthereumTrieDB.sol";
 
 /**
  * @title A Merkle Patricia library
@@ -30,6 +28,14 @@ import "./Types.sol";
  * @dev refer to research for more info. https://research.polytope.technology/state-(machine)-proofs
  */
 library MerklePatricia {
+    // Outcome of a successfully verified merkle-patricia proof
+    struct StorageValue {
+        // the storage key
+        bytes key;
+        // the encoded value
+        bytes value;
+    }
+
     /**
      * @notice Verifies substrate specific merkle patricia proofs.
      * @param root hash of the merkle patricia trie
@@ -56,9 +62,11 @@ library MerklePatricia {
                 TrieDB.get(nodes, root)
             );
 
-            // This loop is unbounded so that an adversary cannot insert a deeply nested key in the trie
-            // and successfully convince us of it's non-existence, if we consume the block gas limit while
-            // traversing the trie, then the transaction should revert.
+            /*
+             * This loop is unbounded so that an adversary cannot insert a deeply nested key in the trie
+             * and successfully convince us of it's non-existence, if we consume the block gas limit while
+             * traversing the trie, then the transaction should revert.
+             */
             for (uint256 j = 1; j > 0; j++) {
                 NodeHandle memory nextNode;
 
@@ -173,9 +181,11 @@ library MerklePatricia {
                 TrieDB.get(nodes, root)
             );
 
-            // This loop is unbounded so that an adversary cannot insert a deeply nested key in the trie
-            // and successfully convince us of it's non-existence, if we consume the block gas limit while
-            // traversing the trie, then the transaction should revert.
+            /*
+             * This loop is unbounded so that an adversary cannot insert a deeply nested key in the trie
+             * and successfully convince us of it's non-existence, if we consume the block gas limit while
+             * traversing the trie, then the transaction should revert.
+             */
             for (uint256 j = 1; j > 0; j++) {
                 NodeHandle memory nextNode;
 

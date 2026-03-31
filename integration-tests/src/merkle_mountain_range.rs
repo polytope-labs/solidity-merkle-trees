@@ -1,93 +1,23 @@
 #![cfg(test)]
 
 use crate::{MergeKeccak, NumberHash, Token};
-use ckb_merkle_mountain_range::{mmr_position_to_k_index, util::MemStore, MMR};
+use ckb_merkle_mountain_range::{util::MemStore, MMR};
 use forge_testsuite::{Contract, Runner};
-use hex_literal::hex;
 use primitive_types::U256;
 use proptest::{prop_compose, proptest};
 use std::{env, path::PathBuf};
 
-type MmrLeaf = (u64, u64, [u8; 32]);
-
-#[tokio::test(flavor = "multi_thread")]
-async fn test_mmr_utils() {
-    let base_dir = env::current_dir().unwrap().parent().unwrap().display().to_string();
-    let mut runner = Runner::new(PathBuf::from(&base_dir));
-    let mut contract = runner.deploy("MerkleMountainRangeTest").await;
-
-    {
-        let left = vec![3, 4].into_iter().map(|n| Token::Uint(U256::from(n))).collect();
-        let right = vec![2, 5].into_iter().map(|n| Token::Uint(U256::from(n))).collect();
-
-        let height = contract
-            .call::<_, Vec<u64>>("difference", (Token::Array(left), Token::Array(right)))
-            .await
-            .unwrap();
-
-        assert_eq!(height, vec![3, 4]);
-    }
-
-    {
-        let indices =
-            vec![2, 5].into_iter().map(|i| Token::Uint(U256::from(i))).collect::<Vec<_>>();
-        let siblings = contract.call::<_, Vec<u64>>("siblingIndices", (indices)).await.unwrap();
-
-        assert_eq!(siblings, vec![3, 4]);
-    }
-
-    {
-        let leaves = vec![
-            (3, 2, hex!("2b97a4b75a93aa1ac8581fac0f7d4ab42406569409a737bdf9de584903b372c5")),
-            (8, 5, hex!("d279eb4bf22b2aeded31e65a126516215a9d93f83e3e425fdcd1a05ab347e535")),
-            (14, 5, hex!("d279eb4bf22b2aeded31e65a126516215a9d93f83e3e425fdcd1a05ab347e535")),
-            (22, 5, hex!("d279eb4bf22b2aeded31e65a126516215a9d93f83e3e425fdcd1a05ab347e535")),
-            (25, 5, hex!("d279eb4bf22b2aeded31e65a126516215a9d93f83e3e425fdcd1a05ab347e535")),
-            (30, 5, hex!("d279eb4bf22b2aeded31e65a126516215a9d93f83e3e425fdcd1a05ab347e535")),
-        ]
-        .into_iter()
-        .map(|(pos, index, hash)| {
-            Token::Tuple(vec![
-                Token::Uint(U256::from(index)),
-                Token::Uint(U256::from(pos)),
-                Token::FixedBytes(hash.to_vec()),
-            ])
-        })
-        .collect::<Vec<_>>();
-
-        let result = contract
-            .call::<_, (Vec<(u64, [u8; 32])>, Vec<u64>)>("mmrLeafToNode", (leaves.clone()))
-            .await
-            .unwrap();
-
-        assert_eq!(result.0.len(), 6);
-        assert_eq!(result.1.len(), 6);
-
-        let result = contract
-            .call::<_, (Vec<MmrLeaf>, Vec<MmrLeaf>)>(
-                "leavesForPeak",
-                (leaves, Token::Uint(U256::from(15))),
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(result.0.len(), 3);
-        assert_eq!(result.1.len(), 3);
-    }
-}
-
 pub async fn solidity_calculate_root(
     contract: &mut Contract<'_>,
-    custom_leaves: Vec<(u32, usize, [u8; 32])>,
+    custom_leaves: Vec<(u32, [u8; 32])>,
     proof_items: Vec<Vec<u8>>,
-    mmr_size: u64,
+    leaf_count: u64,
 ) -> [u8; 32] {
     let token_leaves = custom_leaves
         .into_iter()
-        .map(|(pos, index, hash)| {
+        .map(|(leaf_index, hash)| {
             Token::Tuple(vec![
-                Token::Uint(U256::from(index)),
-                Token::Uint(U256::from(pos)),
+                Token::Uint(U256::from(leaf_index)),
                 Token::FixedBytes(hash.to_vec()),
             ])
         })
@@ -96,7 +26,7 @@ pub async fn solidity_calculate_root(
     let nodes = proof_items.iter().map(|n| Token::FixedBytes(n.clone())).collect::<Vec<_>>();
 
     contract
-        .call::<_, [u8; 32]>("CalculateRoot", (nodes, token_leaves, Token::Uint(mmr_size.into())))
+        .call::<_, [u8; 32]>("CalculateRoot", (nodes, token_leaves, Token::Uint(leaf_count.into())))
         .await
         .unwrap()
 }
@@ -127,11 +57,10 @@ pub async fn test_mmr(contract: &mut Contract<'_>, count: u32, mut proof_elem: V
     let mut custom_leaves = leaves
         .into_iter()
         .zip(proof_elem.clone().into_iter())
-        .map(|((pos, leaf), index)| {
-            let k_index = mmr_position_to_k_index(vec![pos], proof.mmr_size())[0].1;
+        .map(|((_pos, leaf), index)| {
             let mut hash = [0u8; 32];
             hash.copy_from_slice(&leaf.0);
-            (index, k_index, hash)
+            (index, hash)
         })
         .collect::<Vec<_>>();
 

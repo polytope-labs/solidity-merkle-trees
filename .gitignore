@@ -17,6 +17,7 @@ artifacts/
 corpus/
 
 .idea/
+.claude/
 
 integration-tests/proptest-regressions/
 node_modules

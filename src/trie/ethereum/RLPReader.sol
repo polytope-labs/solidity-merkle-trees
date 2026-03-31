@@ -186,10 +186,12 @@ library RLPReader {
             result := byte(0, mload(memPtr))
         }
 
-        // SEE Github Issue #5.
-        // Summary: Most commonly used RLP libraries (i.e Geth) will encode
-        // "0" as "0x80" instead of as "0". We handle this edge case explicitly
-        // here.
+        /*
+         * SEE Github Issue #5.
+         * Summary: Most commonly used RLP libraries (i.e Geth) will encode
+         * "0" as "0x80" instead of as "0". We handle this edge case explicitly
+         * here.
+         */
         if (result == 0 || result == STRING_SHORT_START) {
             return false;
         } else {
@@ -285,7 +287,7 @@ library RLPReader {
                 let byteLen := sub(byte0, 0xb7) // # of bytes the actual length is
                 memPtr := add(memPtr, 1) // skip over the first byte
 
-                /* 32 byte word size */
+                // 32 byte word size
                 let dataLen := div(mload(memPtr), exp(256, sub(32, byteLen))) // right shifting to get the len
                 itemLen := add(dataLen, add(byteLen, 1))
             }
