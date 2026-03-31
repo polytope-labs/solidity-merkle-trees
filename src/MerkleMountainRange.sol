@@ -14,9 +14,6 @@
 // limitations under the License.
 pragma solidity ^0.8.17;
 
-import {MmrLeaf, Iterator} from "./Types.sol";
-import {MerkleMultiProof} from "./MerkleMultiProof.sol";
-
 /**
  * @title A Merkle Mountain Range proof library
  * @author Polytope Labs
@@ -26,75 +23,91 @@ import {MerkleMultiProof} from "./MerkleMultiProof.sol";
 library MerkleMountainRange {
     error ProofExhausted();
 
+    /// @title A merkle mountain range leaf node
+    struct Leaf {
+        // Index of the leaf in the bottom layer of the tree
+        uint256 index;
+        // A hash of the leaf 
+        bytes32 hash;
+    }
+    
     /// @dev Iterator for tracking a contiguous range of leaves in an array
     struct LeafIterator {
-        uint256 offset; // Start index of the range
-        uint256 length; // Length of the range
+        // Start index of the range
+        uint256 offset; 
+        // Length of the range
+        uint256 length; 
+        // Reference to the underlying leaves array
+        Leaf[] data; 
+    }
+
+    /// @dev A bidirectional iterator over a bytes32 array, used for sequential
+    ///      consumption of proof elements and accumulation of peak roots.
+    struct HashIterator {
+        // Start index of the range
+        uint256 offset;
+        // Reference to the underlying data
+        bytes32[] data;
     }
 
     /// @notice Verify that merkle proof is accurate
     /// @notice This calls CalculateRoot(...) under the hood
     /// @param root hash of the Merkle's root node
     /// @param proof a list of nodes required for the proof to be verified
-    /// @param leaves a list of mmr leaves to prove
-    /// @param mmrSize the total leaf count of the merkle mountain range
+    /// @param leaves a list of mmr leaves to prove. nodeIndex = 0-based leaf index, node = leaf hash.
+    /// @param leafCount the total leaf count of the merkle mountain range
     /// @return boolean if the calculated root matches the provided root node
-    function VerifyProof(
-        bytes32 root,
-        bytes32[] memory proof,
-        MmrLeaf[] memory leaves,
-        uint256 mmrSize
-    ) internal pure returns (bool) {
-        return root == CalculateRoot(proof, leaves, mmrSize);
+    function VerifyProof(bytes32 root, bytes32[] memory proof, Leaf[] memory leaves, uint256 leafCount)
+        internal
+        pure
+        returns (bool)
+    {
+        return root == CalculateRoot(proof, leaves, leafCount);
     }
 
-    /// @notice Calculate merkle root
+    /// @notice Calculate merkle mountain range root
     /// @notice This method computes the root hash of a merkle mountain range tree
     /// @param proof A list of the merkle nodes that are needed to re-calculate root node.
-    /// @param leaves a list of mmr leaves to prove
+    /// @param leaves a list of mmr leaves to prove. nodeIndex = 0-based leaf index, node = leaf hash.
     /// @param leafCount the total leaf count of the merkle mountain range
     /// @return bytes32 hash of the computed root node
-    function CalculateRoot(
-        bytes32[] memory proof,
-        MmrLeaf[] memory leaves,
-        uint256 leafCount
-    ) internal pure returns (bytes32) {
+    function CalculateRoot(bytes32[] memory proof, Leaf[] memory leaves, uint256 leafCount)
+        internal
+        pure
+        returns (bytes32)
+    {
         // special handle the only 1 leaf MMR
-        if (leafCount == 1 && leaves.length == 1 && leaves[0].leafIndex == 0) {
+        if (leafCount == 1 && leaves.length == 1 && leaves[0].index == 0) {
             return leaves[0].hash;
         }
 
-        Iterator memory peakRoots = Iterator(0, new bytes32[](_popcount(leafCount)));
-        Iterator memory proofIter = Iterator(0, proof);
+        HashIterator memory peakRoots = HashIterator(0, new bytes32[](_popcount(leafCount)));
+        HashIterator memory proofIter = HashIterator(0, proof);
 
-        uint256 current_subtree;
+        uint256 nextSubtreeStart;
         uint256 remaining = leafCount;
-        LeafIterator memory leafIter = LeafIterator(0, leaves.length);
+        LeafIterator memory leafIter = LeafIterator(0, leaves.length, leaves);
 
         while (remaining != 0) {
             uint256 height = _log2(remaining);
-            remaining -= 1 << height;
-            current_subtree += 1 << height;
+            uint256 subtreeSize = 1 << height;
+            remaining -= subtreeSize;
+            nextSubtreeStart += subtreeSize;
 
-            LeafIterator memory subtreeLeaves = getSubtreeLeaves(
-                leaves,
-                leafIter,
-                current_subtree
-            );
+            LeafIterator memory subtreeLeaves = _subtreeLeaves(leafIter, nextSubtreeStart);
 
             if (subtreeLeaves.length == 0) {
                 if (proofIter.data.length == proofIter.offset) {
                     break;
                 } else {
-                    push(peakRoots, next(proofIter));
+                    _push(peakRoots, _next(proofIter));
                 }
             } else if (subtreeLeaves.length == 1 && height == 0) {
-                push(peakRoots, leaves[subtreeLeaves.offset].hash);
+                _push(peakRoots, subtreeLeaves.data[subtreeLeaves.offset].hash);
             } else {
-                push(
-                    peakRoots,
-                    CalculateSubtreeRoot(leaves, subtreeLeaves, proofIter)
-                );
+                uint256 subtreeBase;
+                unchecked { subtreeBase = 2 * subtreeSize - nextSubtreeStart; }
+                _push(peakRoots, _subtreeRoot(subtreeLeaves, proofIter, subtreeBase));
             }
         }
 
@@ -103,8 +116,8 @@ library MerkleMountainRange {
         }
 
         while (peakRoots.offset != 0) {
-            bytes32 right = previous(peakRoots);
-            bytes32 left = previous(peakRoots);
+            bytes32 right = _previous(peakRoots);
+            bytes32 left = _previous(peakRoots);
             unchecked {
                 ++peakRoots.offset;
             }
@@ -120,23 +133,22 @@ library MerkleMountainRange {
         return peakRoots.data[0];
     }
 
-    /// @notice Get a mountain peak's leaves
+    /// @notice Get a subtree's leaves
     /// @dev Partitions the leaf iterator so that leaves belonging to the current subtree
     ///      are returned, and the iterator is advanced past them.
-    /// @param leaves A list of mountain merkle leaves
     /// @param leafIter Iterator tracking the current leaf range
-    /// @param current_subtree The cumulative leaf index boundary of the current subtree
+    /// @param nextSubtreeStart The first leaf index belonging to the next subtree
     /// @return LeafIterator for the current subtree's leaves
-    function getSubtreeLeaves(
-        MmrLeaf[] memory leaves,
-        LeafIterator memory leafIter,
-        uint256 current_subtree
-    ) internal pure returns (LeafIterator memory) {
+    function _subtreeLeaves(LeafIterator memory leafIter, uint256 nextSubtreeStart)
+        internal
+        pure
+        returns (LeafIterator memory)
+    {
         uint256 end = leafIter.offset + leafIter.length;
         uint256 newOffset = leafIter.offset;
 
-        for (; newOffset < end; ) {
-            if (current_subtree <= leaves[newOffset].leafIndex) {
+        for (; newOffset < end;) {
+            if (nextSubtreeStart <= leafIter.data[newOffset].index) {
                 break;
             }
             unchecked {
@@ -145,7 +157,7 @@ library MerkleMountainRange {
         }
 
         uint256 newLength = newOffset - leafIter.offset;
-        LeafIterator memory subtreeIter = LeafIterator(leafIter.offset, newLength);
+        LeafIterator memory subtreeIter = LeafIterator(leafIter.offset, newLength, leafIter.data);
         leafIter.offset = newOffset;
         leafIter.length -= newLength;
 
@@ -153,34 +165,33 @@ library MerkleMountainRange {
     }
 
     /// @notice Calculate root hash of a subtree of the merkle mountain
-    /// @dev Converts MMR leaves to positional indices and walks up the tree level by level,
-    ///      pairing siblings (from proof or known leaves) and hashing to compute the peak root.
+    /// @dev Converts leaf indices to binary heap positions within the peak, then walks up
+    ///      the tree level by level, pairing siblings and hashing to compute the peak root.
     ///      Reuses the same arrays in-place to avoid per-level memory allocations.
-    /// @param leaves A list of all MMR leaves
     /// @param leafIter An iterator representing the range of leaves for the subtree
     /// @param proofIter Iterator over proof node hashes consumed as siblings during traversal
+    /// @param subtreeBase Precomputed constant such that heapPos = subtreeBase + leafIndex (may underflow, corrected on addition)
     /// @return bytes32 The computed peak root hash
-    function CalculateSubtreeRoot(
-        MmrLeaf[] memory leaves,
-        LeafIterator memory leafIter,
-        Iterator memory proofIter
-    ) internal pure returns (bytes32) {
+    function _subtreeRoot(LeafIterator memory leafIter, HashIterator memory proofIter, uint256 subtreeBase)
+        internal
+        pure
+        returns (bytes32)
+    {
         uint256 length = leafIter.length;
         uint256 offset = leafIter.offset;
 
-        // nodeIndex is already a 1-based tree position — use directly
         uint256[] memory positions = new uint256[](length);
         bytes32[] memory hashes = new bytes32[](length);
-        for (uint256 i; i < length; ) {
-            positions[i] = leaves[offset + i].nodeIndex;
-            hashes[i] = leaves[offset + i].hash;
+        for (uint256 i; i < length;) {
+            unchecked { positions[i] = subtreeBase + leafIter.data[offset + i].index; }
+            hashes[i] = leafIter.data[offset + i].hash;
             unchecked {
                 ++i;
             }
         }
+        uint256 len = length;
 
         // Walk up the tree, hashing with proof nodes — reuse arrays in-place
-        uint256 len = length;
         while (positions[0] != 1) {
             uint256 nIdx;
             uint256 i;
@@ -199,7 +210,7 @@ library MerkleMountainRange {
                 } else {
                     // Sibling is a proof node
                     if (proofIter.offset >= proofIter.data.length) revert ProofExhausted();
-                    hashes[nIdx] = _hashPair(pos, hashes[i], next(proofIter));
+                    hashes[nIdx] = _hashPair(pos, hashes[i], _next(proofIter));
                     positions[nIdx] = pos >> 1;
                     unchecked {
                         ++nIdx;
@@ -220,7 +231,7 @@ library MerkleMountainRange {
     }
 
     /// @dev Push a value onto the iterator and advance the offset
-    function push(Iterator memory iterator, bytes32 data) internal pure {
+    function _push(HashIterator memory iterator, bytes32 data) internal pure {
         iterator.data[iterator.offset] = data;
         unchecked {
             ++iterator.offset;
@@ -228,7 +239,7 @@ library MerkleMountainRange {
     }
 
     /// @dev Read the current value and advance the iterator forward
-    function next(Iterator memory iterator) internal pure returns (bytes32) {
+    function _next(HashIterator memory iterator) internal pure returns (bytes32) {
         bytes32 data = iterator.data[iterator.offset];
         unchecked {
             ++iterator.offset;
@@ -238,9 +249,7 @@ library MerkleMountainRange {
     }
 
     /// @dev Read the current value and move the iterator backward
-    function previous(
-        Iterator memory iterator
-    ) internal pure returns (bytes32) {
+    function _previous(HashIterator memory iterator) internal pure returns (bytes32) {
         bytes32 data = iterator.data[iterator.offset];
         unchecked {
             --iterator.offset;

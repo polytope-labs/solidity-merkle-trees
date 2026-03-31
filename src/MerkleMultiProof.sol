@@ -14,8 +14,6 @@
 // limitations under the License.
 pragma solidity ^0.8.20;
 
-import {Node} from "./Types.sol";
-
 /**
  * @title A Merkle Multi proof library
  * @author Polytope Labs
@@ -23,6 +21,14 @@ import {Node} from "./Types.sol";
  * @dev refer to research for more info. https://research.polytope.technology/merkle-multi-proofs
  */
 library MerkleMultiProof {
+    /// @title A representation of a Merkle tree node
+    struct Node {
+        // The global 1-based position of the node in the tree
+        uint256 position;
+        // A hash of the node itself
+        bytes32 node;
+    }
+    
     error LeafMissingSibling();
     error NodeMissingSibling();
 
@@ -31,16 +37,16 @@ library MerkleMultiProof {
      * @param root hash of the root node of the merkle tree
      * @param proof A list of the merkle nodes along with their node indices that are needed to re-calculate root node.
      * @param leaves A list of the leaves along with their node indices to prove
-     * @param leavesCount Total number of leaves in the complete tree
+     * @param leafCount Total number of leaves in the complete tree
      * @return boolean if the calculated root matches the provided root node
      */
     function VerifyProof(
         bytes32 root,
         Node[] memory proof,
         Node[] memory leaves,
-        uint256 leavesCount
+        uint256 leafCount
     ) internal pure returns (bool) {
-        return root == CalculateRoot(proof, leaves, leavesCount);
+        return root == CalculateRoot(proof, leaves, leafCount);
     }
 
     /**
@@ -51,15 +57,17 @@ library MerkleMultiProof {
      * unbalanced trees by promoting unpaired nodes.
      * @param proof Array of proof nodes containing position and hash
      * @param leaves Array of leaf nodes with their positions
-     * @param leavesCount Total number of leaves in the complete tree
+     * @param leafCount Total number of leaves in the complete tree
      * @return bytes32 The calculated root hash
      */
     function CalculateRoot(
         Node[] memory proof,
         Node[] memory leaves,
-        uint256 leavesCount
+        uint256 leafCount
     ) internal pure returns (bytes32) {
-        uint256 height = _ceilLog2(leavesCount);
+        if (leafCount == 0) return bytes32(0);
+
+        uint256 height = _ceilLog2(leafCount);
 
         uint256 p;
         uint256 f;
@@ -71,30 +79,30 @@ library MerkleMultiProof {
         Node[] memory flattened = new Node[](leavesLen);
 
         while (l < leavesLen) {
-            if ((leaves[l].nodeIndex & 1) == 0) {
+            if ((leaves[l].position & 1) == 0) {
                 if (
                     p < proofLen &&
-                    proof[p].nodeIndex == leaves[l].nodeIndex + 1
+                    proof[p].position == leaves[l].position + 1
                 ) {
                     flattened[f].node = _optimizedHash(leaves[l].node, proof[p].node);
-                    flattened[f].nodeIndex = leaves[l].nodeIndex >> 1;
+                    flattened[f].position = leaves[l].position >> 1;
                     unchecked {
                         ++f;
                         ++p;
                     }
                 } else if (
                     l + 1 < leavesLen &&
-                    leaves[l + 1].nodeIndex == leaves[l].nodeIndex + 1
+                    leaves[l + 1].position == leaves[l].position + 1
                 ) {
                     flattened[f].node = _optimizedHash(leaves[l].node, leaves[l + 1].node);
-                    flattened[f].nodeIndex = leaves[l].nodeIndex >> 1;
+                    flattened[f].position = leaves[l].position >> 1;
                     unchecked {
                         ++f;
                         ++l;
                     }
                 } else {
                     flattened[f].node = leaves[l].node;
-                    flattened[f].nodeIndex = leaves[l].nodeIndex >> 1;
+                    flattened[f].position = leaves[l].position >> 1;
                     unchecked {
                         ++f;
                         ++l;
@@ -103,20 +111,20 @@ library MerkleMultiProof {
             } else {
                 if (
                     p < proofLen &&
-                    proof[p].nodeIndex == leaves[l].nodeIndex - 1
+                    proof[p].position == leaves[l].position - 1
                 ) {
                     flattened[f].node = _optimizedHash(proof[p].node, leaves[l].node);
-                    flattened[f].nodeIndex = proof[p].nodeIndex >> 1;
+                    flattened[f].position = proof[p].position >> 1;
                     unchecked {
                         ++f;
                         ++p;
                     }
                 } else if (
                     l + 1 < leavesLen &&
-                    leaves[l + 1].nodeIndex == leaves[l].nodeIndex - 1
+                    leaves[l + 1].position == leaves[l].position - 1
                 ) {
                     flattened[f].node = _optimizedHash(leaves[l + 1].node, leaves[l].node);
-                    flattened[f].nodeIndex = leaves[l + 1].nodeIndex >> 1;
+                    flattened[f].position = leaves[l + 1].position >> 1;
                     unchecked {
                         ++f;
                         ++l;
@@ -138,14 +146,14 @@ library MerkleMultiProof {
             --height;
         }
 
-        while (flattened[0].nodeIndex != 1) {
+        while (flattened[0].position != 1) {
             uint256 r;
             uint256 w;
 
             while (r < flatLen) {
                 if (
-                    flattened[r].nodeIndex == 0 ||
-                    flattened[r].nodeIndex >= 1 << (height + 1)
+                    flattened[r].position == 0 ||
+                    flattened[r].position >= 1 << (height + 1)
                 ) {
                     if (height != 0) {
                         height--;
@@ -155,30 +163,30 @@ library MerkleMultiProof {
                     break;
                 }
 
-                if ((flattened[r].nodeIndex & 1) == 0) {
+                if ((flattened[r].position & 1) == 0) {
                     if (
                         p < proofLen &&
-                        proof[p].nodeIndex == flattened[r].nodeIndex + 1
+                        proof[p].position == flattened[r].position + 1
                     ) {
                         flattened[w].node = _optimizedHash(flattened[r].node, proof[p].node);
-                        flattened[w].nodeIndex = flattened[r].nodeIndex >> 1;
+                        flattened[w].position = flattened[r].position >> 1;
                         unchecked {
                             ++w;
                             ++p;
                         }
                     } else if (
                         r + 1 < flatLen &&
-                        flattened[r + 1].nodeIndex == flattened[r].nodeIndex + 1
+                        flattened[r + 1].position == flattened[r].position + 1
                     ) {
                         flattened[w].node = _optimizedHash(flattened[r].node, flattened[r + 1].node);
-                        flattened[w].nodeIndex = flattened[r].nodeIndex >> 1;
+                        flattened[w].position = flattened[r].position >> 1;
                         unchecked {
                             ++w;
                             ++r;
                         }
                     } else {
                         flattened[w].node = flattened[r].node;
-                        flattened[w].nodeIndex = flattened[r].nodeIndex >> 1;
+                        flattened[w].position = flattened[r].position >> 1;
                         unchecked {
                             ++w;
                             ++r;
@@ -187,20 +195,20 @@ library MerkleMultiProof {
                 } else {
                     if (
                         p < proofLen &&
-                        proof[p].nodeIndex == flattened[r].nodeIndex - 1
+                        proof[p].position == flattened[r].position - 1
                     ) {
                         flattened[w].node = _optimizedHash(proof[p].node, flattened[r].node);
-                        flattened[w].nodeIndex = proof[p].nodeIndex >> 1;
+                        flattened[w].position = proof[p].position >> 1;
                         unchecked {
                             ++w;
                             ++p;
                         }
                     } else if (
                         r + 1 < flatLen &&
-                        flattened[r + 1].nodeIndex == flattened[r].nodeIndex - 1
+                        flattened[r + 1].position == flattened[r].position - 1
                     ) {
                         flattened[w].node = _optimizedHash(flattened[r + 1].node, flattened[r].node);
-                        flattened[w].nodeIndex = flattened[r + 1].nodeIndex >> 1;
+                        flattened[w].position = flattened[r + 1].position >> 1;
                         unchecked {
                             ++w;
                             ++r;

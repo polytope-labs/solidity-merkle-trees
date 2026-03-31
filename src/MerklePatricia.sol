@@ -20,7 +20,6 @@ import {NibbleSlice, NibbleSliceOps} from "./trie/NibbleSlice.sol";
 import {TrieDB} from "./trie/TrieDB.sol";
 import {SubstrateTrieDB} from "./trie/substrate/SubstrateTrieDB.sol";
 import {EthereumTrieDB} from "./trie/ethereum/EthereumTrieDB.sol";
-import {StorageValue} from "./Types.sol";
 
 /**
  * @title A Merkle Patricia library
@@ -29,6 +28,14 @@ import {StorageValue} from "./Types.sol";
  * @dev refer to research for more info. https://research.polytope.technology/state-(machine)-proofs
  */
 library MerklePatricia {
+    // Outcome of a successfully verified merkle-patricia proof
+    struct StorageValue {
+        // the storage key
+        bytes key;
+        // the encoded value
+        bytes value;
+    }
+
     /**
      * @notice Verifies substrate specific merkle patricia proofs.
      * @param root hash of the merkle patricia trie

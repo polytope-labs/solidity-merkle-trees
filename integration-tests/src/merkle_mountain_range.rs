@@ -1,54 +1,23 @@
 #![cfg(test)]
 
 use crate::{MergeKeccak, NumberHash, Token};
-use ckb_merkle_mountain_range::{mmr_position_to_k_index, util::MemStore, MMR};
+use ckb_merkle_mountain_range::{util::MemStore, MMR};
 use forge_testsuite::{Contract, Runner};
 use primitive_types::U256;
 use proptest::{prop_compose, proptest};
 use std::{env, path::PathBuf};
 
-/// Convert a 1-based MMR position to a 1-based tree position within its subtree peak.
-/// Decomposes leaf_count into descending powers-of-two peaks, locates which peak the
-/// leaf belongs to via its leaf_index, derives the k_index from the MMR position, and
-/// returns (1 << peak_height) + k_index.
-fn mmr_position_to_tree_position(
-    mmr_pos: u64,
-    leaf_index: u32,
-    leaf_count: u32,
-    mmr_size: u64,
-) -> usize {
-    let k_index = mmr_position_to_k_index(vec![mmr_pos], mmr_size)[0].1;
-
-    let mut remaining = leaf_count;
-    let mut boundary: u32 = 0;
-
-    while remaining != 0 {
-        let height = u32::BITS - 1 - remaining.leading_zeros();
-        let peak_size = 1u32 << height;
-        boundary += peak_size;
-
-        if leaf_index < boundary {
-            return (1usize << height) + k_index;
-        }
-
-        remaining -= peak_size;
-    }
-
-    panic!("leaf_index {} not found in MMR with leaf_count {}", leaf_index, leaf_count);
-}
-
 pub async fn solidity_calculate_root(
     contract: &mut Contract<'_>,
-    custom_leaves: Vec<(u32, usize, [u8; 32])>,
+    custom_leaves: Vec<(u32, [u8; 32])>,
     proof_items: Vec<Vec<u8>>,
-    mmr_size: u64,
+    leaf_count: u64,
 ) -> [u8; 32] {
     let token_leaves = custom_leaves
         .into_iter()
-        .map(|(pos, index, hash)| {
+        .map(|(leaf_index, hash)| {
             Token::Tuple(vec![
-                Token::Uint(U256::from(index)),
-                Token::Uint(U256::from(pos)),
+                Token::Uint(U256::from(leaf_index)),
                 Token::FixedBytes(hash.to_vec()),
             ])
         })
@@ -57,7 +26,7 @@ pub async fn solidity_calculate_root(
     let nodes = proof_items.iter().map(|n| Token::FixedBytes(n.clone())).collect::<Vec<_>>();
 
     contract
-        .call::<_, [u8; 32]>("CalculateRoot", (nodes, token_leaves, Token::Uint(mmr_size.into())))
+        .call::<_, [u8; 32]>("CalculateRoot", (nodes, token_leaves, Token::Uint(leaf_count.into())))
         .await
         .unwrap()
 }
@@ -88,11 +57,10 @@ pub async fn test_mmr(contract: &mut Contract<'_>, count: u32, mut proof_elem: V
     let mut custom_leaves = leaves
         .into_iter()
         .zip(proof_elem.clone().into_iter())
-        .map(|((pos, leaf), index)| {
-            let node_index = mmr_position_to_tree_position(pos, index, count, proof.mmr_size());
+        .map(|((_pos, leaf), index)| {
             let mut hash = [0u8; 32];
             hash.copy_from_slice(&leaf.0);
-            (index, node_index, hash)
+            (index, hash)
         })
         .collect::<Vec<_>>();
 
