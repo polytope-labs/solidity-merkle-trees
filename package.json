@@ -28,7 +28,6 @@
     "algorithms"
   ],
   "dependencies": {
-    "@openzeppelin/contracts": "^5.4.0",
     "prettier": "^3.3.3",
     "prettier-plugin-solidity": "^1.4.1"
   }

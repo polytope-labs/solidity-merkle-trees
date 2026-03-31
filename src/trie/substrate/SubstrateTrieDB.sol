@@ -18,7 +18,6 @@ import {NodeKind, NibbledBranch, NodeHandleOption, Leaf, NodeHandle} from "../No
 import {Bytes, ByteSlice} from "../Bytes.sol";
 import {NibbleSlice, NibbleSliceOps} from "../NibbleSlice.sol";
 import {ScaleCodec} from "./ScaleCodec.sol";
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 library SubstrateTrieDB {
     uint8 public constant FIRST_PREFIX = 0x00 << 6;
