@@ -6,7 +6,7 @@ use ethers::abi::{AbiEncode, Uint};
 use forge_testsuite::Runner;
 use primitive_types::{H256, U256};
 use rand::Rng;
-use rs_merkle::{merkelize_sorted, MerkleProof, MerkleTree, utils};
+use rs_merkle::{merkelize_sorted, utils, MerkleProof, MerkleTree};
 use std::{
     collections::{HashMap, HashSet},
     env, iter,
@@ -173,8 +173,7 @@ async fn test_rs_merkle_proof_conversion() {
         convert_rs_merkle_proof(&rs_proof, &indices, &leaves_to_prove, num_leaves);
 
     // Verify with the Rust reference implementation
-    let root =
-        calculate_balanced_root(&proof_nodes, &leaf_nodes, num_leaves as u64).unwrap();
+    let root = calculate_balanced_root(&proof_nodes, &leaf_nodes, num_leaves as u64).unwrap();
     assert_eq!(root, H256(tree.root().unwrap()));
 
     // Verify with the Solidity contract
