@@ -1,19 +1,17 @@
-/* Copyright (C) Polytope Labs Ltd. */
-/* SPDX-License-Identifier: Apache-2.0 */
+// Copyright (C) Polytope Labs Ltd.
+// SPDX-License-Identifier: Apache-2.0
 
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * 	http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 pragma solidity ^0.8.20;
 
 /**
@@ -23,36 +21,22 @@ pragma solidity ^0.8.20;
  * @dev refer to research for more info. https://research.polytope.technology/merkle-multi-proofs
  */
 library MerkleMultiProof {
-    /*
-     * @title A representation of a Merkle tree node
-     *
-     * Position numbering (root = 1, children of i are 2i and 2i+1):
-     *
-     *              1
-     *            /   \
-     *           2     3
-     *          / \   / \
-     *         4   5 6   7
-     */
+    /// @title A representation of a Merkle tree node
     struct Node {
-        /* 1-based position of the node in the tree */
+        // The global 1-based position of the node in the tree
         uint256 position;
-        /* A hash of the node itself */
+        // A hash of the node itself
         bytes32 node;
     }
-
-    /* @dev Thrown when a leaf node has no sibling in the proof or leaves array. */
+    
     error LeafMissingSibling();
-    /* @dev Thrown when an internal node has no sibling during the tree walk. */
     error NodeMissingSibling();
-    /* @dev Thrown when leafCount is zero. */
-    error EmptyTree();
 
     /**
      * @notice Verify a Merkle Multi Proof
      * @param root hash of the root node of the merkle tree
-     * @param proof A list of the merkle nodes along with their positions that are needed to re-calculate root node.
-     * @param leaves A list of the leaves along with their positions to prove
+     * @param proof A list of the merkle nodes along with their node indices that are needed to re-calculate root node.
+     * @param leaves A list of the leaves along with their node indices to prove
      * @param leafCount Total number of leaves in the complete tree
      * @return boolean if the calculated root matches the provided root node
      */
@@ -67,23 +51,10 @@ library MerkleMultiProof {
 
     /**
      * @notice Calculates the root hash of a merkle tree.
-     * @dev Walks up the tree level by level, pairing siblings and hashing:
-     *
-     *      Even positions are left children, odd are right.
-     *      Parent = position >> 1. Sibling = position +/- 1.
-     *
-     *      Proving L0 (pos 4) and L2 (pos 6) in a 4-leaf tree:
-     *
-     *               1  ← root
-     *             /   \
-     *            2     3          Level 1: hash(node2, node3)
-     *           / \   / \
-     *          4   5 6   7        Level 2: hash(L0, proof₀), hash(L2, proof₁)
-     *         [L0] P [L2] P
-     *
-     *      Unbalanced trees: unpaired even nodes are promoted to the parent
-     *      level with their hash unchanged (rightmost edge has no sibling).
-     *
+     * @dev By assigning nodes a 1-based positional index within their tree level, we can
+     * efficiently walk up the tree pairing siblings. Even indices are left children,
+     * odd indices are right children. Parent index = child index >> 1. Also works for
+     * unbalanced trees by promoting unpaired nodes.
      * @param proof Array of proof nodes containing position and hash
      * @param leaves Array of leaf nodes with their positions
      * @param leafCount Total number of leaves in the complete tree
@@ -94,7 +65,7 @@ library MerkleMultiProof {
         Node[] memory leaves,
         uint256 leafCount
     ) internal pure returns (bytes32) {
-        if (leafCount == 0) revert EmptyTree();
+        if (leafCount == 0) return bytes32(0);
 
         uint256 height = _ceilLog2(leafCount);
 
@@ -165,7 +136,7 @@ library MerkleMultiProof {
             l++;
         }
 
-        /* Trim flattened to actual size before processing upper levels */
+        // Trim flattened to actual size before processing upper levels
         assembly {
             mstore(flattened, f)
         }
@@ -252,7 +223,7 @@ library MerkleMultiProof {
                 }
             }
 
-            /* Trim flattened to the number of nodes written this level */
+            // Trim flattened to the number of nodes written this level
             flatLen = w;
             assembly {
                 mstore(flattened, w)
@@ -262,11 +233,9 @@ library MerkleMultiProof {
         return flattened[0].node;
     }
 
-    /*
-     * @notice Compute the keccak256 hash of two nodes
-     * @param node1 hash of the first node
-     * @param node2 hash of the second node
-     */
+    /// @notice Compute the keccak256 hash of two nodes
+    /// @param node1 hash of the first node
+    /// @param node2 hash of the second node
     function _optimizedHash(
         bytes32 node1,
         bytes32 node2
@@ -278,13 +247,13 @@ library MerkleMultiProof {
         }
     }
 
-    /* @dev Compute ceil(log2(x)) */
+    /// @dev Compute ceil(log2(x))
     function _ceilLog2(uint256 x) private pure returns (uint256) {
         if (x <= 1) return 0;
         return _log2(x - 1) + 1;
     }
 
-    /* @dev Efficient floor(log2(x)) using bit-shifting */
+    /// @dev Efficient floor(log2(x)) using bit-shifting
     function _log2(uint256 x) private pure returns (uint256 r) {
         assembly {
             r := shl(7, lt(0xffffffffffffffffffffffffffffffff, x))

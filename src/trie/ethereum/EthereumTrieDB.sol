@@ -1,19 +1,17 @@
-/*
- * Copyright (C) Polytope Labs Ltd.
- * SPDX-License-Identifier: Apache-2.0
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * 	http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// Copyright (C) Polytope Labs Ltd.
+// SPDX-License-Identifier: Apache-2.0
+
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 pragma solidity ^0.8.20;
 
 import {NodeKind, Leaf, Extension, Branch, NodeHandle, NodeHandleOption, ByteSlice} from "../Node.sol";
@@ -44,7 +42,7 @@ library EthereumTrieDB {
             node.isEmpty = true;
             return node;
         } else if (numItems == 2) {
-            /* It may be a leaf or extension */
+            //It may be a leaf or extension
             bytes memory key = itemList[0].toBytes();
             uint256 prefix;
             assembly {
@@ -75,7 +73,7 @@ library EthereumTrieDB {
             .toRlpItem()
             .toList();
         bytes memory data = decoded[1].toBytes();
-        /* Remove the first byte, which is the prefix and not present in the user provided key */
+        //Remove the first byte, which is the prefix and not present in the user provided key
         leaf.key = NibbleSlice(Bytes.substr(decoded[0].toBytes(), 1), 0);
         leaf.value = NodeHandle(false, bytes32(0), true, data);
 
@@ -93,7 +91,7 @@ library EthereumTrieDB {
             .toList();
         bytes memory data = decoded[1].toBytes();
         uint8 isOdd = uint8(decoded[0].toBytes()[0] >> 4) & 0x01;
-        /* Remove the first byte, which is the prefix and not present in the user provided key */
+        //Remove the first byte, which is the prefix and not present in the user provided key
         extension.key = NibbleSlice(
             Bytes.substr(decoded[0].toBytes(), (isOdd + 1) % 2),
             isOdd

@@ -1,19 +1,17 @@
-/* Copyright (C) Polytope Labs Ltd. */
-/* SPDX-License-Identifier: Apache-2.0 */
+// Copyright (C) Polytope Labs Ltd.
+// SPDX-License-Identifier: Apache-2.0
 
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * 	http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 pragma solidity ^0.8.20;
 
 import {Memory} from "./Memory.sol";
@@ -26,13 +24,11 @@ struct ByteSlice {
 library Bytes {
     uint256 internal constant BYTES_HEADER_SIZE = 32;
 
-    /*
-     * Checks if two `bytes memory` variables are equal. This is done using hashing,
-     * which is much more gas efficient then comparing each byte individually.
-     * Equality means that:
-     *  - 'self.length == other.length'
-     *  - For 'n' in '[0, self.length)', 'self[n] == other[n]'
-     */
+    // Checks if two `bytes memory` variables are equal. This is done using hashing,
+    // which is much more gas efficient then comparing each byte individually.
+    // Equality means that:
+    //  - 'self.length == other.length'
+    //  - For 'n' in '[0, self.length)', 'self[n] == other[n]'
     function equals(
         bytes memory self,
         bytes memory other
@@ -60,13 +56,11 @@ library Bytes {
         return b;
     }
 
-    /*
-     * Copies 'len' bytes from 'self' into a new array, starting at the provided 'startIndex'.
-     * Returns the new copy.
-     * Requires that:
-     *  - 'startIndex + len <= self.length'
-     * The length of the substring is: 'len'
-     */
+    // Copies 'len' bytes from 'self' into a new array, starting at the provided 'startIndex'.
+    // Returns the new copy.
+    // Requires that:
+    //  - 'startIndex + len <= self.length'
+    // The length of the substring is: 'len'
     function read(
         ByteSlice memory self,
         uint256 len
@@ -81,12 +75,10 @@ library Bytes {
         return slice;
     }
 
-    /*
-     * Copies a section of 'self' into a new array, starting at the provided 'startIndex'.
-     * Returns the new copy.
-     * Requires that 'startIndex <= self.length'
-     * The length of the substring is: 'self.length - startIndex'
-     */
+    // Copies a section of 'self' into a new array, starting at the provided 'startIndex'.
+    // Returns the new copy.
+    // Requires that 'startIndex <= self.length'
+    // The length of the substring is: 'self.length - startIndex'
     function substr(
         bytes memory self,
         uint256 startIndex
@@ -97,13 +89,11 @@ library Bytes {
         return Memory.toBytes(addr + startIndex, len);
     }
 
-    /*
-     * Copies 'len' bytes from 'self' into a new array, starting at the provided 'startIndex'.
-     * Returns the new copy.
-     * Requires that:
-     *  - 'startIndex + len <= self.length'
-     * The length of the substring is: 'len'
-     */
+    // Copies 'len' bytes from 'self' into a new array, starting at the provided 'startIndex'.
+    // Returns the new copy.
+    // Requires that:
+    //  - 'startIndex + len <= self.length'
+    // The length of the substring is: 'len'
     function substr(
         bytes memory self,
         uint256 startIndex,
@@ -117,12 +107,10 @@ library Bytes {
         return Memory.toBytes(addr + startIndex, len);
     }
 
-    /*
-     * Combines 'self' and 'other' into a single array.
-     * Returns the concatenated arrays:
-     *  [self[0], self[1], ... , self[self.length - 1], other[0], other[1], ... , other[other.length - 1]]
-     * The length of the new array is 'self.length + other.length'
-     */
+    // Combines 'self' and 'other' into a single array.
+    // Returns the concatenated arrays:
+    //  [self[0], self[1], ... , self[self.length - 1], other[0], other[1], ... , other[other.length - 1]]
+    // The length of the new array is 'self.length + other.length'
     function concat(
         bytes memory self,
         bytes memory other
