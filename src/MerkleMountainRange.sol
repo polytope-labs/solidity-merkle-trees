@@ -24,6 +24,8 @@ import {MerkleMultiProof} from "./MerkleMultiProof.sol";
  * @dev refer to research for more info. https://research.polytope.technology/merkle-mountain-range-multi-proofs
  */
 library MerkleMountainRange {
+    error ProofExhausted();
+
     /// @dev Iterator for tracking a contiguous range of leaves in an array
     struct LeafIterator {
         uint256 offset; // Start index of the range
@@ -196,6 +198,7 @@ library MerkleMountainRange {
                     i += 2;
                 } else {
                     // Sibling is a proof node
+                    if (proofIter.offset >= proofIter.data.length) revert ProofExhausted();
                     hashes[nIdx] = _hashPair(pos, hashes[i], next(proofIter));
                     positions[nIdx] = pos >> 1;
                     unchecked {
