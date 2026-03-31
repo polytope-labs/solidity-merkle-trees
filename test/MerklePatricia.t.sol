@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+/* SPDX-License-Identifier: UNLICENSED */
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
@@ -12,7 +12,7 @@ import {ByteSlice} from "../src/trie/Bytes.sol";
 contract MerklePatriciaTest is Test {
     function testSubstrateMerklePatricia() public pure {
         bytes[] memory keys = new bytes[](1);
-        // trie key for pallet_timestamp::Now
+        /* trie key for pallet_timestamp::Now */
         keys[
             0
         ] = hex"f0c365c3cf59d671eb72da0e7a4113c49f1f0515f462cdcf84e0f1d6045dfcbb";
@@ -34,7 +34,7 @@ contract MerklePatriciaTest is Test {
 
     function testSubstrateMerklePatriciaSingleNode() public {
         bytes[] memory keys = new bytes[](1);
-        // trie key for pallet_timestamp::Now
+        /* trie key for pallet_timestamp::Now */
         keys[0] = hex"00";
 
         bytes[] memory proof = new bytes[](1);
@@ -53,12 +53,12 @@ contract MerklePatriciaTest is Test {
 
     function testEthereumMerklePatricia() public {
         bytes[] memory keys = new bytes[](1);
-        // slot at 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc
+        /* slot at 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc */
         keys[
             0
         ] = hex"75b20eef8615de99c108b05f0dbda081c91897128caa336d75dffb97c4132b4d";
 
-        // proof from account 0xbEb5Fc579115071764c7423A4f12eDde41f106Ed on Ethreum mainnet at block 19458609
+        /* proof from account 0xbEb5Fc579115071764c7423A4f12eDde41f106Ed on Ethreum mainnet at block 19458609 */
         bytes[] memory proof = new bytes[](7);
         proof[
             0
