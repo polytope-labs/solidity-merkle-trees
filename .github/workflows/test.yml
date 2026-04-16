@@ -56,6 +56,39 @@ jobs:
           cd ./tests/rust
           cargo test --release -- --nocapture
 
+  fuzz:
+    name: Fuzz
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz
+
+      - name: Download SVM Releases List
+        run: |
+          wget -O /tmp/svm_releases_list.json https://raw.githubusercontent.com/nikitastupin/solc/2287d4326237172acf91ce42fd7ec18a67b7f512/linux/aarch64/list.json
+          echo "SVM_RELEASES_LIST_JSON=/tmp/svm_releases_list.json" >> $GITHUB_ENV
+
+      - name: Build contracts
+        run: forge build
+
+      - name: Fuzz trie proof valid
+        run: cd tests/rust && cargo +nightly fuzz run trie_proof_valid -- -max_total_time=120
+
+      - name: Fuzz trie proof invalid
+        run: cd tests/rust && cargo +nightly fuzz run trie_proof_invalid -- -max_total_time=120
+
   fmt:
     name: Rustfmt
     runs-on: ubuntu-latest

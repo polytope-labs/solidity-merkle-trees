@@ -148,7 +148,7 @@ library MerkleMountainRange {
             }
         }
 
-        // ensure all leaves were consumed by some peak subtree
+        // invariant: no out of bounds leaves
         if (leafIter.length != 0) revert OutOfBoundsLeaves();
 
         unchecked {
