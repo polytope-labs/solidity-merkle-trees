@@ -2,7 +2,7 @@
 
 use alloy_primitives::FixedBytes;
 use alloy_sol_types::{sol, SolCall};
-use solidity_merkle_trees_test::evm_runner::{EvmRunner, project_root};
+use solidity_merkle_trees_test::evm_runner::{project_root, EvmRunner};
 use sp_core::KeccakHasher;
 use sp_trie::{LayoutV0, MemoryDB, StorageProof};
 use std::collections::HashSet;

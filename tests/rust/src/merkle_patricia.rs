@@ -1,7 +1,7 @@
 #![cfg(test)]
 #![allow(dead_code, unused_imports)]
 
-use crate::evm_runner::{EvmRunner, project_root};
+use crate::evm_runner::{project_root, EvmRunner};
 use alloy_primitives::{FixedBytes, U256};
 use alloy_sol_types::{sol, SolCall, SolValue};
 use codec::Decode;
@@ -90,10 +90,7 @@ fn setup() -> (EvmRunner, alloy_primitives::Address) {
 }
 
 fn make_nibble(data: &[u8], offset: u64) -> SolNibbleSlice {
-    SolNibbleSlice {
-        data: data.to_vec().into(),
-        offset: U256::from(offset),
-    }
+    SolNibbleSlice { data: data.to_vec().into(), offset: U256::from(offset) }
 }
 
 #[test]
@@ -104,17 +101,13 @@ fn test_decode_nibbled_branch() {
     for item in proof {
         let _plan = NodeCodec::<KeccakHasher>::decode_plan(&mut &item[..]).unwrap().build(&item);
 
-        let call = decodeNodeKindCall {
-            node: item.clone().into(),
-        };
+        let call = decodeNodeKindCall { node: item.clone().into() };
         let result = runner.call_raw(addr, call.abi_encode());
         let decoded = decodeNodeKindCall::abi_decode_returns(&result, true).unwrap();
         assert!(decoded._0.isNibbledBranch);
 
         // Just check decodeNibbledBranch doesn't revert
-        let call = decodeNibbledBranchCall {
-            node: item.clone().into(),
-        };
+        let call = decodeNibbledBranchCall { node: item.clone().into() };
         runner.call_raw(addr, call.abi_encode());
     }
 }
@@ -133,17 +126,13 @@ fn test_decode_leaf() {
     for leaf in leaves {
         let _plan = NodeCodec::<KeccakHasher>::decode_plan(&mut &leaf[..]).unwrap().build(&leaf);
 
-        let call = decodeNodeKindCall {
-            node: leaf.clone().into(),
-        };
+        let call = decodeNodeKindCall { node: leaf.clone().into() };
         let result = runner.call_raw(addr, call.abi_encode());
         let decoded = decodeNodeKindCall::abi_decode_returns(&result, true).unwrap();
         assert!(decoded._0.isLeaf);
 
         // Just check decodeLeaf doesn't revert
-        let call = decodeLeafCall {
-            node: leaf.clone().into(),
-        };
+        let call = decodeLeafCall { node: leaf.clone().into() };
         runner.call_raw(addr, call.abi_encode());
     }
 }
@@ -180,10 +169,7 @@ fn test_nibble_slice_ops_basics() {
 
     // nibbleAt with offset 3
     for i in 0u64..3 {
-        let call = nibbleAtCall {
-            self_: make_nibble(D, 3),
-            i: U256::from(i),
-        };
+        let call = nibbleAtCall { self_: make_nibble(D, 3), i: U256::from(i) };
         let result = runner.call_raw(addr, call.abi_encode());
         let decoded = nibbleAtCall::abi_decode_returns(&result, true).unwrap();
         assert_eq!(decoded._0, U256::from(i + 3));
@@ -195,36 +181,24 @@ fn test_nibble_slice_ops_mid() {
     let (mut runner, addr) = setup();
 
     // mid(D, 2)
-    let call = midCall {
-        self_: make_nibble(D, 0),
-        i: U256::from(2),
-    };
+    let call = midCall { self_: make_nibble(D, 0), i: U256::from(2) };
     let result = runner.call_raw(addr, call.abi_encode());
     let nibble = midCall::abi_decode_returns(&result, true).unwrap()._0;
 
     for i in 0u64..4 {
-        let call = nibbleAtCall {
-            self_: nibble.clone(),
-            i: U256::from(i),
-        };
+        let call = nibbleAtCall { self_: nibble.clone(), i: U256::from(i) };
         let result = runner.call_raw(addr, call.abi_encode());
         let decoded = nibbleAtCall::abi_decode_returns(&result, true).unwrap();
         assert_eq!(decoded._0, U256::from(i + 2));
     }
 
     // mid(D, 3)
-    let call = midCall {
-        self_: make_nibble(D, 0),
-        i: U256::from(3),
-    };
+    let call = midCall { self_: make_nibble(D, 0), i: U256::from(3) };
     let result = runner.call_raw(addr, call.abi_encode());
     let nibble = midCall::abi_decode_returns(&result, true).unwrap()._0;
 
     for i in 0u64..3 {
-        let call = nibbleAtCall {
-            self_: nibble.clone(),
-            i: U256::from(i),
-        };
+        let call = nibbleAtCall { self_: nibble.clone(), i: U256::from(i) };
         let result = runner.call_raw(addr, call.abi_encode());
         let decoded = nibbleAtCall::abi_decode_returns(&result, true).unwrap();
         assert_eq!(decoded._0, U256::from(i + 3));

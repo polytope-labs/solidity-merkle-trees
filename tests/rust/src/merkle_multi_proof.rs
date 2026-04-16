@@ -1,7 +1,11 @@
 #![cfg(test)]
 #![allow(dead_code, unused_imports)]
 
-use crate::{evm_runner::{EvmRunner, project_root}, multi_proof_utils::{convert_rs_merkle_proof, Node}, Keccak256};
+use crate::{
+    evm_runner::{project_root, EvmRunner},
+    multi_proof_utils::{convert_rs_merkle_proof, Node},
+    Keccak256,
+};
 use alloy_primitives::{keccak256, FixedBytes, U256};
 use alloy_sol_types::{sol, SolCall};
 use primitive_types::H256;
@@ -22,10 +26,7 @@ sol! {
 fn nodes_to_abi(nodes: &[Node]) -> Vec<MpNode> {
     nodes
         .iter()
-        .map(|n| MpNode {
-            position: U256::from(n.position),
-            node: FixedBytes(n.hash.0),
-        })
+        .map(|n| MpNode { position: U256::from(n.position), node: FixedBytes(n.hash.0) })
         .collect()
 }
 
@@ -75,13 +76,8 @@ fn test_calculate_root() {
     let mut runner = EvmRunner::new();
     let contract = runner.deploy(&project, "MerkleMultiProofTest");
 
-    let calculated = solidity_calculate_root(
-        &mut runner,
-        contract,
-        &proof_nodes,
-        &leaf_nodes,
-        leaves.len(),
-    );
+    let calculated =
+        solidity_calculate_root(&mut runner, contract, &proof_nodes, &leaf_nodes, leaves.len());
 
     assert_eq!(H256(tree.root().unwrap()), calculated);
 
@@ -121,27 +117,24 @@ fn test_rs_merkle_proof_conversion() {
     let mut runner = EvmRunner::new();
     let contract = runner.deploy(&project, "MerkleMultiProofTest");
 
-    let calculated = solidity_calculate_root(
-        &mut runner,
-        contract,
-        &proof_nodes,
-        &leaf_nodes,
-        num_leaves,
-    );
+    let calculated =
+        solidity_calculate_root(&mut runner, contract, &proof_nodes, &leaf_nodes, num_leaves);
 
     assert_eq!(H256(tree.root().unwrap()), calculated);
 }
 
 /// Build a tree and single-leaf proof, return everything needed for Solidity verification.
-fn build_multi_proof(num_leaves: usize, leaf_idx: usize) -> (
-    [u8; 32],       // root
-    Vec<Node>,       // proof nodes
-    Vec<Node>,       // leaf nodes
-    [u8; 32],        // leaf hash
+fn build_multi_proof(
+    num_leaves: usize,
+    leaf_idx: usize,
+) -> (
+    [u8; 32],  // root
+    Vec<Node>, // proof nodes
+    Vec<Node>, // leaf nodes
+    [u8; 32],  // leaf hash
 ) {
-    let leaf_hashes: Vec<[u8; 32]> = (0..num_leaves)
-        .map(|i| keccak256(&(i as u32).to_le_bytes()).0)
-        .collect();
+    let leaf_hashes: Vec<[u8; 32]> =
+        (0..num_leaves).map(|i| keccak256(&(i as u32).to_le_bytes()).0).collect();
     let tree = MerkleTree::<Keccak256>::from_leaves(&leaf_hashes);
     let root = tree.root().unwrap();
 
@@ -169,7 +162,7 @@ fn solidity_calc_root_raw(
             let decoded = CalculateRootCall::abi_decode_returns(&result, true)
                 .map_err(|e| format!("decode: {e}"))?;
             Ok(decoded._0.0)
-        }
+        },
         Err(e) => Err(e),
     }
 }

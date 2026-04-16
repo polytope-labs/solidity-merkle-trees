@@ -18,13 +18,7 @@ impl EvmRunner {
     pub fn new() -> Self {
         let mut db = CacheDB::new(EmptyDB::default());
         let caller = Address::repeat_byte(0x01);
-        db.insert_account_info(
-            caller,
-            AccountInfo {
-                balance: U256::MAX,
-                ..Default::default()
-            },
-        );
+        db.insert_account_info(caller, AccountInfo { balance: U256::MAX, ..Default::default() });
         Self { db, caller }
     }
 
@@ -35,11 +29,8 @@ impl EvmRunner {
             let mut evm = Evm::builder()
                 .with_ref_db(&mut self.db)
                 .modify_cfg_env(|cfg| {
-                    cfg.limit_contract_code_size = if DISABLE_CONTRACT_SIZE_LIMIT {
-                        Some(usize::MAX)
-                    } else {
-                        None
-                    };
+                    cfg.limit_contract_code_size =
+                        if DISABLE_CONTRACT_SIZE_LIMIT { Some(usize::MAX) } else { None };
                 })
                 .modify_tx_env(|tx| {
                     tx.caller = self.caller;
@@ -53,10 +44,7 @@ impl EvmRunner {
         };
 
         match result {
-            ExecutionResult::Success {
-                output: Output::Create(_, Some(addr)),
-                ..
-            } => addr,
+            ExecutionResult::Success { output: Output::Create(_, Some(addr)), .. } => addr,
             other => panic!("deployment of {contract_name} failed: {other:?}"),
         }
     }
@@ -66,11 +54,8 @@ impl EvmRunner {
             let mut evm = Evm::builder()
                 .with_ref_db(&mut self.db)
                 .modify_cfg_env(|cfg| {
-                    cfg.limit_contract_code_size = if DISABLE_CONTRACT_SIZE_LIMIT {
-                        Some(usize::MAX)
-                    } else {
-                        None
-                    };
+                    cfg.limit_contract_code_size =
+                        if DISABLE_CONTRACT_SIZE_LIMIT { Some(usize::MAX) } else { None };
                 })
                 .modify_tx_env(|tx| {
                     tx.caller = self.caller;
@@ -84,10 +69,7 @@ impl EvmRunner {
         };
 
         match result {
-            ExecutionResult::Success {
-                output: Output::Create(_, Some(addr)),
-                ..
-            } => addr,
+            ExecutionResult::Success { output: Output::Create(_, Some(addr)), .. } => addr,
             other => panic!("deployment of library failed: {other:?}"),
         }
     }
@@ -108,10 +90,7 @@ impl EvmRunner {
         };
 
         match result {
-            ExecutionResult::Success {
-                output: Output::Call(data),
-                ..
-            } => data.to_vec(),
+            ExecutionResult::Success { output: Output::Call(data), .. } => data.to_vec(),
             other => panic!("call failed: {other:?}"),
         }
     }
@@ -132,10 +111,7 @@ impl EvmRunner {
         };
 
         match result {
-            ExecutionResult::Success {
-                output: Output::Call(data),
-                ..
-            } => Ok(data.to_vec()),
+            ExecutionResult::Success { output: Output::Call(data), .. } => Ok(data.to_vec()),
             ExecutionResult::Revert { output, .. } => Err(format!("reverted: {}", output)),
             other => Err(format!("failed: {other:?}")),
         }
@@ -149,11 +125,7 @@ fn load_bytecode(runner: &mut EvmRunner, project_root: &Path, contract_name: &st
 }
 
 /// Load and link a library, deploying any transitive library dependencies first.
-fn load_and_link_artifact(
-    runner: &mut EvmRunner,
-    out_dir: &Path,
-    artifact_name: &str,
-) -> Vec<u8> {
+fn load_and_link_artifact(runner: &mut EvmRunner, out_dir: &Path, artifact_name: &str) -> Vec<u8> {
     // Find the artifact
     for entry in std::fs::read_dir(out_dir).unwrap() {
         let entry = entry.unwrap();
@@ -172,8 +144,7 @@ fn load_and_link_artifact(
                     for (_source_file, libs) in link_refs {
                         for (lib_name, offsets) in libs.as_object().unwrap() {
                             // Recursively load and deploy the library
-                            let lib_bytecode =
-                                load_and_link_artifact(runner, out_dir, lib_name);
+                            let lib_bytecode = load_and_link_artifact(runner, out_dir, lib_name);
                             let lib_addr = runner.deploy_raw(lib_bytecode);
 
                             let addr_hex = hex::encode(lib_addr.as_slice());
@@ -195,11 +166,8 @@ fn load_and_link_artifact(
                     }
                 }
 
-                let hex_str = bytecode_hex
-                    .strip_prefix("0x")
-                    .unwrap_or(&bytecode_hex);
-                return hex::decode(hex_str)
-                    .expect("invalid hex in bytecode after linking");
+                let hex_str = bytecode_hex.strip_prefix("0x").unwrap_or(&bytecode_hex);
+                return hex::decode(hex_str).expect("invalid hex in bytecode after linking");
             }
         }
     }

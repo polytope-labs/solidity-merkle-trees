@@ -1,6 +1,9 @@
 #![cfg(test)]
 
-use crate::{evm_runner::{EvmRunner, project_root}, MergeKeccak, NumberHash};
+use crate::{
+    evm_runner::{project_root, EvmRunner},
+    MergeKeccak, NumberHash,
+};
 use alloy_primitives::{FixedBytes, U256};
 use alloy_sol_types::{sol, SolCall};
 use ckb_merkle_mountain_range::{util::MemStore, MMR};
@@ -25,10 +28,7 @@ fn solidity_calculate_root(
 ) -> [u8; 32] {
     let leaves: Vec<MmrLeaf> = custom_leaves
         .into_iter()
-        .map(|(index, hash)| MmrLeaf {
-            index: U256::from(index),
-            hash: FixedBytes(hash),
-        })
+        .map(|(index, hash)| MmrLeaf { index: U256::from(index), hash: FixedBytes(hash) })
         .collect();
 
     let proof: Vec<FixedBytes<32>> = proof_items
@@ -40,18 +40,19 @@ fn solidity_calculate_root(
         })
         .collect();
 
-    let call = CalculateRootCall {
-        proof,
-        leaves,
-        leafCount: U256::from(leaf_count),
-    };
+    let call = CalculateRootCall { proof, leaves, leafCount: U256::from(leaf_count) };
 
     let result = runner.call_raw(contract, call.abi_encode());
     let decoded = CalculateRootCall::abi_decode_returns(&result, true).unwrap();
     decoded._0.0
 }
 
-fn test_mmr(runner: &mut EvmRunner, contract: alloy_primitives::Address, count: u32, mut proof_elem: Vec<u32>) {
+fn test_mmr(
+    runner: &mut EvmRunner,
+    contract: alloy_primitives::Address,
+    count: u32,
+    mut proof_elem: Vec<u32>,
+) {
     proof_elem.sort();
     let store = MemStore::default();
     let mut mmr = MMR::<_, MergeKeccak, _>::new(0, &store);
@@ -208,17 +209,20 @@ fn solidity_verify_proof(
             let decoded = VerifyProofCall::abi_decode_returns(&result, true)
                 .map_err(|e| format!("decode error: {e}"))?;
             Ok(decoded._0)
-        }
+        },
         Err(e) => Err(e),
     }
 }
 
 /// Build a valid MMR proof and return all the pieces needed for Solidity verification.
-fn build_mmr_proof(count: u32, leaf_idx: u32) -> (
-    [u8; 32],           // root
+fn build_mmr_proof(
+    count: u32,
+    leaf_idx: u32,
+) -> (
+    [u8; 32],            // root
     Vec<FixedBytes<32>>, // proof items
-    Vec<MmrLeaf>,       // leaves
-    [u8; 32],           // leaf hash
+    Vec<MmrLeaf>,        // leaves
+    [u8; 32],            // leaf hash
 ) {
     let store = MemStore::default();
     let mut mmr = MMR::<_, MergeKeccak, _>::new(0, &store);
@@ -233,14 +237,17 @@ fn build_mmr_proof(count: u32, leaf_idx: u32) -> (
     let mut root_hash = [0u8; 32];
     root_hash.copy_from_slice(&root.0);
 
-    let sol_proof: Vec<FixedBytes<32>> = proof.proof_items().iter().map(|p| {
-        let mut b = [0u8; 32]; b.copy_from_slice(&p.0); FixedBytes(b)
-    }).collect();
+    let sol_proof: Vec<FixedBytes<32>> = proof
+        .proof_items()
+        .iter()
+        .map(|p| {
+            let mut b = [0u8; 32];
+            b.copy_from_slice(&p.0);
+            FixedBytes(b)
+        })
+        .collect();
 
-    let sol_leaves = vec![MmrLeaf {
-        index: U256::from(leaf_idx),
-        hash: FixedBytes(leaf_hash),
-    }];
+    let sol_leaves = vec![MmrLeaf { index: U256::from(leaf_idx), hash: FixedBytes(leaf_hash) }];
 
     (root_hash, sol_proof, sol_leaves, leaf_hash)
 }
