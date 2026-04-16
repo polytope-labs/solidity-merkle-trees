@@ -57,11 +57,19 @@ The `Node.position` uses a 1-based indexing scheme where the root is `1` and the
 To convert an `rs-merkle` proof into the positioned format the Solidity verifier expects:
 
 ```rust
-use rs_merkle::{MerkleTree, MerkleProof, Hasher, utils};
+use rs_merkle::{MerkleProof, Hasher, utils};
 
 struct Node {
     position: usize,
     hash: [u8; 32],
+}
+
+/// ceil(log2(n)) — must match the Solidity `_ceilLog2` used by MerkleMultiProof.
+/// Do NOT use `rs_merkle::utils::indices::tree_depth` here — it uses floating-point
+/// math that returns incorrect results for exact powers of 2.
+fn ceil_log2(n: usize) -> usize {
+    if n <= 1 { return 0; }
+    (usize::BITS - (n - 1).leading_zeros()) as usize
 }
 
 fn convert_proof<T: Hasher<Hash = [u8; 32]>>(
@@ -70,16 +78,14 @@ fn convert_proof<T: Hasher<Hash = [u8; 32]>>(
     leaf_hashes: &[[u8; 32]],
     total_leaves: usize,
 ) -> (Vec<Node>, Vec<Node>) {
-    let height = utils::indices::tree_depth(total_leaves);
+    let height = ceil_log2(total_leaves);
 
-    // Calculate the expected proof node positions and zip with the proof hashes.
     // proof_indices_by_layers returns the 0-based indices that each proof hash
     // corresponds to, layer by layer (bottom-to-top), in the same order as proof_hashes().
     let proof_nodes = utils::indices::proof_indices_by_layers(leaf_indices, total_leaves)
         .into_iter()
         .enumerate()
         .flat_map(|(layer, indices)| {
-            // At layer k (0 = leaves), 0-based index i → 1-based position:
             let level_start = 1usize << (height - layer);
             indices.into_iter().map(move |idx| level_start + idx)
         })
@@ -123,6 +129,8 @@ contract YourContract {
 ```
 
 You can generate the MMR proofs using the [ckb-merkle-mountain-range](https://crates.io/crates/ckb-merkle-mountain-range) crate.
+
+> **Note:** The MMR verifier provides **membership** proofs only — it guarantees that a given leaf hash exists somewhere in the committed tree. It is **not positionally binding**: the `Leaf.index` field determines how the proof is reconstructed but a valid leaf hash may verify at more than one index. If your application requires positional binding, commit the leaf index into the leaf hash before inserting into the tree (e.g. `keccak256(abi.encodePacked(index, data))`).
 
 ## Merkle Patricia Trie
 
@@ -175,20 +183,20 @@ forge build
 To run the unit tests associated with the Merkle Multi Proof library;
 
 ```bash
-cargo test --release --manifest-path=./integration-tests/Cargo.toml --lib merkle_multi_proof
+cargo test --release --manifest-path=./tests/rust/Cargo.toml --lib merkle_multi_proof
 ```
 
 To run the unit tests associated with the Merkle Mountain Range library;
 
 ```bash
-cargo test --release --manifest-path=./integration-tests/Cargo.toml --lib merkle_mountain_range
+cargo test --release --manifest-path=./tests/rust/Cargo.toml --lib merkle_mountain_range
 ```
 
 To run the unit and fuzz tests associated with the Merkle Patricia Trie library;
 
 ```bash
-cargo test --release --manifest-path=./integration-tests/Cargo.toml --lib merkle_patricia
-cd integration-tests && cargo +nightly fuzz run trie_proof_valid
+cargo test --release --manifest-path=./tests/rust/Cargo.toml --lib merkle_patricia
+cd tests/rust && cargo +nightly fuzz run trie_proof_valid
 cargo +nightly fuzz run trie_proof_invalid
 ```
 
@@ -199,11 +207,11 @@ Execute the following commands in the project directory:
 ```bash
 git submodule update --init --recursive
 # run tests for all merkle verifiers
-docker run --memory="24g" --rm --user root -v "$PWD":/app -w /app rust:latest cargo test --release --manifest-path=./integration-tests/Cargo.toml
+docker run --memory="24g" --rm --user root -v "$PWD":/app -w /app rust:latest cargo test --release --manifest-path=./tests/rust/Cargo.toml
 # fuzz the merkle-patricia verifier
 docker build -t test .
-docker run --memory="24g" --rm --user root -v "$PWD":/app -w /app/integration-tests/fuzz test cargo +nightly fuzz run trie_proof_valid
-docker run --memory="24g" --rm --user root -v "$PWD":/app -w /app/integration-tests/fuzz test cargo +nightly fuzz run trie_proof_invalid
+docker run --memory="24g" --rm --user root -v "$PWD":/app -w /app/tests/rust/fuzz test cargo +nightly fuzz run trie_proof_valid
+docker run --memory="24g" --rm --user root -v "$PWD":/app -w /app/tests/rust/fuzz test cargo +nightly fuzz run trie_proof_invalid
 ```
 
 ## License

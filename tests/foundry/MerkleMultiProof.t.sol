@@ -17,7 +17,7 @@
 pragma solidity ^0.8.17;
 
 import {Test, console} from "forge-std/Test.sol";
-import {MerkleMultiProof} from "../src/MerkleMultiProof.sol";
+import {MerkleMultiProof} from "../../src/MerkleMultiProof.sol";
 
 contract MerkleMultiProofTest is Test {
     function CalculateRoot(
