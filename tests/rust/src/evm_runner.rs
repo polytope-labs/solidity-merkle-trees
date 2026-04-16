@@ -95,6 +95,28 @@ impl EvmRunner {
         }
     }
 
+    pub fn call_with_gas(&mut self, to: Address, calldata: Vec<u8>) -> (Vec<u8>, u64) {
+        let result = {
+            let mut evm = Evm::builder()
+                .with_ref_db(&mut self.db)
+                .modify_tx_env(|tx| {
+                    tx.caller = self.caller;
+                    tx.transact_to = TransactTo::Call(to);
+                    tx.data = Bytes::from(calldata);
+                    tx.value = U256::ZERO;
+                    tx.gas_limit = 30_000_000;
+                })
+                .build();
+            evm.transact_commit().unwrap()
+        };
+
+        match result {
+            ExecutionResult::Success { output: Output::Call(data), gas_used, .. } =>
+                (data.to_vec(), gas_used),
+            other => panic!("call failed: {other:?}"),
+        }
+    }
+
     pub fn call_may_revert(&mut self, to: Address, calldata: Vec<u8>) -> Result<Vec<u8>, String> {
         let result = {
             let mut evm = Evm::builder()

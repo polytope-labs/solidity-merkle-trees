@@ -365,3 +365,76 @@ proptest! {
         }
     }
 }
+
+#[test]
+fn test_mmr_gas_benchmark() {
+    use rand::Rng;
+
+    let (mut runner, contract) = setup();
+
+    for count in [8u32, 32, 64, 128, 256, 512, 1024] {
+        let store = MemStore::default();
+        let mut mmr = MMR::<_, MergeKeccak, _>::new(0, &store);
+        let positions: Vec<u64> =
+            (0..count).map(|i| mmr.push(NumberHash::from(i)).unwrap()).collect();
+        let root = mmr.get_root().unwrap();
+
+        let threshold = std::cmp::max(1, count / 3);
+        let mut rng = rand::thread_rng();
+        let mut indices_set = std::collections::HashSet::new();
+        while indices_set.len() < threshold as usize {
+            indices_set.insert(rng.gen_range(0..count));
+        }
+        let mut indices: Vec<u32> = indices_set.into_iter().collect();
+        indices.sort();
+
+        let proof =
+            mmr.gen_proof(indices.iter().map(|&i| positions[i as usize]).collect()).unwrap();
+        mmr.commit().unwrap();
+
+        let mut custom_leaves: Vec<(u32, [u8; 32])> = indices
+            .iter()
+            .map(|&i| {
+                let leaf = NumberHash::from(i);
+                let mut hash = [0u8; 32];
+                hash.copy_from_slice(&leaf.0);
+                (i, hash)
+            })
+            .collect();
+        custom_leaves.dedup_by(|a, b| a.0 == b.0);
+
+        let sol_leaves: Vec<MmrLeaf> = custom_leaves
+            .iter()
+            .map(|&(idx, hash)| MmrLeaf { index: U256::from(idx), hash: FixedBytes(hash) })
+            .collect();
+        let sol_proof: Vec<FixedBytes<32>> = proof
+            .proof_items()
+            .iter()
+            .map(|p| {
+                let mut b = [0u8; 32];
+                b.copy_from_slice(&p.0);
+                FixedBytes(b)
+            })
+            .collect();
+
+        let call = CalculateRootCall {
+            proof: sol_proof.clone(),
+            leaves: sol_leaves,
+            leafCount: U256::from(count),
+        };
+
+        let (result, gas) = runner.call_with_gas(contract, call.abi_encode());
+        let decoded = CalculateRootCall::abi_decode_returns(&result, true).unwrap();
+        let mut root_hash = [0u8; 32];
+        root_hash.copy_from_slice(&root.0);
+        assert_eq!(decoded._0.0, root_hash);
+
+        println!(
+            "leaves={:>4}  proving={:>4}  proof_elements={:>4}  gas={:>8}",
+            count,
+            indices.len(),
+            sol_proof.len(),
+            gas
+        );
+    }
+}

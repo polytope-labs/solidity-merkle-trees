@@ -17,47 +17,41 @@ pragma solidity ^0.8.20;
 /**
  * @title A Merkle Multi proof library
  * @author Polytope Labs
- * @dev Use this library to verify merkle tree leaves using merkle multi proofs
+ * @dev Use this library to verify merkle tree leaves using merkle multi proofs.
+ *      Supports both balanced and unbalanced trees.
  * @dev refer to research for more info. https://research.polytope.technology/merkle-multi-proofs
  */
 library MerkleMultiProof {
     /*
-     * @title A representation of a Merkle tree node
+     * @title A merkle tree leaf node
      *
-     * Position numbering (root = 1, children of i are 2i and 2i+1):
-     *
-     *              1
-     *            /   \
-     *           2     3
-     *          / \   / \
-     *         4   5 6   7
      */
-    struct Node {
-        // 1-based position of the node in the tree
-        uint256 position;
-        // A hash of the node itself
-        bytes32 node;
+    struct Leaf {
+        // 0-based index of the leaf
+        uint256 index;
+        // A hash of the leaf
+        bytes32 hash;
     }
 
-    // @dev Thrown when a leaf node has no sibling in the proof or leaves array.
-    error LeafMissingSibling();
-    // @dev Thrown when an internal node has no sibling during the tree walk.
-    error NodeMissingSibling();
+    // @dev Thrown when the proof array is exhausted before all siblings are resolved.
+    error ProofExhausted();
     // @dev Thrown when leafCount is zero.
     error EmptyTree();
+    // @dev Thrown when a leaf index is >= leafCount.
+    error LeafIndexOutOfBounds();
 
     /**
      * @notice Verify a Merkle Multi Proof
      * @param root hash of the root node of the merkle tree
-     * @param proof A list of the merkle nodes along with their positions that are needed to re-calculate root node.
-     * @param leaves A list of the leaves along with their positions to prove
+     * @param proof A list of proof node hashes needed to re-calculate root node.
+     * @param leaves A list of the leaves with their indices to prove
      * @param leafCount Total number of leaves in the complete tree
      * @return boolean if the calculated root matches the provided root node
      */
     function VerifyProof(
         bytes32 root,
-        Node[] memory proof,
-        Node[] memory leaves,
+        bytes32[] memory proof,
+        Leaf[] memory leaves,
         uint256 leafCount
     ) internal pure returns (bool) {
         return root == CalculateRoot(proof, leaves, leafCount);
@@ -65,214 +59,133 @@ library MerkleMultiProof {
 
     /**
      * @notice Calculates the root hash of a merkle tree.
-     * @dev Walks up the tree level by level, pairing siblings and hashing:
+     * @dev Supports both balanced and unbalanced trees (leafCount need not be a
+     *      power of 2). Converts leaf indices to 1-based tree positions, then
+     *      walks up level by level pairing siblings. Missing siblings are consumed
+     *      sequentially from the proof array. On the rightmost edge of an unbalanced
+     *      tree, nodes whose sibling does not exist are promoted unchanged.
      *
-     *      Even positions are left children, odd are right.
-     *      Parent = position >> 1. Sibling = position +/- 1.
-     *
-     *      Proving L0 (pos 4) and L2 (pos 6) in a 4-leaf tree:
+     *      Position numbering (root = 1, children of i are 2i and 2i+1):
      *
      *               1  ← root
      *             /   \
-     *            2     3          Level 1: hash(node2, node3)
+     *            2     3
      *           / \   / \
-     *          4   5 6   7        Level 2: hash(L0, proof₀), hash(L2, proof₁)
-     *         [L0] P [L2] P
+     *          4   5 6   7        leaves at positions (1 << height) + index
      *
-     *      Unbalanced trees: unpaired even nodes are promoted to the parent
-     *      level with their hash unchanged (rightmost edge has no sibling).
+     *      Unbalanced example (5 leaves, height = 3):
      *
-     * @param proof Array of proof nodes containing position and hash
-     * @param leaves Array of leaf nodes with their positions
+     *                1
+     *              /   \
+     *             2     3
+     *            / \   / \
+     *           4   5 6   7
+     *          /\ /\ |
+     *         8 9 .. 12         positions 13-15 don't exist, nodes promoted
+     *
+     *      At each level, siblings are identified via pos ^ 1.
+     *      Even positions are left children, odd are right.
+     *
+     * @param proof Array of proof node hashes consumed as siblings during traversal
+     * @param leaves Array of leaf nodes with their 0-based indices (must be sorted)
      * @param leafCount Total number of leaves in the complete tree
      * @return bytes32 The calculated root hash
      */
     function CalculateRoot(
-        Node[] memory proof,
-        Node[] memory leaves,
+        bytes32[] memory proof,
+        Leaf[] memory leaves,
         uint256 leafCount
     ) internal pure returns (bytes32) {
         if (leafCount == 0) revert EmptyTree();
 
-        uint256 height = _ceilLog2(leafCount);
+        uint256 len = leaves.length;
+        uint256[] memory positions = new uint256[](len);
+        bytes32[] memory hashes = new bytes32[](len);
 
+        // Convert leaf indices to 1-based tree positions
+        uint256 firstLeafPos = 1 << _ceilLog2(leafCount);
+        for (uint256 i; i < len;) {
+            if (leaves[i].index >= leafCount) revert LeafIndexOutOfBounds();
+            hashes[i] = leaves[i].hash;
+            unchecked {
+                positions[i] = firstLeafPos + leaves[i].index;
+                ++i;
+            }
+        }
+
+        return _walk(positions, hashes, proof, leafCount);
+    }
+
+    /**
+     * @dev Walk up the tree level by level, pairing siblings and hashing.
+     *
+     *      Supports unbalanced trees by tracking the number of valid nodes per
+     *      level (`nodesAtLevel`). Starting from `leafCount`, this halves (with
+     *      ceiling) each level. A sibling position that falls outside the valid
+     *      range means it doesn't exist — the node is promoted unchanged.
+     *
+     */
+    function _walk(
+        uint256[] memory positions,
+        bytes32[] memory hashes,
+        bytes32[] memory proof,
+        uint256 nodesAtLevel
+    ) private pure returns (bytes32) {
         uint256 p;
-        uint256 f;
-        uint256 l;
+        uint256 len = positions.length;
 
-        uint256 leavesLen = leaves.length;
-        uint256 proofLen = proof.length;
+        while (positions[0] != 1) {
+            uint256 lastValid = (1 << _log2(positions[0])) + nodesAtLevel - 1;
+            uint256 j;
 
-        Node[] memory flattened = new Node[](leavesLen);
+            for (uint256 i; i < len;) {
+                uint256 pos = positions[i];
+                bool hasSiblingInSet = i + 1 < len && positions[i + 1] == (pos ^ 1);
+                bool siblingExists = (pos ^ 1) <= lastValid;
 
-        while (l < leavesLen) {
-            if ((leaves[l].position & 1) == 0) {
-                if (
-                    p < proofLen &&
-                    proof[p].position == leaves[l].position + 1
-                ) {
-                    flattened[f].node = _optimizedHash(leaves[l].node, proof[p].node);
-                    flattened[f].position = leaves[l].position >> 1;
-                    unchecked {
-                        ++f;
-                        ++p;
-                    }
-                } else if (
-                    l + 1 < leavesLen &&
-                    leaves[l + 1].position == leaves[l].position + 1
-                ) {
-                    flattened[f].node = _optimizedHash(leaves[l].node, leaves[l + 1].node);
-                    flattened[f].position = leaves[l].position >> 1;
-                    unchecked {
-                        ++f;
-                        ++l;
-                    }
+                bytes32 parent;
+                if (hasSiblingInSet) {
+                    parent = _hashPair(pos, hashes[i], hashes[i + 1]);
+                    unchecked { i += 2; }
+                } else if (siblingExists) {
+                    parent = _hashPair(pos, hashes[i], proof[p]);
+                    unchecked { ++p; ++i; }
                 } else {
-                    flattened[f].node = leaves[l].node;
-                    flattened[f].position = leaves[l].position >> 1;
-                    unchecked {
-                        ++f;
-                        ++l;
-                    }
-                }
-            } else {
-                if (
-                    p < proofLen &&
-                    proof[p].position == leaves[l].position - 1
-                ) {
-                    flattened[f].node = _optimizedHash(proof[p].node, leaves[l].node);
-                    flattened[f].position = proof[p].position >> 1;
-                    unchecked {
-                        ++f;
-                        ++p;
-                    }
-                } else if (
-                    l + 1 < leavesLen &&
-                    leaves[l + 1].position == leaves[l].position - 1
-                ) {
-                    flattened[f].node = _optimizedHash(leaves[l + 1].node, leaves[l].node);
-                    flattened[f].position = leaves[l + 1].position >> 1;
-                    unchecked {
-                        ++f;
-                        ++l;
-                    }
-                } else {
-                    revert LeafMissingSibling();
-                }
-            }
-            l++;
-        }
-
-        // Trim flattened to actual size before processing upper levels
-        assembly {
-            mstore(flattened, f)
-        }
-        uint256 flatLen = f;
-
-        unchecked {
-            --height;
-        }
-
-        while (flattened[0].position != 1) {
-            uint256 r;
-            uint256 w;
-
-            while (r < flatLen) {
-                if (
-                    flattened[r].position == 0 ||
-                    flattened[r].position >= 1 << (height + 1)
-                ) {
-                    if (height != 0) {
-                        height--;
-                    }
-                    r = 0;
-                    w = 0;
-                    break;
+                    parent = hashes[i]; // unbalanced edge — promote
+                    unchecked { ++i; }
                 }
 
-                if ((flattened[r].position & 1) == 0) {
-                    if (
-                        p < proofLen &&
-                        proof[p].position == flattened[r].position + 1
-                    ) {
-                        flattened[w].node = _optimizedHash(flattened[r].node, proof[p].node);
-                        flattened[w].position = flattened[r].position >> 1;
-                        unchecked {
-                            ++w;
-                            ++p;
-                        }
-                    } else if (
-                        r + 1 < flatLen &&
-                        flattened[r + 1].position == flattened[r].position + 1
-                    ) {
-                        flattened[w].node = _optimizedHash(flattened[r].node, flattened[r + 1].node);
-                        flattened[w].position = flattened[r].position >> 1;
-                        unchecked {
-                            ++w;
-                            ++r;
-                        }
-                    } else {
-                        flattened[w].node = flattened[r].node;
-                        flattened[w].position = flattened[r].position >> 1;
-                        unchecked {
-                            ++w;
-                            ++r;
-                        }
-                    }
-                } else {
-                    if (
-                        p < proofLen &&
-                        proof[p].position == flattened[r].position - 1
-                    ) {
-                        flattened[w].node = _optimizedHash(proof[p].node, flattened[r].node);
-                        flattened[w].position = proof[p].position >> 1;
-                        unchecked {
-                            ++w;
-                            ++p;
-                        }
-                    } else if (
-                        r + 1 < flatLen &&
-                        flattened[r + 1].position == flattened[r].position - 1
-                    ) {
-                        flattened[w].node = _optimizedHash(flattened[r + 1].node, flattened[r].node);
-                        flattened[w].position = flattened[r + 1].position >> 1;
-                        unchecked {
-                            ++w;
-                            ++r;
-                        }
-                    } else {
-                        revert NodeMissingSibling();
-                    }
-                }
-
-                unchecked {
-                    ++r;
-                }
+                hashes[j] = parent;
+                positions[j] = pos >> 1;
+                unchecked { ++j; }
             }
 
-            // Trim flattened to the number of nodes written this level
-            flatLen = w;
-            assembly {
-                mstore(flattened, w)
-            }
+            len = j;
+            nodesAtLevel = (nodesAtLevel + 1) >> 1;
         }
 
-        return flattened[0].node;
+        return hashes[0];
     }
 
     /*
-     * @notice Compute the keccak256 hash of two nodes
-     * @param node1 hash of the first node
-     * @param node2 hash of the second node
+     * @dev Hash a node with its sibling, ordering by position (even = left child, odd = right child)
+     * @param pos The 1-based tree position of the current node
+     * @param current Hash of the current node
+     * @param sibling Hash of the sibling node
      */
-    function _optimizedHash(
-        bytes32 node1,
-        bytes32 node2
-    ) internal pure returns (bytes32 hash) {
-        assembly {
-            mstore(0x0, node1)
-            mstore(0x20, node2)
-            hash := keccak256(0x0, 0x40)
+    function _hashPair(uint256 pos, bytes32 current, bytes32 sibling) private pure returns (bytes32 h) {
+        if ((pos & 1) == 0) {
+            assembly {
+                mstore(0x0, current)
+                mstore(0x20, sibling)
+                h := keccak256(0x0, 0x40)
+            }
+        } else {
+            assembly {
+                mstore(0x0, sibling)
+                mstore(0x20, current)
+                h := keccak256(0x0, 0x40)
+            }
         }
     }
 

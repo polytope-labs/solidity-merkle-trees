@@ -23,6 +23,8 @@ npm install @polytope-labs/solidity-merkle-trees
 
 This algorithm is based on the research done here: https://research.polytope.technology/merkle-multi-proofs
 
+Supports both balanced and unbalanced trees (leaf count need not be a power of 2).
+
 You can use it to verify proofs like so:
 
 ```solidity
@@ -33,8 +35,8 @@ import "@polytope-labs/solidity-merkle-trees/MerkleMultiProof.sol";
 contract YourContract {
     function verify(
         bytes32 root,
-        MerkleMultiProof.Node[] memory proof,
-        MerkleMultiProof.Node[] memory leaves,
+        bytes32[] memory proof,
+        MerkleMultiProof.Leaf[] memory leaves,
         uint256 leafCount
     ) public {
         require(MerkleMultiProof.VerifyProof(root, proof, leaves, leafCount), "Invalid proof");
@@ -42,66 +44,35 @@ contract YourContract {
 }
 ```
 
+Leaves carry a 0-based `index` and `hash`. The proof is a flat `bytes32[]` array of sibling hashes — no position metadata needed. The contract converts indices to 1-based tree positions internally and walks up level by level, consuming proof elements for missing siblings.
+
 You can generate the merkle multi proofs using the [rs-merkle](https://crates.io/crates/rs-merkle) crate.
 
-The `Node.position` uses a 1-based indexing scheme where the root is `1` and the children of node `i` are `2i` and `2i+1`:
-
-```
-         1            <- root
-       /   \
-      2     3
-     / \   / \
-    4   5 6   7       <- leaves (leaf_count = 4, so leaf 0 → position 4, leaf 1 → 5, …)
-```
-
-To convert an `rs-merkle` proof into the positioned format the Solidity verifier expects:
+To convert an `rs-merkle` proof into the format the Solidity verifier expects:
 
 ```rust
-use rs_merkle::{MerkleProof, Hasher, utils};
+use rs_merkle::MerkleProof;
 
-struct Node {
-    position: usize,
+struct Leaf {
+    index: usize,     // 0-based leaf index
     hash: [u8; 32],
-}
-
-/// ceil(log2(n)) — must match the Solidity `_ceilLog2` used by MerkleMultiProof.
-/// Do NOT use `rs_merkle::utils::indices::tree_depth` here — it uses floating-point
-/// math that returns incorrect results for exact powers of 2.
-fn ceil_log2(n: usize) -> usize {
-    if n <= 1 { return 0; }
-    (usize::BITS - (n - 1).leading_zeros()) as usize
 }
 
 fn convert_proof<T: Hasher<Hash = [u8; 32]>>(
     proof: &MerkleProof<T>,
     leaf_indices: &[usize],
     leaf_hashes: &[[u8; 32]],
-    total_leaves: usize,
-) -> (Vec<Node>, Vec<Node>) {
-    let height = ceil_log2(total_leaves);
+) -> (Vec<[u8; 32]>, Vec<Leaf>) {
+    // Proof hashes can be passed directly — they are already in the correct
+    // consumption order (layer by layer, left to right).
+    let proof_hashes: Vec<[u8; 32]> = proof.proof_hashes().to_vec();
 
-    // proof_indices_by_layers returns the 0-based indices that each proof hash
-    // corresponds to, layer by layer (bottom-to-top), in the same order as proof_hashes().
-    let proof_nodes = utils::indices::proof_indices_by_layers(leaf_indices, total_leaves)
-        .into_iter()
-        .enumerate()
-        .flat_map(|(layer, indices)| {
-            let level_start = 1usize << (height - layer);
-            indices.into_iter().map(move |idx| level_start + idx)
-        })
-        .zip(proof.proof_hashes())
-        .map(|(position, &hash)| Node { position, hash })
+    let mut leaves: Vec<Leaf> = leaf_indices.iter().zip(leaf_hashes)
+        .map(|(&i, &hash)| Leaf { index: i, hash })
         .collect();
+    leaves.sort_by_key(|l| l.index);
 
-    let first_leaf_pos = 1usize << height;
-    let mut leaf_nodes: Vec<Node> = leaf_indices
-        .iter()
-        .zip(leaf_hashes)
-        .map(|(&i, &hash)| Node { position: first_leaf_pos + i, hash })
-        .collect();
-    leaf_nodes.sort_by_key(|n| n.position);
-
-    (proof_nodes, leaf_nodes)
+    (proof_hashes, leaves)
 }
 ```
 
