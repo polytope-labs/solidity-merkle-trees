@@ -17,8 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        with:
-          submodules: recursive
 
       - name: Install pnpm
         uses: pnpm/action-setup@v2
@@ -37,7 +35,7 @@ jobs:
 
       - name: Run Forge build
         run: |
-          pnpm install
+          pnpm install --ignore-scripts
           forge --version
           forge build --sizes
         id: build
@@ -54,10 +52,8 @@ jobs:
 
       - name: cargo test
         run: |
-          pnpm install
           forge build
-          git submodule update --init --recursive
-          cd ./integration-tests
+          cd ./tests/rust
           cargo test --release -- --nocapture --test-threads=1
 
   fmt:
@@ -73,4 +69,4 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: fmt
-          args: --manifest-path ./integration-tests/Cargo.toml --all -- --check
+          args: --manifest-path ./tests/rust/Cargo.toml --all -- --check
