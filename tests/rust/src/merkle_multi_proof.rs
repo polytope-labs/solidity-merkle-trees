@@ -154,9 +154,9 @@ fn build_multi_proof(
     num_leaves: usize,
     leaf_idx: usize,
 ) -> (
-    [u8; 32],        // root
-    SolidityProof,   // converted proof
-    [u8; 32],        // leaf hash
+    [u8; 32],      // root
+    SolidityProof, // converted proof
+    [u8; 32],      // leaf hash
 ) {
     let leaf_hashes: Vec<[u8; 32]> =
         (0..num_leaves).map(|i| keccak256(&(i as u32).to_le_bytes()).0).collect();
@@ -305,5 +305,55 @@ proptest! {
             Ok(calc) => prop_assert_ne!(calc, root, "shifted index matched root"),
             Err(_) => {}
         }
+    }
+}
+
+#[test]
+fn test_gas_benchmark() {
+    let project = project_root();
+    let mut runner = EvmRunner::new();
+    let contract = runner.deploy(&project, "MerkleMultiProofTest");
+
+    for num_leaves in [8, 32, 64, 128, 256, 512, 1024] {
+        let leaf_hashes: Vec<[u8; 32]> =
+            (0..num_leaves).map(|i| keccak256(&(i as u32).to_le_bytes()).0).collect();
+        let tree = MerkleTree::<Keccak256>::from_leaves(&leaf_hashes);
+
+        // Prove ~1/3 of leaves
+        let threshold = std::cmp::max(1, num_leaves / 3);
+        let mut rng = rand::thread_rng();
+        let mut indices_set = HashSet::new();
+        while indices_set.len() < threshold {
+            indices_set.insert(rng.gen_range(0..num_leaves));
+        }
+        let mut indices: Vec<usize> = indices_set.into_iter().collect();
+        indices.sort();
+
+        let rs_proof = tree.proof(&indices);
+        let leaves_to_prove: Vec<[u8; 32]> = indices.iter().map(|&i| leaf_hashes[i]).collect();
+
+        let sol_proof = SolidityProof::from(RsMerkleProof {
+            proof: &rs_proof,
+            leaf_indices: &indices,
+            leaf_hashes: &leaves_to_prove,
+        });
+
+        let call = CalculateRootCall {
+            proof: proof_to_abi(&sol_proof.proof_hashes),
+            leaves: leaves_to_abi(&sol_proof.leaves),
+            numLeaves: U256::from(num_leaves),
+        };
+
+        let (result, gas) = runner.call_with_gas(contract, call.abi_encode());
+        let decoded = CalculateRootCall::abi_decode_returns(&result, true).unwrap();
+        assert_eq!(decoded._0.0, tree.root().unwrap());
+
+        println!(
+            "leaves={:>4}  proving={:>4}  proof_elements={:>4}  gas={:>8}",
+            num_leaves,
+            indices.len(),
+            sol_proof.proof_hashes.len(),
+            gas
+        );
     }
 }

@@ -80,8 +80,15 @@ jobs:
           wget -O /tmp/svm_releases_list.json https://raw.githubusercontent.com/nikitastupin/solc/2287d4326237172acf91ce42fd7ec18a67b7f512/linux/aarch64/list.json
           echo "SVM_RELEASES_LIST_JSON=/tmp/svm_releases_list.json" >> $GITHUB_ENV
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
       - name: Build contracts
-        run: forge build
+        run: |
+          pnpm install --ignore-scripts
+          forge build
 
       - name: Fuzz trie proof valid
         run: cd tests/rust && cargo +nightly fuzz run trie_proof_valid -- -max_total_time=120
