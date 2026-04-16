@@ -54,7 +54,7 @@ jobs:
         run: |
           forge build
           cd ./tests/rust
-          cargo test --release -- --nocapture --test-threads=1
+          cargo test --release -- --nocapture
 
   fmt:
     name: Rustfmt
