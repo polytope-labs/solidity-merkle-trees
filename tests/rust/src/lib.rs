@@ -1,26 +1,27 @@
 #![allow(unused_parens, dead_code)]
 
+pub mod evm_runner;
 pub mod merkle_mountain_range;
 pub mod merkle_multi_proof;
 pub mod merkle_patricia;
-pub mod positional_merkle;
+pub mod multi_proof_utils;
 
+use alloy_primitives::keccak256;
 use ckb_merkle_mountain_range::{Error, Merge};
-pub use ethers::{abi::Token, types::U256, utils::keccak256};
 use rs_merkle::Hasher;
 
 #[derive(Clone)]
-struct Keccak256;
+pub struct Keccak256;
 
 impl Hasher for Keccak256 {
     type Hash = [u8; 32];
 
     fn hash(data: &[u8]) -> [u8; 32] {
-        keccak256(data)
+        keccak256(data).0
     }
 }
 
-struct MergeKeccak;
+pub struct MergeKeccak;
 
 impl Merge for MergeKeccak {
     type Item = NumberHash;
@@ -29,16 +30,16 @@ impl Merge for MergeKeccak {
         concat.extend(&lhs.0);
         concat.extend(&rhs.0);
         let hash = keccak256(&concat);
-        Ok(NumberHash(hash.to_vec().into()))
+        Ok(NumberHash(hash.0.to_vec()))
     }
 }
 
 #[derive(Eq, PartialEq, Clone, Debug, Default)]
-struct NumberHash(pub Vec<u8>);
+pub struct NumberHash(pub Vec<u8>);
 
 impl From<u32> for NumberHash {
     fn from(num: u32) -> Self {
         let hash = keccak256(&num.to_le_bytes());
-        NumberHash(hash.to_vec())
+        NumberHash(hash.0.to_vec())
     }
 }

@@ -2,7 +2,8 @@
 solc = '0.8.20'
 src = 'src'
 out = 'out'
-libs = ['lib']
+libs = []
+test = 'tests/foundry'
 
 [lint]
 lint_on_build = false

@@ -25,6 +25,8 @@ library MerkleMountainRange {
     error ProofExhausted();
     // @dev Thrown when leafCount is zero.
     error EmptyTree();
+    // @dev Thrown when there are leaves with indices >= leafCount
+    error OutOfBoundsLeaves();
 
     /*
      * @title A merkle mountain range leaf node
@@ -145,6 +147,9 @@ library MerkleMountainRange {
                 _push(peakRoots, _subtreeRoot(subtreeLeaves, proofIter, subtreeStartPos));
             }
         }
+
+        // ensure all leaves were consumed by some peak subtree
+        if (leafIter.length != 0) revert OutOfBoundsLeaves();
 
         unchecked {
             peakRoots.offset--;

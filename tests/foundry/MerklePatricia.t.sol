@@ -2,12 +2,12 @@
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
-import {MerklePatricia} from "../src/MerklePatricia.sol";
-import {SubstrateTrieDB} from "../src/trie/substrate/SubstrateTrieDB.sol";
-import {NodeKind, NibbledBranch, Leaf} from "../src/trie/Node.sol";
-import {ScaleCodec} from "../src/trie/substrate/ScaleCodec.sol";
-import {NibbleSlice, NibbleSliceOps} from "../src/trie/NibbleSlice.sol";
-import {ByteSlice} from "../src/trie/Bytes.sol";
+import {MerklePatricia} from "../../src/MerklePatricia.sol";
+import {SubstrateTrieDB} from "../../src/trie/substrate/SubstrateTrieDB.sol";
+import {NodeKind, NibbledBranch, Leaf} from "../../src/trie/Node.sol";
+import {ScaleCodec} from "../../src/trie/substrate/ScaleCodec.sol";
+import {NibbleSlice, NibbleSliceOps} from "../../src/trie/NibbleSlice.sol";
+import {ByteSlice} from "../../src/trie/Bytes.sol";
 
 contract MerklePatriciaTest is Test {
     function testSubstrateMerklePatricia() public pure {
