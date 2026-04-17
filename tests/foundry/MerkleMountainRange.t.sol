@@ -79,7 +79,9 @@ contract MerkleMountainRangeTest is Test {
     /**
      * @notice Regression test: leaf index=1 with leafCount=1 previously bypassed the early-exit
      *         check, allowing arbitrary leaf hashes to pass verification. Now reverts with
-     *         UnconsumedLeaves() because the leaf is never assigned to any peak subtree.
+     *         OutOfBoundsLeaves() because the leaf is never assigned to any peak subtree.
+     *         Duplicate-index attacks against single-leaf peaks are additionally caught earlier
+     *         by the UnsortedLeaves() guard (see testDuplicateLeafIndex_*).
      */
     function testExploit_LeafIndexBypass() public {
         bytes32 knownRoot = 0x466dddba7e9a84a0f2632b59be71b8bd489e3334a1314a61253f8b827c9d3a36;
@@ -186,6 +188,75 @@ contract MerkleMountainRangeTest is Test {
         leaves[5] = MerkleMountainRange.Leaf(50, 0xe54ccfb12a140c2dddb6cf78d1c6121610260412c66d00658ed1267863427ab9);
 
         vm.expectRevert(MerkleMountainRange.OutOfBoundsLeaves.selector);
+        this.CalculateRoot(proof, leaves, 14);
+    }
+
+    /**
+     * @notice Duplicate leaf indices with identical hash must revert with UnsortedLeaves.
+     *         Previously a duplicate leaf targeting a single-leaf peak could ride along invisibly
+     *         because `_subtreeRoot` short-circuits on `positions[0] == 1` and never inspects the
+     *         extra entry.
+     */
+    function testDuplicateLeafIndex_SameHash() public {
+        bytes32[] memory proof = new bytes32[](7);
+        proof[0] = 0xa4a7208a40e95acaf2fe1a3c675b1b5d8c341060e4f179b76ba79493582a95a6;
+        proof[1] = 0x989a7025bda9312b19569d9e84e33a624e7fc007e54db23b6758d5f819647071;
+        proof[2] = 0xfc5b56233029d71e7e9aff8e230ff491475dee2d8074b27d5fecf8f5154d7c8d;
+        proof[3] = 0x37db026959b7bafb26c0d292ecd69c24df5eab845d9625ac5301324402938f25;
+        proof[4] = 0x754310be011a7a378b07fa7cbac39dbedcadf645c518ddec58deeaa8c29e0634;
+        proof[5] = 0x06be3c46e5a06d7b3e438a9d698f4319dc628624a63e484d97f00b92d09edce7;
+        proof[6] = 0x7463c9b814b5d9081938e21346fe8bf81a9a9a0dcfa7bcc03b644a361e395a3b;
+
+        MerkleMountainRange.Leaf[] memory leaves = new MerkleMountainRange.Leaf[](2);
+        leaves[0] = MerkleMountainRange.Leaf(5, 0xd279eb4bf22b2aeded31e65a126516215a9d93f83e3e425fdcd1a05ab347e535);
+        leaves[1] = MerkleMountainRange.Leaf(5, 0xd279eb4bf22b2aeded31e65a126516215a9d93f83e3e425fdcd1a05ab347e535);
+
+        vm.expectRevert(MerkleMountainRange.UnsortedLeaves.selector);
+        this.CalculateRoot(proof, leaves, 14);
+    }
+
+    /**
+     * @notice Duplicate leaf index with a forged hash — the original single-leaf-peak exploit.
+     *         Without the guard, the fake entry is silently dropped and the proof verifies.
+     */
+    function testDuplicateLeafIndex_ForgedHash() public {
+        bytes32[] memory proof = new bytes32[](7);
+        proof[0] = 0xa4a7208a40e95acaf2fe1a3c675b1b5d8c341060e4f179b76ba79493582a95a6;
+        proof[1] = 0x989a7025bda9312b19569d9e84e33a624e7fc007e54db23b6758d5f819647071;
+        proof[2] = 0xfc5b56233029d71e7e9aff8e230ff491475dee2d8074b27d5fecf8f5154d7c8d;
+        proof[3] = 0x37db026959b7bafb26c0d292ecd69c24df5eab845d9625ac5301324402938f25;
+        proof[4] = 0x754310be011a7a378b07fa7cbac39dbedcadf645c518ddec58deeaa8c29e0634;
+        proof[5] = 0x06be3c46e5a06d7b3e438a9d698f4319dc628624a63e484d97f00b92d09edce7;
+        proof[6] = 0x7463c9b814b5d9081938e21346fe8bf81a9a9a0dcfa7bcc03b644a361e395a3b;
+
+        MerkleMountainRange.Leaf[] memory leaves = new MerkleMountainRange.Leaf[](2);
+        leaves[0] = MerkleMountainRange.Leaf(5, 0xd279eb4bf22b2aeded31e65a126516215a9d93f83e3e425fdcd1a05ab347e535);
+        leaves[1] = MerkleMountainRange.Leaf(5, 0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef);
+
+        vm.expectRevert(MerkleMountainRange.UnsortedLeaves.selector);
+        this.CalculateRoot(proof, leaves, 14);
+    }
+
+    /**
+     * @notice Leaves sorted in descending order must revert with UnsortedLeaves.
+     *         The verifier requires strictly increasing indices so that `_subtreeLeaves` can
+     *         partition into subtrees in a single forward pass.
+     */
+    function testUnsortedLeaves_DescendingOrder() public {
+        bytes32[] memory proof = new bytes32[](7);
+        proof[0] = 0xa4a7208a40e95acaf2fe1a3c675b1b5d8c341060e4f179b76ba79493582a95a6;
+        proof[1] = 0x989a7025bda9312b19569d9e84e33a624e7fc007e54db23b6758d5f819647071;
+        proof[2] = 0xfc5b56233029d71e7e9aff8e230ff491475dee2d8074b27d5fecf8f5154d7c8d;
+        proof[3] = 0x37db026959b7bafb26c0d292ecd69c24df5eab845d9625ac5301324402938f25;
+        proof[4] = 0x754310be011a7a378b07fa7cbac39dbedcadf645c518ddec58deeaa8c29e0634;
+        proof[5] = 0x06be3c46e5a06d7b3e438a9d698f4319dc628624a63e484d97f00b92d09edce7;
+        proof[6] = 0x7463c9b814b5d9081938e21346fe8bf81a9a9a0dcfa7bcc03b644a361e395a3b;
+
+        MerkleMountainRange.Leaf[] memory leaves = new MerkleMountainRange.Leaf[](2);
+        leaves[0] = MerkleMountainRange.Leaf(8, 0x38e18ac9b4d78020e0f164d6da9ea61b962ab1975bcf6e8e80e9a9fc2ae509f8);
+        leaves[1] = MerkleMountainRange.Leaf(5, 0xd279eb4bf22b2aeded31e65a126516215a9d93f83e3e425fdcd1a05ab347e535);
+
+        vm.expectRevert(MerkleMountainRange.UnsortedLeaves.selector);
         this.CalculateRoot(proof, leaves, 14);
     }
 

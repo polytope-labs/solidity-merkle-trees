@@ -345,6 +345,104 @@ proptest! {
         }
     }
 
+    /// Duplicate leaves with the same index must not verify.
+    /// The verifier does not enforce uniqueness of leaf indices, so two leaves
+    /// at the same index each consume a proof element independently and produce
+    /// a bogus root.  This test confirms that the computed root never matches.
+    #[test]
+    fn test_duplicate_leaf_same_index(
+        count in 2u32..200u32,
+        leaf_idx_raw in 0u32..200u32,
+    ) {
+        let leaf_idx = leaf_idx_raw % count;
+        let (root_hash, sol_proof, sol_leaves, _leaf_hash) = build_mmr_proof(count, leaf_idx);
+
+        // Duplicate the leaf: same index, same hash
+        let mut dup_leaves = sol_leaves.clone();
+        dup_leaves.push(dup_leaves[0].clone());
+
+        let (mut runner, addr) = setup();
+        match solidity_verify_proof(&mut runner, addr, root_hash, sol_proof, dup_leaves, count as u64) {
+            Ok(verified) => prop_assert!(!verified, "duplicate leaf (same hash) verified for count={count}, leaf={leaf_idx}"),
+            Err(_) => {} // revert is acceptable
+        }
+    }
+
+    /// Duplicate leaves with the same index but different hashes must not verify.
+    #[test]
+    fn test_duplicate_leaf_same_index_different_hash(
+        count in 2u32..200u32,
+        leaf_idx_raw in 0u32..200u32,
+        fake_hash in proptest::array::uniform32(0u8..),
+    ) {
+        let leaf_idx = leaf_idx_raw % count;
+        let (root_hash, sol_proof, sol_leaves, real_hash) = build_mmr_proof(count, leaf_idx);
+
+        if fake_hash == real_hash { return Ok(()); }
+
+        // Append a second leaf at the same index with a different hash
+        let mut dup_leaves = sol_leaves.clone();
+        dup_leaves.push(MmrLeaf { index: sol_leaves[0].index, hash: FixedBytes(fake_hash) });
+
+        let (mut runner, addr) = setup();
+        match solidity_verify_proof(&mut runner, addr, root_hash, sol_proof, dup_leaves, count as u64) {
+            Ok(verified) => prop_assert!(!verified, "duplicate leaf (different hash) verified for count={count}, leaf={leaf_idx}"),
+            Err(_) => {} // revert is acceptable
+        }
+    }
+
+    /// Multiple duplicates of the same leaf index in a multi-proof context.
+    #[test]
+    fn test_multi_proof_with_duplicate_indices(
+        count in 4u32..200u32,
+        idx_a_raw in 0u32..200u32,
+        idx_b_raw in 0u32..200u32,
+    ) {
+        let idx_a = idx_a_raw % count;
+        let idx_b = idx_b_raw % count;
+
+        let store = MemStore::default();
+        let mut mmr = MMR::<_, MergeKeccak, _>::new(0, &store);
+        let positions: Vec<u64> = (0..count).map(|i| mmr.push(NumberHash::from(i)).unwrap()).collect();
+        let root = mmr.get_root().unwrap();
+
+        let mut proof_indices = vec![idx_a, idx_b];
+        proof_indices.sort();
+        proof_indices.dedup();
+
+        let proof = mmr
+            .gen_proof(proof_indices.iter().map(|&i| positions[i as usize]).collect())
+            .unwrap();
+        mmr.commit().unwrap();
+
+        let mut root_hash = [0u8; 32];
+        root_hash.copy_from_slice(&root.0);
+
+        let sol_proof: Vec<FixedBytes<32>> = proof
+            .proof_items()
+            .iter()
+            .map(|p| { let mut b = [0u8; 32]; b.copy_from_slice(&p.0); FixedBytes(b) })
+            .collect();
+
+        // Build leaves with a duplicated index: include idx_a twice
+        let mut sol_leaves: Vec<MmrLeaf> = proof_indices.iter().map(|&i| {
+            let leaf = NumberHash::from(i);
+            let mut hash = [0u8; 32];
+            hash.copy_from_slice(&leaf.0);
+            MmrLeaf { index: U256::from(i), hash: FixedBytes(hash) }
+        }).collect();
+
+        // Duplicate the first leaf
+        sol_leaves.push(sol_leaves[0].clone());
+        sol_leaves.sort_by(|a, b| a.index.cmp(&b.index));
+
+        let (mut runner, addr) = setup();
+        match solidity_verify_proof(&mut runner, addr, root_hash, sol_proof, sol_leaves, count as u64) {
+            Ok(verified) => prop_assert!(!verified, "multi-proof with duplicate index verified for count={count}, indices=[{idx_a},{idx_b}]"),
+            Err(_) => {} // revert is acceptable
+        }
+    }
+
     /// Random replacement hash must not verify.
     #[test]
     fn test_random_leaf_hash(

@@ -27,6 +27,8 @@ library MerkleMountainRange {
     error EmptyTree();
     // @dev Thrown when there are leaves with indices >= leafCount
     error OutOfBoundsLeaves();
+    // @dev Thrown when leaves are not strictly sorted by index (catches duplicates too).
+    error UnsortedLeaves();
 
     /*
      * @title A merkle mountain range leaf node
@@ -113,6 +115,12 @@ library MerkleMountainRange {
         returns (bytes32)
     {
         if (leafCount == 0) revert EmptyTree();
+
+        // invariant: leaves must be sorted 
+        for (uint256 i = 1; i < leaves.length;) {
+            if (leaves[i].index <= leaves[i - 1].index) revert UnsortedLeaves();
+            unchecked { ++i; }
+        }
 
         // special handle the only 1 leaf MMR
         if (leafCount == 1 && leaves.length == 1 && leaves[0].index == 0) {
