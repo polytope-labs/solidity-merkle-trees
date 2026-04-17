@@ -35,4 +35,61 @@ contract MerkleMultiProofTest is Test {
         console.log(gasUsed);
         return root;
     }
+
+    /**
+     * @notice Duplicate leaf index with forged hash — the original exploit.
+     *         Both leaves share position P; neither pairs as the other's
+     *         sibling (pos ^ 1 != pos), and `_walk`'s `positions[0] != 1`
+     *         short-circuit returned `hashes[0]` while silently discarding
+     *         the forged climb. Must now revert with UnsortedLeaves.
+     */
+    function testDuplicateLeafIndex_ForgedHash() public {
+        bytes32[] memory proof = new bytes32[](4);
+        proof[0] = bytes32(uint256(0x1111));
+        proof[1] = bytes32(uint256(0x2222));
+        proof[2] = bytes32(uint256(0x3333));
+        proof[3] = bytes32(uint256(0x4444));
+
+        MerkleMultiProof.Leaf[] memory leaves = new MerkleMultiProof.Leaf[](2);
+        leaves[0] = MerkleMultiProof.Leaf(0, bytes32(uint256(0xaaaa)));
+        leaves[1] = MerkleMultiProof.Leaf(0, bytes32(uint256(0xdeadbeef))); // dup index
+
+        vm.expectRevert(MerkleMultiProof.UnsortedLeaves.selector);
+        this.CalculateRoot(proof, leaves, 4);
+    }
+
+    /**
+     * @notice Duplicate leaf with identical hash is still malformed — reject it.
+     */
+    function testDuplicateLeafIndex_SameHash() public {
+        bytes32[] memory proof = new bytes32[](4);
+        proof[0] = bytes32(uint256(0x1111));
+        proof[1] = bytes32(uint256(0x2222));
+        proof[2] = bytes32(uint256(0x3333));
+        proof[3] = bytes32(uint256(0x4444));
+
+        MerkleMultiProof.Leaf[] memory leaves = new MerkleMultiProof.Leaf[](2);
+        leaves[0] = MerkleMultiProof.Leaf(0, bytes32(uint256(0xaaaa)));
+        leaves[1] = MerkleMultiProof.Leaf(0, bytes32(uint256(0xaaaa))); // same index & hash
+
+        vm.expectRevert(MerkleMultiProof.UnsortedLeaves.selector);
+        this.CalculateRoot(proof, leaves, 4);
+    }
+
+    /**
+     * @notice Descending leaf order is unsupported — the `_walk` algorithm assumes
+     *         strictly increasing indices so positions land in sorted order per level.
+     */
+    function testUnsortedLeaves_DescendingOrder() public {
+        bytes32[] memory proof = new bytes32[](2);
+        proof[0] = bytes32(uint256(0x1111));
+        proof[1] = bytes32(uint256(0x2222));
+
+        MerkleMultiProof.Leaf[] memory leaves = new MerkleMultiProof.Leaf[](2);
+        leaves[0] = MerkleMultiProof.Leaf(2, bytes32(uint256(0xcccc)));
+        leaves[1] = MerkleMultiProof.Leaf(1, bytes32(uint256(0xbbbb)));
+
+        vm.expectRevert(MerkleMultiProof.UnsortedLeaves.selector);
+        this.CalculateRoot(proof, leaves, 4);
+    }
 }

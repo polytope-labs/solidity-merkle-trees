@@ -282,6 +282,73 @@ proptest! {
         }
     }
 
+    /// Duplicate leaf with forged hash at the same index must not verify.
+    /// The `while (positions[0] != 1)` short-circuit in `_walk` means the
+    /// duplicate's climb is discarded. Padding the proof with `pad` between
+    /// real sibling hashes lets the fake leaf consume "throwaway" siblings
+    /// each level — without the fix, the real root is still returned.
+    #[test]
+    fn test_duplicate_leaf_forgery(
+        num_leaves in 2usize..200,
+        leaf_idx_raw in 0usize..200,
+        fake_hash in proptest::array::uniform32(0u8..),
+        pad in proptest::array::uniform32(0u8..),
+    ) {
+        let leaf_idx = leaf_idx_raw % num_leaves;
+        let (root, mut sol_proof, real_hash) = build_multi_proof(num_leaves, leaf_idx);
+
+        if fake_hash == real_hash { return Ok(()); }
+
+        // Duplicate the leaf with a forged hash at the same index.
+        sol_proof.leaves.push(Leaf { hash: H256(fake_hash), index: leaf_idx });
+
+        // Interleave `pad` after each real proof element so the fake climb
+        // has a "sibling" to consume at every level. Both leaves are at the
+        // same position, so they traverse identical levels.
+        let original = std::mem::take(&mut sol_proof.proof_hashes);
+        for h in original {
+            sol_proof.proof_hashes.push(h);
+            sol_proof.proof_hashes.push(H256(pad));
+        }
+
+        let project = project_root();
+        let mut runner = EvmRunner::new();
+        let contract = runner.deploy(&project, "MerkleMultiProofTest");
+
+        match solidity_calc_root_raw(&mut runner, contract, &sol_proof, num_leaves) {
+            Ok(calc) => prop_assert_ne!(calc, root, "duplicate-leaf forgery verified for num_leaves={}, leaf_idx={}", num_leaves, leaf_idx),
+            Err(_) => {} // revert is acceptable (desired post-fix behaviour)
+        }
+    }
+
+    /// Duplicate leaf with the real hash is still malformed input — reject it.
+    #[test]
+    fn test_duplicate_leaf_same_hash(
+        num_leaves in 2usize..200,
+        leaf_idx_raw in 0usize..200,
+        pad in proptest::array::uniform32(0u8..),
+    ) {
+        let leaf_idx = leaf_idx_raw % num_leaves;
+        let (root, mut sol_proof, real_hash) = build_multi_proof(num_leaves, leaf_idx);
+
+        sol_proof.leaves.push(Leaf { hash: H256(real_hash), index: leaf_idx });
+
+        let original = std::mem::take(&mut sol_proof.proof_hashes);
+        for h in original {
+            sol_proof.proof_hashes.push(h);
+            sol_proof.proof_hashes.push(H256(pad));
+        }
+
+        let project = project_root();
+        let mut runner = EvmRunner::new();
+        let contract = runner.deploy(&project, "MerkleMultiProofTest");
+
+        match solidity_calc_root_raw(&mut runner, contract, &sol_proof, num_leaves) {
+            Ok(calc) => prop_assert_ne!(calc, root, "duplicate-leaf (same hash) verified for num_leaves={}, leaf_idx={}", num_leaves, leaf_idx),
+            Err(_) => {}
+        }
+    }
+
     /// Shifted leaf index must not produce matching root.
     #[test]
     fn test_shifted_leaf_index(

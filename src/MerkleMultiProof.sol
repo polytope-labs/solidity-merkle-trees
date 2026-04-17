@@ -39,6 +39,8 @@ library MerkleMultiProof {
     error EmptyTree();
     // @dev Thrown when a leaf index is >= leafCount.
     error LeafIndexOutOfBounds();
+    // @dev Thrown when leaves are not strictly sorted by index (catches duplicates too).
+    error UnsortedLeaves();
 
     /**
      * @notice Verify a Merkle Multi Proof
@@ -102,13 +104,16 @@ library MerkleMultiProof {
         uint256[] memory positions = new uint256[](len);
         bytes32[] memory hashes = new bytes32[](len);
 
-        // Convert leaf indices to 1-based tree positions
         uint256 firstLeafPos = 1 << _ceilLog2(leafCount);
+        uint256 prevIndex;
         for (uint256 i; i < len;) {
-            if (leaves[i].index >= leafCount) revert LeafIndexOutOfBounds();
+            uint256 idx = leaves[i].index;
+            if (idx >= leafCount) revert LeafIndexOutOfBounds();
+            if (i != 0 && idx <= prevIndex) revert UnsortedLeaves();
             hashes[i] = leaves[i].hash;
             unchecked {
-                positions[i] = firstLeafPos + leaves[i].index;
+                positions[i] = firstLeafPos + idx;
+                prevIndex = idx;
                 ++i;
             }
         }
