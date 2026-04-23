@@ -31,7 +31,7 @@ library EthereumTrieDB {
 
     function decodeNodeKind(
         bytes memory encoded
-    ) external pure returns (NodeKind memory) {
+    ) internal pure returns (NodeKind memory) {
         NodeKind memory node;
         ByteSlice memory input = ByteSlice(encoded, 0);
         if (Bytes.equals(encoded, HASHED_NULL_NODE)) {
@@ -67,7 +67,7 @@ library EthereumTrieDB {
 
     function decodeLeaf(
         NodeKind memory node
-    ) external pure returns (Leaf memory) {
+    ) internal pure returns (Leaf memory) {
         Leaf memory leaf;
         RLPReader.RLPItem[] memory decoded = node
             .data
@@ -84,7 +84,7 @@ library EthereumTrieDB {
 
     function decodeExtension(
         NodeKind memory node
-    ) external pure returns (Extension memory) {
+    ) internal pure returns (Extension memory) {
         Extension memory extension;
         RLPReader.RLPItem[] memory decoded = node
             .data
@@ -109,7 +109,7 @@ library EthereumTrieDB {
 
     function decodeBranch(
         NodeKind memory node
-    ) external pure returns (Branch memory) {
+    ) internal pure returns (Branch memory) {
         Branch memory branch;
         RLPReader.RLPItem[] memory decoded = node
             .data
