@@ -73,3 +73,11 @@ struct TrieNode {
     bytes32 hash;
     bytes node;
 }
+
+// Outcome of a successfully verified merkle-patricia proof.
+struct StorageValue {
+    // the storage key
+    bytes key;
+    // the encoded value
+    bytes value;
+}

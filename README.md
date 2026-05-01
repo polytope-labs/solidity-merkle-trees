@@ -115,7 +115,9 @@ This library also supports the verification of the different styles of merkle pa
 ```solidity
 pragma solidity ^0.8.17;
 
-import "@polytope-labs/solidity-merkle-trees/MerklePatricia.sol";
+import "@polytope-labs/solidity-merkle-trees/SubstrateMPT.sol";
+import "@polytope-labs/solidity-merkle-trees/EthereumMPT.sol";
+import {StorageValue} from "@polytope-labs/solidity-merkle-trees/trie/Node.sol";
 
 contract YourContract {
     function verifySubstrateProof(
@@ -124,7 +126,7 @@ contract YourContract {
         bytes[] memory keys
     ) public {
         // verifies proofs from state.getReadProof
-        MerklePatricia.StorageValue[] memory values = MerklePatricia.VerifySubstrateProof(root, proof, keys);
+        StorageValue[] memory values = SubstrateMPT.VerifyProof(root, proof, keys);
         // do something with the verified values (values[i].key, values[i].value).
     }
 
@@ -133,9 +135,9 @@ contract YourContract {
         bytes[] memory proof,
         bytes[] memory keys
     ) public {
-        // verifies ethereum specific merkle patricia proofs as described by EIP-1188.
+        // verifies ethereum specific merkle patricia proofs as described by EIP-1186.
         // can be used to verify the receipt trie, transaction trie and state trie
-        MerklePatricia.StorageValue[] memory values = MerklePatricia.VerifyEthereumProof(root, proof, keys);
+        StorageValue[] memory values = EthereumMPT.VerifyProof(root, proof, keys);
         // do something with the verified values (values[i].key, values[i].value).
     }
 }
