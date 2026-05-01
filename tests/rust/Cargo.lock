@@ -794,14 +794,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ckb-merkle-mountain-range"
-version = "0.5.2"
-source = "git+https://github.com/polytope-labs/merkle-mountain-range?branch=seun/simplified-mmr#f1b48672f4dc4d593291506c3933de1dfb9b8461"
-dependencies = [
- "cfg-if",
-]
-
-[[package]]
 name = "common-path"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2040,12 +2032,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "micromath"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "39617bc909d64b068dcffd0e3e31679195b5576d0c83fadc52690268cc2b2b55"
-
-[[package]]
 name = "miniz_oxide"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2304,6 +2290,15 @@ name = "platforms"
 version = "3.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "626dec3cac7cc0e1577a2ec3fc496277ec2baa084bebad95bb6fdbfae235f84c"
+
+[[package]]
+name = "polkadot-ckb-merkle-mountain-range"
+version = "0.8.2"
+source = "git+https://github.com/paritytech/merkle-mountain-range?rev=864ec208b126606eb5e0ecb5e7e4c538be086f34#864ec208b126606eb5e0ecb5e7e4c538be086f34"
+dependencies = [
+ "cfg-if",
+ "itertools",
+]
 
 [[package]]
 name = "ppv-lite86"
@@ -2683,10 +2678,9 @@ dependencies = [
 
 [[package]]
 name = "rs_merkle"
-version = "1.2.0"
-source = "git+https://github.com/polytope-labs/rs-merkle?branch=seun/2d-merkle-proofs#02750ca0b3a93dc9b53c826b58692b3c1cf7e2a7"
+version = "1.5.0"
+source = "git+https://github.com/polytope-labs/rs-merkle?rev=f14a8aaec1a617dd5f8d032198821d658805ba92#f14a8aaec1a617dd5f8d032198821d658805ba92"
 dependencies = [
- "micromath",
  "sha2 0.10.7",
 ]
 
@@ -3169,12 +3163,12 @@ dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
  "binary-merkle-tree",
- "ckb-merkle-mountain-range",
  "hex",
  "hex-literal",
  "indexmap 2.7.1",
  "once_cell",
  "parity-scale-codec",
+ "polkadot-ckb-merkle-mountain-range",
  "primitive-types",
  "proptest",
  "rand 0.8.5",

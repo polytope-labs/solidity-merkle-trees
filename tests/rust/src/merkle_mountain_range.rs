@@ -4,9 +4,9 @@ use crate::{
     evm_runner::{project_root, EvmRunner},
     MergeKeccak, NumberHash,
 };
+use ::merkle_mountain_range::{util::MemStore, MMR};
 use alloy_primitives::{FixedBytes, U256};
 use alloy_sol_types::{sol, SolCall};
-use ckb_merkle_mountain_range::{util::MemStore, MMR};
 use proptest::{prop_assert, proptest, test_runner::Config as ProptestConfig};
 
 sol! {
