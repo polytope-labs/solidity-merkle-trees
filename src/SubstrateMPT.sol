@@ -38,7 +38,7 @@ library SubstrateMPT {
         bytes32 root,
         bytes[] memory proof,
         bytes[] memory keys
-    ) public pure returns (StorageValue[] memory) {
+    ) internal pure returns (StorageValue[] memory) {
         StorageValue[] memory values = new StorageValue[](keys.length);
         TrieNode[] memory nodes = new TrieNode[](proof.length);
 
@@ -132,7 +132,7 @@ library SubstrateMPT {
         bytes[] memory proof,
         bytes[] memory keys,
         bytes memory childInfo
-    ) public pure returns (StorageValue[] memory) {
+    ) internal pure returns (StorageValue[] memory) {
         // fetch the child trie root hash;
         bytes memory prefix = bytes(":child_storage:default:");
         bytes memory key = bytes.concat(prefix, childInfo);

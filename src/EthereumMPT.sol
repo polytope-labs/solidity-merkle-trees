@@ -38,7 +38,7 @@ library EthereumMPT {
         bytes32 root,
         bytes[] memory proof,
         bytes[] memory keys
-    ) public pure returns (StorageValue[] memory) {
+    ) internal pure returns (StorageValue[] memory) {
         StorageValue[] memory values = new StorageValue[](keys.length);
 
         // Empty trie root: every key is non-membership. The empty trie has no
