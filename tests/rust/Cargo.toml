@@ -35,8 +35,7 @@ rev = "f14a8aaec1a617dd5f8d032198821d658805ba92"
 
 [dependencies.merkle-mountain-range]
 package = "polkadot-ckb-merkle-mountain-range"
-git = "https://github.com/paritytech/merkle-mountain-range"
-rev = "864ec208b126606eb5e0ecb5e7e4c538be086f34"
+version = "0.8.2"
 
 # Prevent this from interfering with workspaces
 [workspace]

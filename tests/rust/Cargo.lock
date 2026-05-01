@@ -2294,7 +2294,8 @@ checksum = "626dec3cac7cc0e1577a2ec3fc496277ec2baa084bebad95bb6fdbfae235f84c"
 [[package]]
 name = "polkadot-ckb-merkle-mountain-range"
 version = "0.8.2"
-source = "git+https://github.com/paritytech/merkle-mountain-range?rev=864ec208b126606eb5e0ecb5e7e4c538be086f34#864ec208b126606eb5e0ecb5e7e4c538be086f34"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f70a16374b7a26b74bfb4788254f8fd64c3406034e81694142cf93f1dd59368f"
 dependencies = [
  "cfg-if",
  "itertools",
