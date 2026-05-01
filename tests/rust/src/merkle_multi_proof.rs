@@ -9,7 +9,9 @@ use crate::{
 use alloy_primitives::{keccak256, FixedBytes, U256};
 use alloy_sol_types::{sol, SolCall};
 use primitive_types::H256;
-use proptest::{prop_assert, prop_assert_eq, prop_assert_ne, proptest, test_runner::Config as ProptestConfig};
+use proptest::{
+    prop_assert, prop_assert_eq, prop_assert_ne, proptest, test_runner::Config as ProptestConfig,
+};
 use rand::Rng;
 use rs_merkle::MerkleTree;
 use std::collections::HashSet;
