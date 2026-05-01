@@ -51,6 +51,62 @@ contract MerklePatriciaTest is Test {
         );
     }
 
+    // Empty Ethereum trie root (keccak256(rlp("""")) ). All keys must resolve
+    // to non-membership without reverting on the empty proof.
+    function testEthereumEmptyTrieRoot() public pure {
+        bytes32 emptyRoot = hex"56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421";
+
+        bytes[] memory keys = new bytes[](2);
+        keys[0] = hex"75b20eef8615de99c108b05f0dbda081c91897128caa336d75dffb97c4132b4d";
+        keys[1] = hex"00";
+
+        bytes[] memory proof = new bytes[](0);
+
+        MerklePatricia.StorageValue[] memory values = MerklePatricia
+            .VerifyEthereumProof(emptyRoot, proof, keys);
+
+        assertEq(values.length, 2);
+        assertEq(values[0].key, keys[0]);
+        assertEq(values[0].value.length, 0);
+        assertEq(values[1].key, keys[1]);
+        assertEq(values[1].value.length, 0);
+    }
+
+    // Inline child references: a branch whose child encoding is shorter than
+    // 32 bytes embeds the full RLP of the child rather than a hash. The
+    // verifier must follow the inline child instead of treating it as absent.
+    //
+    // Trie shape (single key 0x12 -> "v"):
+    //   root branch: child[1] = inline leaf encoding
+    //   inline leaf: key nibble [2] (compact "0x32"), value "v"
+    function testEthereumInlineBranchChild() public pure {
+        // Inline leaf RLP encoding: list[ encoded_key = 0x32, value = 0x76 ].
+        // 0x32 = leaf-prefix(3) | nibble(2) for an odd-length key with one nibble.
+        // Both items self-encode (< 0x80). Total inline leaf = 3 bytes < 32 → embedded.
+        bytes memory inlineLeaf = hex"c23276";
+        // Branch with 17 items. Child[1] = inlineLeaf (raw RLP list).
+        // All other slots = 0x80 (empty), value slot = 0x80. Payload = 19 bytes.
+        bytes memory branch = abi.encodePacked(
+            hex"d3",
+            hex"80", inlineLeaf,
+            hex"80808080808080808080808080",
+            hex"80",
+            hex"80"
+        );
+        bytes32 root = keccak256(branch);
+
+        bytes[] memory keys = new bytes[](1);
+        keys[0] = hex"12";
+
+        bytes[] memory proof = new bytes[](1);
+        proof[0] = branch;
+
+        MerklePatricia.StorageValue[] memory values = MerklePatricia
+            .VerifyEthereumProof(root, proof, keys);
+
+        assertEq(values[0].value, hex"76");
+    }
+
     function testEthereumMerklePatricia() public {
         bytes[] memory keys = new bytes[](1);
         // slot at 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc

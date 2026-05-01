@@ -168,6 +168,17 @@ library MerklePatricia {
         bytes[] memory keys
     ) public pure returns (StorageValue[] memory) {
         StorageValue[] memory values = new StorageValue[](keys.length);
+
+        // Empty trie root: every key is non-membership. The empty trie has no
+        // proof nodes, so attempting to look up the root in `nodes` would
+        // revert as "Incomplete Proof!" rather than returning a clean result.
+        if (root == EthereumTrieDB.HASHED_NULL_NODE) {
+            for (uint256 i = 0; i < keys.length; i++) {
+                values[i].key = keys[i];
+            }
+            return values;
+        }
+
         TrieNode[] memory nodes = new TrieNode[](proof.length);
 
         for (uint256 i = 0; i < proof.length; i++) {
