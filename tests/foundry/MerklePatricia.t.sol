@@ -2,8 +2,8 @@
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
-import {SubstrateMPT} from "../../src/SubstrateMPT.sol";
-import {EthereumMPT} from "../../src/EthereumMPT.sol";
+import {PolkadotTrie} from "../../src/PolkadotTrie.sol";
+import {EthereumTrie} from "../../src/EthereumTrie.sol";
 import {SubstrateTrieDB} from "../../src/trie/substrate/SubstrateTrieDB.sol";
 import {NodeKind, NibbledBranch, Leaf, StorageValue} from "../../src/trie/Node.sol";
 import {ScaleCodec} from "../../src/trie/substrate/ScaleCodec.sol";
@@ -27,7 +27,7 @@ contract MerklePatriciaTest is Test {
         ] = hex"9f00c365c3cf59d671eb72da0e7a4113c41002505f0e7b9012096b41c4eb3aaf947f6ea429080000685f0f1f0515f462cdcf84e0f1d6045dfcbb2035e90c7f86010000";
 
         bytes32 root = hex"6b5710000eccbd59b6351fc2eb53ff2c1df8e0f816f7186ddd309ca85e8798dd";
-        bytes memory value = SubstrateMPT
+        bytes memory value = PolkadotTrie
         .VerifyProof(root, proof, keys)[0].value;
         uint256 timestamp = ScaleCodec.decodeUint256(value);
         assert(timestamp == 1677168798005);
@@ -44,7 +44,7 @@ contract MerklePatriciaTest is Test {
         ] = hex"8100110034402c280401000b5db899138701804f1dc18c0729c67df638dcb17ff86372be663d0d85339a845510498c6c42fc3b";
 
         bytes32 root = hex"9ec7b55dd538898d95dec220abf8f60e8c626bdb4a348d117d1ecaa564cb565c";
-        bytes memory value = SubstrateMPT
+        bytes memory value = PolkadotTrie
         .VerifyProof(root, proof, keys)[0].value;
         assertEq(
             ScaleCodec.decodeUintCompact(ByteSlice(value, 4)),
@@ -63,7 +63,7 @@ contract MerklePatriciaTest is Test {
 
         bytes[] memory proof = new bytes[](0);
 
-        StorageValue[] memory values = EthereumMPT
+        StorageValue[] memory values = EthereumTrie
             .VerifyProof(emptyRoot, proof, keys);
 
         assertEq(values.length, 2);
@@ -102,7 +102,7 @@ contract MerklePatriciaTest is Test {
         bytes[] memory proof = new bytes[](1);
         proof[0] = branch;
 
-        StorageValue[] memory values = EthereumMPT
+        StorageValue[] memory values = EthereumTrie
             .VerifyProof(root, proof, keys);
 
         assertEq(values[0].value, hex"76");
@@ -151,7 +151,7 @@ contract MerklePatriciaTest is Test {
         bytes[] memory proof,
         bytes[] memory keys
     ) public pure returns (StorageValue[] memory) {
-        return SubstrateMPT.VerifyProof(root, proof, keys);
+        return PolkadotTrie.VerifyProof(root, proof, keys);
     }
 
     function VerifyEthereum(
@@ -159,7 +159,7 @@ contract MerklePatriciaTest is Test {
         bytes[] memory proof,
         bytes[] memory keys
     ) public pure returns (StorageValue[] memory) {
-        return EthereumMPT.VerifyProof(root, proof, keys);
+        return EthereumTrie.VerifyProof(root, proof, keys);
     }
 
     function decodeNodeKind(

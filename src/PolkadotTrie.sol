@@ -14,21 +14,21 @@
 // limitations under the License.
 pragma solidity ^0.8.20;
 
-import {NodeKind, NodeHandle, Extension, Branch, NodeHandleOption, Leaf, TrieNode, StorageValue} from "./trie/Node.sol";
+import {NodeKind, NodeHandle, NibbledBranch, NodeHandleOption, Leaf, TrieNode, StorageValue} from "./trie/Node.sol";
 import {Option} from "./trie/Option.sol";
 import {NibbleSlice, NibbleSliceOps} from "./trie/NibbleSlice.sol";
 import {TrieDB} from "./trie/TrieDB.sol";
-import {EthereumTrieDB} from "./trie/ethereum/EthereumTrieDB.sol";
+import {SubstrateTrieDB} from "./trie/substrate/SubstrateTrieDB.sol";
 
 /**
- * @title Ethereum Merkle Patricia Trie verifier
+ * @title Polkadot Merkle Patricia Trie verifier
  * @author Polytope Labs
- * @dev Verifies ethereum specific merkle patricia proofs as described by EIP-1186.
+ * @dev Verifies merkle-patricia proofs produced by substrate/polkadot state tries.
  * @dev refer to research for more info. https://research.polytope.technology/state-(machine)-proofs
  */
-library EthereumMPT {
+library PolkadotTrie {
     /**
-     * @notice Verifies ethereum specific merkle patricia proofs as described by EIP-1186.
+     * @notice Verifies polkadot specific merkle patricia proofs.
      * @param root hash of the merkle patricia trie
      * @param proof a list of proof nodes
      * @param keys a list of keys to verify
@@ -40,17 +40,6 @@ library EthereumMPT {
         bytes[] memory keys
     ) internal pure returns (StorageValue[] memory) {
         StorageValue[] memory values = new StorageValue[](keys.length);
-
-        // Empty trie root: every key is non-membership. The empty trie has no
-        // proof nodes, so attempting to look up the root in `nodes` would
-        // revert as "Incomplete Proof!" rather than returning a clean result.
-        if (root == EthereumTrieDB.HASHED_NULL_NODE) {
-            for (uint256 i = 0; i < keys.length; i++) {
-                values[i].key = keys[i];
-            }
-            return values;
-        }
-
         TrieNode[] memory nodes = new TrieNode[](proof.length);
 
         for (uint256 i = 0; i < proof.length; i++) {
@@ -60,7 +49,7 @@ library EthereumMPT {
         for (uint256 i = 0; i < keys.length; i++) {
             values[i].key = keys[i];
             NibbleSlice memory keyNibbles = NibbleSlice(keys[i], 0);
-            NodeKind memory node = EthereumTrieDB.decodeNodeKind(
+            NodeKind memory node = SubstrateTrieDB.decodeNodeKind(
                 TrieDB.get(nodes, root)
             );
 
@@ -73,55 +62,44 @@ library EthereumMPT {
                 NodeHandle memory nextNode;
 
                 if (TrieDB.isLeaf(node)) {
-                    Leaf memory leaf = EthereumTrieDB.decodeLeaf(node);
-                    // Let's retrieve the offset to be used
-                    uint256 offset = keyNibbles.offset % 2 == 0
-                        ? keyNibbles.offset / 2
-                        : keyNibbles.offset / 2 + 1;
-                    // Let's cut the key passed as input
-                    keyNibbles = NibbleSlice(
-                        NibbleSliceOps.bytesSlice(keyNibbles.data, offset),
-                        0
-                    );
+                    Leaf memory leaf = SubstrateTrieDB.decodeLeaf(node);
                     if (NibbleSliceOps.eq(leaf.key, keyNibbles)) {
                         values[i].value = TrieDB.load(nodes, leaf.value);
                     }
                     break;
-                } else if (TrieDB.isExtension(node)) {
-                    Extension memory extension = EthereumTrieDB.decodeExtension(
-                        node
+                } else if (TrieDB.isNibbledBranch(node)) {
+                    NibbledBranch memory nibbled = SubstrateTrieDB
+                        .decodeNibbledBranch(node);
+                    uint256 nibbledBranchKeyLength = NibbleSliceOps.len(
+                        nibbled.key
                     );
-                    if (NibbleSliceOps.startsWith(keyNibbles, extension.key)) {
-                        // Let's cut the key passed as input
-                        uint256 cutNibble = keyNibbles.offset +
-                            NibbleSliceOps.len(extension.key);
-                        keyNibbles = NibbleSlice(
-                            NibbleSliceOps.bytesSlice(
-                                keyNibbles.data,
-                                cutNibble / 2
-                            ),
-                            cutNibble % 2
-                        );
-                        nextNode = extension.node;
-                    } else {
+                    if (!NibbleSliceOps.startsWith(keyNibbles, nibbled.key)) {
                         break;
                     }
-                } else if (TrieDB.isBranch(node)) {
-                    Branch memory branch = EthereumTrieDB.decodeBranch(node);
-                    if (NibbleSliceOps.isEmpty(keyNibbles)) {
-                        if (Option.isSome(branch.value)) {
+
+                    if (
+                        NibbleSliceOps.len(keyNibbles) == nibbledBranchKeyLength
+                    ) {
+                        if (Option.isSome(nibbled.value)) {
                             values[i].value = TrieDB.load(
                                 nodes,
-                                branch.value.value
+                                nibbled.value.value
                             );
                         }
                         break;
                     } else {
-                        NodeHandleOption memory handle = branch.children[
-                            NibbleSliceOps.at(keyNibbles, 0)
+                        uint256 index = NibbleSliceOps.at(
+                            keyNibbles,
+                            nibbledBranchKeyLength
+                        );
+                        NodeHandleOption memory handle = nibbled.children[
+                            index
                         ];
                         if (Option.isSome(handle)) {
-                            keyNibbles = NibbleSliceOps.mid(keyNibbles, 1);
+                            keyNibbles = NibbleSliceOps.mid(
+                                keyNibbles,
+                                nibbledBranchKeyLength + 1
+                            );
                             nextNode = handle.value;
                         } else {
                             break;
@@ -131,12 +109,40 @@ library EthereumMPT {
                     break;
                 }
 
-                node = EthereumTrieDB.decodeNodeKind(
+                node = SubstrateTrieDB.decodeNodeKind(
                     TrieDB.load(nodes, nextNode)
                 );
             }
         }
 
         return values;
+    }
+
+    /**
+     * @notice Verify child trie keys
+     * @dev substrate specific method in order to verify keys in the child trie.
+     * @param root hash of the merkle root
+     * @param proof a list of proof nodes
+     * @param keys a list of keys to verify
+     * @param childInfo data that can be used to compute the root of the child trie
+     * @return bytes[], a list of values corresponding to the supplied keys.
+     */
+    function ReadChildProof(
+        bytes32 root,
+        bytes[] memory proof,
+        bytes[] memory keys,
+        bytes memory childInfo
+    ) internal pure returns (StorageValue[] memory) {
+        // fetch the child trie root hash;
+        bytes memory prefix = bytes(":child_storage:default:");
+        bytes memory key = bytes.concat(prefix, childInfo);
+        bytes[] memory _keys = new bytes[](1);
+        _keys[0] = key;
+        StorageValue[] memory values = VerifyProof(root, proof, _keys);
+
+        bytes32 childRoot = bytes32(values[0].value);
+        require(childRoot != bytes32(0), "Invalid child trie proof");
+
+        return VerifyProof(childRoot, proof, keys);
     }
 }
