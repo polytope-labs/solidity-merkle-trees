@@ -62,9 +62,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      # Pin nightly: substrate's transitive wasmtime/rustix uses
+      # '#[cfg_attr(rustc_attrs, ...)]', which recent nightlies reject as
+      # reserved. This pin matches the rust-toolchain (1.81.0) era.
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
+          toolchain: nightly-2024-09-01
           override: true
 
       - name: Install Foundry
@@ -91,10 +94,10 @@ jobs:
           forge build
 
       - name: Fuzz trie proof valid
-        run: cd tests/rust && cargo +nightly fuzz run trie_proof_valid -- -max_total_time=120
+        run: cd tests/rust && cargo fuzz run trie_proof_valid -- -max_total_time=120
 
       - name: Fuzz trie proof invalid
-        run: cd tests/rust && cargo +nightly fuzz run trie_proof_invalid -- -max_total_time=120
+        run: cd tests/rust && cargo fuzz run trie_proof_invalid -- -max_total_time=120
 
   fmt:
     name: Rustfmt
