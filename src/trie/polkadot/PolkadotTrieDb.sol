@@ -19,7 +19,7 @@ import {Bytes, ByteSlice} from "../Bytes.sol";
 import {NibbleSlice, NibbleSliceOps} from "../NibbleSlice.sol";
 import {ScaleCodec} from "./ScaleCodec.sol";
 
-library SubstrateTrieDB {
+library PolkadotTrieDb {
     uint8 public constant FIRST_PREFIX = 0x00 << 6;
     uint8 public constant PADDING_BITMASK = 0x0F;
     uint8 public constant EMPTY_TRIE = FIRST_PREFIX | (0x00 << 4);

@@ -18,7 +18,7 @@ import {NodeKind, NodeHandle, NibbledBranch, NodeHandleOption, Leaf, TrieNode, S
 import {Option} from "./trie/Option.sol";
 import {NibbleSlice, NibbleSliceOps} from "./trie/NibbleSlice.sol";
 import {TrieDB} from "./trie/TrieDB.sol";
-import {SubstrateTrieDB} from "./trie/substrate/SubstrateTrieDB.sol";
+import {PolkadotTrieDb} from "./trie/polkadot/PolkadotTrieDb.sol";
 
 /**
  * @title Polkadot Merkle Patricia Trie verifier
@@ -49,7 +49,7 @@ library PolkadotTrie {
         for (uint256 i = 0; i < keys.length; i++) {
             values[i].key = keys[i];
             NibbleSlice memory keyNibbles = NibbleSlice(keys[i], 0);
-            NodeKind memory node = SubstrateTrieDB.decodeNodeKind(
+            NodeKind memory node = PolkadotTrieDb.decodeNodeKind(
                 TrieDB.get(nodes, root)
             );
 
@@ -62,13 +62,13 @@ library PolkadotTrie {
                 NodeHandle memory nextNode;
 
                 if (TrieDB.isLeaf(node)) {
-                    Leaf memory leaf = SubstrateTrieDB.decodeLeaf(node);
+                    Leaf memory leaf = PolkadotTrieDb.decodeLeaf(node);
                     if (NibbleSliceOps.eq(leaf.key, keyNibbles)) {
                         values[i].value = TrieDB.load(nodes, leaf.value);
                     }
                     break;
                 } else if (TrieDB.isNibbledBranch(node)) {
-                    NibbledBranch memory nibbled = SubstrateTrieDB
+                    NibbledBranch memory nibbled = PolkadotTrieDb
                         .decodeNibbledBranch(node);
                     uint256 nibbledBranchKeyLength = NibbleSliceOps.len(
                         nibbled.key
@@ -109,7 +109,7 @@ library PolkadotTrie {
                     break;
                 }
 
-                node = SubstrateTrieDB.decodeNodeKind(
+                node = PolkadotTrieDb.decodeNodeKind(
                     TrieDB.load(nodes, nextNode)
                 );
             }

@@ -4,9 +4,9 @@ pragma solidity ^0.8.20;
 import {Test} from "forge-std/Test.sol";
 import {PolkadotTrie} from "../../src/PolkadotTrie.sol";
 import {EthereumTrie} from "../../src/EthereumTrie.sol";
-import {SubstrateTrieDB} from "../../src/trie/substrate/SubstrateTrieDB.sol";
+import {PolkadotTrieDb} from "../../src/trie/polkadot/PolkadotTrieDb.sol";
 import {NodeKind, NibbledBranch, Leaf, StorageValue} from "../../src/trie/Node.sol";
-import {ScaleCodec} from "../../src/trie/substrate/ScaleCodec.sol";
+import {ScaleCodec} from "../../src/trie/polkadot/ScaleCodec.sol";
 import {NibbleSlice, NibbleSliceOps} from "../../src/trie/NibbleSlice.sol";
 import {ByteSlice} from "../../src/trie/Bytes.sol";
 
@@ -165,20 +165,20 @@ contract MerklePatriciaTest is Test {
     function decodeNodeKind(
         bytes memory node
     ) public pure returns (NodeKind memory) {
-        return SubstrateTrieDB.decodeNodeKind(node);
+        return PolkadotTrieDb.decodeNodeKind(node);
     }
 
     function decodeNibbledBranch(
         bytes memory node
     ) external pure returns (NibbledBranch memory) {
         return
-            SubstrateTrieDB.decodeNibbledBranch(
-                SubstrateTrieDB.decodeNodeKind(node)
+            PolkadotTrieDb.decodeNibbledBranch(
+                PolkadotTrieDb.decodeNodeKind(node)
             );
     }
 
     function decodeLeaf(bytes memory node) external pure returns (Leaf memory) {
-        return SubstrateTrieDB.decodeLeaf(SubstrateTrieDB.decodeNodeKind(node));
+        return PolkadotTrieDb.decodeLeaf(PolkadotTrieDb.decodeNodeKind(node));
     }
 
     function nibbleLen(
