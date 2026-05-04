@@ -76,7 +76,10 @@ jobs:
           version: nightly
 
       - name: Install cargo-fuzz
-        run: cargo install cargo-fuzz
+        # Pin: latest cargo-fuzz (0.13+) pulls clap_builder requiring the
+        # 'edition2024' cargo feature, which isn't stabilised in our pinned
+        # nightly. 0.12.0 is the last version before that requirement.
+        run: cargo install cargo-fuzz --version 0.12.0 --locked
 
       - name: Download SVM Releases List
         run: |
