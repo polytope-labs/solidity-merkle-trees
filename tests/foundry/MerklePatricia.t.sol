@@ -108,6 +108,42 @@ contract MerklePatriciaTest is Test {
         assertEq(values[0].value, hex"76");
     }
 
+    // Issue #6 regression: odd-length leaf paths must not alias different keys.
+    //
+    // Trie with a single key 0x12 -> "v". The leaf has an odd compact path
+    // (one nibble: 2), reached via branch child[1]. Before the fix, querying
+    // key 0x12 and 0x1F would both match because the first nibble of the
+    // odd leaf suffix was dropped from both the decoded leaf and the queried key.
+    function testEthereumOddLeafNoAlias() public pure {
+        // Reuse the inline branch from testEthereumInlineBranchChild:
+        // root branch with child[1] = inline leaf for key 0x12, value 0x76.
+        bytes memory inlineLeaf = hex"c23276";
+        bytes memory branch = abi.encodePacked(
+            hex"d3",
+            hex"80", inlineLeaf,
+            hex"80808080808080808080808080",
+            hex"80",
+            hex"80"
+        );
+        bytes32 root = keccak256(branch);
+
+        bytes[] memory proof = new bytes[](1);
+        proof[0] = branch;
+
+        // Correct key 0x12 should return value
+        bytes[] memory correctKey = new bytes[](1);
+        correctKey[0] = hex"12";
+        StorageValue[] memory found = EthereumTrie.VerifyProof(root, proof, correctKey);
+        assertEq(found[0].value, hex"76");
+
+        // Different key 0x1F (differs at the nibble that was previously dropped)
+        // should return empty (non-membership)
+        bytes[] memory wrongKey = new bytes[](1);
+        wrongKey[0] = hex"1f";
+        StorageValue[] memory notFound = EthereumTrie.VerifyProof(root, proof, wrongKey);
+        assertEq(notFound[0].value.length, 0, "key 0x1F must not alias key 0x12");
+    }
+
     function testEthereumMerklePatricia() public {
         bytes[] memory keys = new bytes[](1);
         // slot at 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc
