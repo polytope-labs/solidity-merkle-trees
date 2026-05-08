@@ -192,6 +192,76 @@ contract MerkleMountainRangeTest is Test {
     }
 
     /**
+     * @notice Empty leaves with a power-of-two leafCount — the trivial forgery from issue #11.
+     *         VerifyProof(root, [root], [], 1) must not succeed.
+     */
+    function testEmptyLeaves_TrivialForgery() public {
+        bytes32 root = 0x5aac4bad5c6a9014429b7e19ec0e5cd059d28d697c9cdd3f71e78cb6bfbd2600;
+
+        bytes32[] memory proof = new bytes32[](1);
+        proof[0] = root;
+
+        MerkleMountainRange.Leaf[] memory leaves = new MerkleMountainRange.Leaf[](0);
+
+        vm.expectRevert(MerkleMountainRange.EmptyLeaves.selector);
+        this.CalculateRoot(proof, leaves, 1);
+    }
+
+    /**
+     * @notice Empty leaves with a multi-peak leafCount.
+     */
+    function testEmptyLeaves_MultiPeak() public {
+        bytes32[] memory proof = new bytes32[](3);
+        proof[0] = bytes32(uint256(1));
+        proof[1] = bytes32(uint256(2));
+        proof[2] = bytes32(uint256(3));
+
+        MerkleMountainRange.Leaf[] memory leaves = new MerkleMountainRange.Leaf[](0);
+
+        vm.expectRevert(MerkleMountainRange.EmptyLeaves.selector);
+        this.CalculateRoot(proof, leaves, 14);
+    }
+
+    /**
+     * @notice Partial peak decomposition — proof only supplies 2 of 3 required peaks.
+     *         The loop exits early on proof exhaustion, but IncompletePeaks catches it.
+     */
+    function testIncompletePeaks_PartialProof() public {
+        // leafCount=14 needs 3 peaks (popcount(14)=3). Supply only 2 proof elements
+        // and a single leaf in the first subtree to trigger partial decomposition.
+        bytes32[] memory proof = new bytes32[](4);
+        proof[0] = 0xa4a7208a40e95acaf2fe1a3c675b1b5d8c341060e4f179b76ba79493582a95a6;
+        proof[1] = 0x989a7025bda9312b19569d9e84e33a624e7fc007e54db23b6758d5f819647071;
+        proof[2] = 0xfc5b56233029d71e7e9aff8e230ff491475dee2d8074b27d5fecf8f5154d7c8d;
+        // only one peak from proof, missing the third
+        proof[3] = 0x37db026959b7bafb26c0d292ecd69c24df5eab845d9625ac5301324402938f25;
+
+        MerkleMountainRange.Leaf[] memory leaves = new MerkleMountainRange.Leaf[](1);
+        leaves[0] = MerkleMountainRange.Leaf(2, 0x2b97a4b75a93aa1ac8581fac0f7d4ab42406569409a737bdf9de584903b372c5);
+
+        vm.expectRevert(MerkleMountainRange.IncompletePeaks.selector);
+        this.CalculateRoot(proof, leaves, 14);
+    }
+
+    /**
+     * @notice Issue #16: single-leaf shortcut accepted trailing proof garbage.
+     *         The UnconsumedProof post-condition now catches this.
+     */
+    function testUnconsumedProof_SingleLeafWithTrailingData() public {
+        bytes32 root = bytes32(uint256(42));
+
+        bytes32[] memory proof = new bytes32[](2);
+        proof[0] = bytes32(uint256(0xdead));
+        proof[1] = bytes32(uint256(0xbeef));
+
+        MerkleMountainRange.Leaf[] memory leaves = new MerkleMountainRange.Leaf[](1);
+        leaves[0] = MerkleMountainRange.Leaf(0, root);
+
+        vm.expectRevert(MerkleMountainRange.UnconsumedProof.selector);
+        this.CalculateRoot(proof, leaves, 1);
+    }
+
+    /**
      * @notice Duplicate leaf indices with identical hash must revert with UnsortedLeaves.
      *         Previously a duplicate leaf targeting a single-leaf peak could ride along invisibly
      *         because `_subtreeRoot` short-circuits on `positions[0] == 1` and never inspects the

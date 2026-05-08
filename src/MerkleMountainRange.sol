@@ -29,6 +29,12 @@ library MerkleMountainRange {
     error OutOfBoundsLeaves();
     // @dev Thrown when leaves are not strictly sorted by index (catches duplicates too).
     error UnsortedLeaves();
+    // @dev Thrown when no leaves are provided — at least one membership must be proven.
+    error EmptyLeaves();
+    // @dev Thrown when the peak decomposition is incomplete (not all peaks were computed).
+    error IncompletePeaks();
+    // @dev Thrown when proof elements remain after verification (non-canonical proof).
+    error UnconsumedProof();
 
     /*
      * @title A merkle mountain range leaf node
@@ -116,20 +122,24 @@ library MerkleMountainRange {
     {
         if (leafCount == 0) revert EmptyTree();
 
-        // invariant: leaves must be sorted 
-        for (uint256 i = 1; i < leaves.length;) {
+        uint256 leavesLen = leaves.length;
+        if (leavesLen == 0) revert EmptyLeaves();
+
+        // invariant: leaves must be sorted
+        for (uint256 i = 1; i < leavesLen;) {
             if (leaves[i].index <= leaves[i - 1].index) revert UnsortedLeaves();
             unchecked { ++i; }
         }
 
         // special handle the only 1 leaf MMR
-        if (leafCount == 1 && leaves.length == 1 && leaves[0].index == 0) {
+        if (leafCount == 1 && leavesLen == 1 && leaves[0].index == 0) {
+            if (proof.length != 0) revert UnconsumedProof();
             return leaves[0].hash;
         }
 
         HashIterator memory peakRoots = HashIterator(0, new bytes32[](_popcount(leafCount)));
         HashIterator memory proofIter = HashIterator(0, proof);
-        LeafIterator memory leafIter = LeafIterator(0, leaves.length, leaves);
+        LeafIterator memory leafIter = LeafIterator(0, leavesLen, leaves);
 
         uint256 nextSubtreeStart;
         uint256 remaining = leafCount;
@@ -158,6 +168,12 @@ library MerkleMountainRange {
 
         // invariant: no out of bounds leaves
         if (leafIter.length != 0) revert OutOfBoundsLeaves();
+
+        // invariant: all peaks must have been computed
+        if (peakRoots.offset != peakRoots.data.length) revert IncompletePeaks();
+
+        // invariant: all proof elements must have been consumed
+        if (proofIter.offset != proofIter.data.length) revert UnconsumedProof();
 
         unchecked {
             peakRoots.offset--;
