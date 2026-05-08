@@ -74,14 +74,14 @@ library EthereumTrie {
 
                 if (TrieDB.isLeaf(node)) {
                     Leaf memory leaf = EthereumTrieDB.decodeLeaf(node);
-                    // Let's retrieve the offset to be used
-                    uint256 offset = keyNibbles.offset % 2 == 0
-                        ? keyNibbles.offset / 2
-                        : keyNibbles.offset / 2 + 1;
-                    // Let's cut the key passed as input
+                    // Slice the remaining key to the current nibble offset,
+                    // preserving nibble alignment (same approach as extensions).
                     keyNibbles = NibbleSlice(
-                        NibbleSliceOps.bytesSlice(keyNibbles.data, offset),
-                        0
+                        NibbleSliceOps.bytesSlice(
+                            keyNibbles.data,
+                            keyNibbles.offset / 2
+                        ),
+                        keyNibbles.offset % 2
                     );
                     if (NibbleSliceOps.eq(leaf.key, keyNibbles)) {
                         values[i].value = TrieDB.load(nodes, leaf.value);

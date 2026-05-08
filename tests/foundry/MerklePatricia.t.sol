@@ -150,7 +150,7 @@ contract MerklePatriciaTest is Test {
         bytes32 root,
         bytes[] memory proof,
         bytes[] memory keys
-    ) public pure returns (StorageValue[] memory) {
+    ) public pure returns (PolkadotTrie.StorageValue[] memory) {
         return PolkadotTrie.VerifyProof(root, proof, keys);
     }
 

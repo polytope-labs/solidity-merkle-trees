@@ -79,8 +79,13 @@ library EthereumTrieDB {
             .toRlpItem()
             .toList();
         bytes memory data = decoded[1].toBytes();
-        // Remove the first byte, which is the prefix and not present in the user provided key
-        leaf.key = NibbleSlice(Bytes.substr(decoded[0].toBytes(), 1), 0);
+        uint8 isOdd = uint8(decoded[0].toBytes()[0] >> 4) & 0x01;
+        // For even: strip the full prefix byte (prefix nibble + padding nibble), offset 0.
+        // For odd: keep the byte containing the first path nibble, offset 1 to skip the prefix nibble.
+        leaf.key = NibbleSlice(
+            Bytes.substr(decoded[0].toBytes(), (isOdd + 1) % 2),
+            isOdd
+        );
         leaf.value = NodeHandle(false, bytes32(0), true, data);
 
         return leaf;

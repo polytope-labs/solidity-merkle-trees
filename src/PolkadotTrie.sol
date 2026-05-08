@@ -14,7 +14,7 @@
 // limitations under the License.
 pragma solidity ^0.8.20;
 
-import {NodeKind, NodeHandle, NibbledBranch, NodeHandleOption, Leaf, TrieNode, StorageValue} from "./trie/Node.sol";
+import {NodeKind, NodeHandle, NibbledBranch, NodeHandleOption, Leaf, TrieNode} from "./trie/Node.sol";
 import {Option} from "./trie/Option.sol";
 import {NibbleSlice, NibbleSliceOps} from "./trie/NibbleSlice.sol";
 import {TrieDB} from "./trie/TrieDB.sol";
@@ -27,6 +27,18 @@ import {PolkadotTrieDb} from "./trie/polkadot/PolkadotTrieDb.sol";
  * @dev refer to research for more info. https://research.polytope.technology/state-(machine)-proofs
  */
 library PolkadotTrie {
+    // Outcome of a successfully verified polkadot merkle-patricia proof.
+    // Substrate/FRAME allows storing empty values (e.g. `()` for set membership),
+    // so `keyPresent` distinguishes "key exists with empty value" from "key absent".
+    struct StorageValue {
+        // the storage key
+        bytes key;
+        // the encoded value
+        bytes value;
+        // true if the key was found in the trie
+        bool keyPresent;
+    }
+
     /**
      * @notice Verifies polkadot specific merkle patricia proofs.
      * @param root hash of the merkle patricia trie
@@ -65,6 +77,7 @@ library PolkadotTrie {
                     Leaf memory leaf = PolkadotTrieDb.decodeLeaf(node);
                     if (NibbleSliceOps.eq(leaf.key, keyNibbles)) {
                         values[i].value = TrieDB.load(nodes, leaf.value);
+                        values[i].keyPresent = true;
                     }
                     break;
                 } else if (TrieDB.isNibbledBranch(node)) {
@@ -80,6 +93,7 @@ library PolkadotTrie {
                     if (
                         NibbleSliceOps.len(keyNibbles) == nibbledBranchKeyLength
                     ) {
+                        values[i].keyPresent = true;
                         if (Option.isSome(nibbled.value)) {
                             values[i].value = TrieDB.load(
                                 nodes,
