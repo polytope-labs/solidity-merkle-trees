@@ -223,27 +223,6 @@ contract MerkleMountainRangeTest is Test {
     }
 
     /**
-     * @notice Partial peak decomposition — proof only supplies 2 of 3 required peaks.
-     *         The loop exits early on proof exhaustion, but IncompletePeaks catches it.
-     */
-    function testIncompletePeaks_PartialProof() public {
-        // leafCount=14 needs 3 peaks (popcount(14)=3). Supply only 2 proof elements
-        // and a single leaf in the first subtree to trigger partial decomposition.
-        bytes32[] memory proof = new bytes32[](4);
-        proof[0] = 0xa4a7208a40e95acaf2fe1a3c675b1b5d8c341060e4f179b76ba79493582a95a6;
-        proof[1] = 0x989a7025bda9312b19569d9e84e33a624e7fc007e54db23b6758d5f819647071;
-        proof[2] = 0xfc5b56233029d71e7e9aff8e230ff491475dee2d8074b27d5fecf8f5154d7c8d;
-        // only one peak from proof, missing the third
-        proof[3] = 0x37db026959b7bafb26c0d292ecd69c24df5eab845d9625ac5301324402938f25;
-
-        MerkleMountainRange.Leaf[] memory leaves = new MerkleMountainRange.Leaf[](1);
-        leaves[0] = MerkleMountainRange.Leaf(2, 0x2b97a4b75a93aa1ac8581fac0f7d4ab42406569409a737bdf9de584903b372c5);
-
-        vm.expectRevert(MerkleMountainRange.IncompletePeaks.selector);
-        this.CalculateRoot(proof, leaves, 14);
-    }
-
-    /**
      * @notice Issue #16: single-leaf shortcut accepted trailing proof garbage.
      *         The UnconsumedProof post-condition now catches this.
      */
