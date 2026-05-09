@@ -111,9 +111,8 @@ impl EvmRunner {
         };
 
         match result {
-            ExecutionResult::Success { output: Output::Call(data), gas_used, .. } => {
-                (data.to_vec(), gas_used)
-            },
+            ExecutionResult::Success { output: Output::Call(data), gas_used, .. } =>
+                (data.to_vec(), gas_used),
             other => panic!("call failed: {other:?}"),
         }
     }

@@ -378,9 +378,9 @@ fn test_polkadot_trie_empty_value_membership() {
 
     let keys_with_values: Vec<(Vec<u8>, Vec<u8>)> = vec![
         (b"alpha".to_vec(), b"hello".to_vec()),
-        (b"beta".to_vec(), vec![]), // empty value — key is present
+        (b"beta".to_vec(), vec![]),            // empty value — key is present
         (b"gamma".to_vec(), b"world".to_vec()),
-        (b"delta".to_vec(), vec![]), // empty value — key is present
+        (b"delta".to_vec(), vec![]),            // empty value — key is present
     ];
 
     let all_keys: Vec<Vec<u8>> = keys_with_values.iter().map(|(k, _)| k.clone()).collect();
@@ -470,7 +470,10 @@ fn test_polkadot_trie_empty_value_membership() {
     };
     let result = runner.call_raw(addr, call.abi_encode());
     let decoded = VerifyKeysCall::abi_decode_returns(&result, true).unwrap();
-    assert!(!decoded._0[0].keyPresent, "absent key should not be present");
+    assert!(
+        !decoded._0[0].keyPresent,
+        "absent key should not be present"
+    );
     assert!(decoded._0[0].value.is_empty());
 }
 

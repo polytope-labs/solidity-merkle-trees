@@ -31,6 +31,10 @@ library MerkleMountainRange {
     error UnsortedLeaves();
     // @dev Thrown when no leaves are provided — at least one membership must be proven.
     error EmptyLeaves();
+    // @dev Thrown when the peak decomposition is incomplete (not all peaks were computed).
+    error IncompletePeaks();
+    // @dev Thrown when proof elements remain after verification (non-canonical proof).
+    error UnconsumedProof();
 
     /*
      * @title A merkle mountain range leaf node
@@ -129,6 +133,7 @@ library MerkleMountainRange {
 
         // special handle the only 1 leaf MMR
         if (leafCount == 1 && leavesLen == 1 && leaves[0].index == 0) {
+            if (proof.length != 0) revert UnconsumedProof();
             return leaves[0].hash;
         }
 
@@ -164,6 +169,11 @@ library MerkleMountainRange {
         // invariant: no out of bounds leaves
         if (leafIter.length != 0) revert OutOfBoundsLeaves();
 
+        // invariant: all peaks must have been computed
+        if (peakRoots.offset != peakRoots.data.length) revert IncompletePeaks();
+
+        // invariant: all proof elements must have been consumed
+        if (proofIter.offset != proofIter.data.length) revert UnconsumedProof();
 
         unchecked {
             peakRoots.offset--;
