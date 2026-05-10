@@ -28,9 +28,9 @@ Supports both balanced and unbalanced trees (leaf count need not be a power of 2
 You can use it to verify proofs like so:
 
 ```solidity
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.20;
 
-import "@polytope-labs/solidity-merkle-trees/MerkleMultiProof.sol";
+import {MerkleMultiProof} from "@polytope-labs/solidity-merkle-trees/MerkleMultiProof.sol";
 
 contract YourContract {
     function verify(
@@ -38,8 +38,16 @@ contract YourContract {
         bytes32[] memory proof,
         MerkleMultiProof.Leaf[] memory leaves,
         uint256 leafCount
-    ) public {
-        require(MerkleMultiProof.VerifyProof(root, proof, leaves, leafCount), "Invalid proof");
+    ) public pure returns (bool) {
+        return MerkleMultiProof.VerifyProof(root, proof, leaves, leafCount);
+    }
+
+    function calculateRoot(
+        bytes32[] memory proof,
+        MerkleMultiProof.Leaf[] memory leaves,
+        uint256 leafCount
+    ) public pure returns (bytes32) {
+        return MerkleMultiProof.CalculateRoot(proof, leaves, leafCount);
     }
 }
 ```
@@ -83,9 +91,9 @@ This algorithm is based on the research done here: https://research.polytope.tec
 You can use it to verify proofs like so:
 
 ```solidity
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.20;
 
-import "@polytope-labs/solidity-merkle-trees/MerkleMountainRange.sol";
+import {MerkleMountainRange} from "@polytope-labs/solidity-merkle-trees/MerkleMountainRange.sol";
 
 contract YourContract {
     function verify(
@@ -93,8 +101,16 @@ contract YourContract {
         bytes32[] memory proof,
         MerkleMountainRange.Leaf[] memory leaves,
         uint256 leafCount
-    ) public {
-        require(MerkleMountainRange.VerifyProof(root, proof, leaves, leafCount), "Invalid proof");
+    ) public pure returns (bool) {
+        return MerkleMountainRange.VerifyProof(root, proof, leaves, leafCount);
+    }
+
+    function calculateRoot(
+        bytes32[] memory proof,
+        MerkleMountainRange.Leaf[] memory leaves,
+        uint256 leafCount
+    ) public pure returns (bytes32) {
+        return MerkleMountainRange.CalculateRoot(proof, leaves, leafCount);
     }
 }
 ```
@@ -107,16 +123,16 @@ You can generate the MMR proofs using the [ckb-merkle-mountain-range](https://cr
 
 This library also supports the verification of the different styles of merkle patricia tries:
 
-- [x] Substrate
+- [x] Substrate/Polkadot
 - [x] Ethereum
 - [ ] NEAR
       <br />
 
 ```solidity
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.20;
 
-import "@polytope-labs/solidity-merkle-trees/PolkadotTrie.sol";
-import "@polytope-labs/solidity-merkle-trees/EthereumTrie.sol";
+import {PolkadotTrie} from "@polytope-labs/solidity-merkle-trees/PolkadotTrie.sol";
+import {EthereumTrie} from "@polytope-labs/solidity-merkle-trees/EthereumTrie.sol";
 import {StorageValue} from "@polytope-labs/solidity-merkle-trees/trie/Node.sol";
 
 contract YourContract {
@@ -124,48 +140,63 @@ contract YourContract {
         bytes32 root,
         bytes[] memory proof,
         bytes[] memory keys
-    ) public {
+    ) public pure returns (PolkadotTrie.StorageValue[] memory) {
         // verifies proofs from state.getReadProof
-        StorageValue[] memory values = PolkadotTrie.VerifyProof(root, proof, keys);
-        // do something with the verified values (values[i].key, values[i].value).
+        // returned StorageValue has: key, value, and keyPresent (to distinguish absent keys from empty values)
+        return PolkadotTrie.VerifyProof(root, proof, keys);
+    }
+
+    function verifyPolkadotChildProof(
+        bytes32 root,
+        bytes[] memory proof,
+        bytes[] memory keys,
+        bytes memory childInfo
+    ) public pure returns (PolkadotTrie.StorageValue[] memory) {
+        // verifies child storage trie proofs
+        return PolkadotTrie.ReadChildProof(root, proof, keys, childInfo);
     }
 
     function verifyEthereumProof(
         bytes32 root,
         bytes[] memory proof,
         bytes[] memory keys
-    ) public {
+    ) public pure returns (StorageValue[] memory) {
         // verifies ethereum specific merkle patricia proofs as described by EIP-1186.
         // can be used to verify the receipt trie, transaction trie and state trie
-        StorageValue[] memory values = EthereumTrie.VerifyProof(root, proof, keys);
-        // do something with the verified values (values[i].key, values[i].value).
+        return EthereumTrie.VerifyProof(root, proof, keys);
     }
 }
 ```
 
 ## Testing Guide
 
-This guide assumes [Rust](https://www.rust-lang.org/tools/install)...along with its [nightly](https://rust-lang.github.io/rustup/concepts/channels.html#:~:text=it%20just%20run-,rustup%20toolchain%20install%20nightly,-%3A) version, [Solidity](https://docs.soliditylang.org/en/v0.8.17/installing-solidity.html), [cargo-fuzz](https://github.com/rust-fuzz/cargo-fuzz) and [Forge](https://github.com/foundry-rs/foundry/blob/master/README.md) are installed, if not browse the official websites/repositories for instructions.
+This guide assumes [Rust](https://www.rust-lang.org/tools/install) (1.81.0+) along with its [nightly](https://rust-lang.github.io/rustup/concepts/channels.html#:~:text=it%20just%20run-,rustup%20toolchain%20install%20nightly,-%3A) version, [cargo-fuzz](https://github.com/rust-fuzz/cargo-fuzz), and [Foundry](https://github.com/foundry-rs/foundry) are installed.
 
-Build the contracts;
+Build the contracts:
 
 ```bash
 forge build
 ```
 
-To run the unit tests associated with the Merkle Multi Proof library;
+Run the Solidity tests:
+
+```bash
+forge test -vvv
+```
+
+To run the Rust unit tests associated with the Merkle Multi Proof library:
 
 ```bash
 cargo test --release --manifest-path=./tests/rust/Cargo.toml --lib merkle_multi_proof
 ```
 
-To run the unit tests associated with the Merkle Mountain Range library;
+To run the Rust unit tests associated with the Merkle Mountain Range library:
 
 ```bash
 cargo test --release --manifest-path=./tests/rust/Cargo.toml --lib merkle_mountain_range
 ```
 
-To run the unit and fuzz tests associated with the Merkle Patricia Trie library;
+To run the Rust unit and fuzz tests associated with the Merkle Patricia Trie library:
 
 ```bash
 cargo test --release --manifest-path=./tests/rust/Cargo.toml --lib merkle_patricia
