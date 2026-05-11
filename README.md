@@ -5,7 +5,7 @@
 
 <img src="assets/web3 foundation_grants_badge_white.png"  style="max-width: 100%; height: auto; max-height: 20em">
 
-This library contains the implementations of various merkle tree verification algorithms. Currently supported algorithms:
+This library contains implementations of various merkle tree verification algorithms. Currently supported algorithms:
 <br />
 
 - [x] Merkle Trees (supports unbalanced trees).
