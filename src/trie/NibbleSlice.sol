@@ -14,10 +14,7 @@
 // limitations under the License.
 pragma solidity ^0.8.20;
 
-struct NibbleSlice {
-    bytes data;
-    uint256 offset;
-}
+import {NibbleSlice} from "./Node.sol";
 
 library NibbleSliceOps {
     uint256 internal constant NIBBLE_PER_BYTE = 2;

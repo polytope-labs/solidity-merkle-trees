@@ -116,7 +116,6 @@ library PolkadotTrieDb {
             if (valueAt(bitmap, i)) {
                 childHandle.isSome = true;
                 uint256 len = ScaleCodec.decodeUintCompact(input);
-                //                revert(string.concat("node index: ", Strings.toString(len)));
                 if (len == HASH_lENGTH) {
                     childHandle.value.isHash = true;
                     childHandle.value.hash = Bytes.toBytes32(

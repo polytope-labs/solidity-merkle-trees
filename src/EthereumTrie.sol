@@ -14,7 +14,16 @@
 // limitations under the License.
 pragma solidity ^0.8.20;
 
-import {NodeKind, NodeHandle, Extension, Branch, NodeHandleOption, Leaf, TrieNode, StorageValue} from "./trie/Node.sol";
+import {
+    NodeKind,
+    NodeHandle,
+    Extension,
+    Branch,
+    NodeHandleOption,
+    Leaf,
+    TrieNode,
+    StorageValue
+} from "./trie/Node.sol";
 import {Option} from "./trie/Option.sol";
 import {NibbleSlice, NibbleSliceOps} from "./trie/NibbleSlice.sol";
 import {TrieDB} from "./trie/TrieDB.sol";
@@ -24,9 +33,12 @@ import {EthereumTrieDB} from "./trie/ethereum/EthereumTrieDB.sol";
  * @title Ethereum Merkle Patricia Trie verifier
  * @author Polytope Labs
  * @dev Verifies ethereum specific merkle patricia proofs as described by EIP-1186.
- * @dev refer to research for more info. https://research.polytope.technology/state-(machine)-proofs
+ * @dev refer to research for more info. https://research.polytope.technology/state-machine-proofs
  */
 library EthereumTrie {
+    using NibbleSliceOps for NibbleSlice;
+    using EthereumTrieDB for NodeKind;
+
     /**
      * @notice Verifies ethereum specific merkle patricia proofs as described by EIP-1186.
      * @param root hash of the merkle patricia trie
@@ -73,7 +85,7 @@ library EthereumTrie {
                 NodeHandle memory nextNode;
 
                 if (TrieDB.isLeaf(node)) {
-                    Leaf memory leaf = EthereumTrieDB.decodeLeaf(node);
+                    Leaf memory leaf = node.decodeLeaf();
                     // Slice the remaining key to the current nibble offset,
                     // preserving nibble alignment (same approach as extensions).
                     keyNibbles = NibbleSlice(
@@ -83,18 +95,16 @@ library EthereumTrie {
                         ),
                         keyNibbles.offset % 2
                     );
-                    if (NibbleSliceOps.eq(leaf.key, keyNibbles)) {
+                    if (leaf.key.eq(keyNibbles)) {
                         values[i].value = TrieDB.load(nodes, leaf.value);
                     }
                     break;
                 } else if (TrieDB.isExtension(node)) {
-                    Extension memory extension = EthereumTrieDB.decodeExtension(
-                        node
-                    );
-                    if (NibbleSliceOps.startsWith(keyNibbles, extension.key)) {
+                    Extension memory extension = node.decodeExtension();
+                    if (keyNibbles.startsWith(extension.key)) {
                         // Let's cut the key passed as input
                         uint256 cutNibble = keyNibbles.offset +
-                            NibbleSliceOps.len(extension.key);
+                            extension.key.len();
                         keyNibbles = NibbleSlice(
                             NibbleSliceOps.bytesSlice(
                                 keyNibbles.data,
@@ -107,8 +117,8 @@ library EthereumTrie {
                         break;
                     }
                 } else if (TrieDB.isBranch(node)) {
-                    Branch memory branch = EthereumTrieDB.decodeBranch(node);
-                    if (NibbleSliceOps.isEmpty(keyNibbles)) {
+                    Branch memory branch = node.decodeBranch();
+                    if (keyNibbles.isEmpty()) {
                         if (Option.isSome(branch.value)) {
                             values[i].value = TrieDB.load(
                                 nodes,
@@ -118,10 +128,10 @@ library EthereumTrie {
                         break;
                     } else {
                         NodeHandleOption memory handle = branch.children[
-                            NibbleSliceOps.at(keyNibbles, 0)
+                            keyNibbles.at(0)
                         ];
                         if (Option.isSome(handle)) {
-                            keyNibbles = NibbleSliceOps.mid(keyNibbles, 1);
+                            keyNibbles = keyNibbles.mid(1);
                             nextNode = handle.value;
                         } else {
                             break;

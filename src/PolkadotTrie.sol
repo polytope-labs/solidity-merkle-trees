@@ -14,9 +14,17 @@
 // limitations under the License.
 pragma solidity ^0.8.20;
 
-import {NodeKind, NodeHandle, NibbledBranch, NodeHandleOption, Leaf, TrieNode} from "./trie/Node.sol";
+import {
+    NodeKind,
+    NodeHandle,
+    NibbledBranch,
+    NodeHandleOption,
+    Leaf,
+    TrieNode,
+    NibbleSlice
+} from "./trie/Node.sol";
 import {Option} from "./trie/Option.sol";
-import {NibbleSlice, NibbleSliceOps} from "./trie/NibbleSlice.sol";
+import {NibbleSliceOps} from "./trie/NibbleSlice.sol";
 import {TrieDB} from "./trie/TrieDB.sol";
 import {PolkadotTrieDb} from "./trie/polkadot/PolkadotTrieDb.sol";
 
@@ -24,9 +32,12 @@ import {PolkadotTrieDb} from "./trie/polkadot/PolkadotTrieDb.sol";
  * @title Polkadot Merkle Patricia Trie verifier
  * @author Polytope Labs
  * @dev Verifies merkle-patricia proofs produced by substrate/polkadot state tries.
- * @dev refer to research for more info. https://research.polytope.technology/state-(machine)-proofs
+ * @dev refer to research for more info. https://research.polytope.technology/state-machine-proofs
  */
 library PolkadotTrie {
+    using NibbleSliceOps for NibbleSlice;
+    using PolkadotTrieDb for NodeKind;
+
     // Outcome of a successfully verified polkadot merkle-patricia proof.
     // Substrate/FRAME allows storing empty values (e.g. `()` for set membership),
     // so `keyPresent` distinguishes "key exists with empty value" from "key absent".
@@ -74,25 +85,20 @@ library PolkadotTrie {
                 NodeHandle memory nextNode;
 
                 if (TrieDB.isLeaf(node)) {
-                    Leaf memory leaf = PolkadotTrieDb.decodeLeaf(node);
-                    if (NibbleSliceOps.eq(leaf.key, keyNibbles)) {
+                    Leaf memory leaf = node.decodeLeaf();
+                    if (leaf.key.eq(keyNibbles)) {
                         values[i].value = TrieDB.load(nodes, leaf.value);
                         values[i].keyPresent = true;
                     }
                     break;
                 } else if (TrieDB.isNibbledBranch(node)) {
-                    NibbledBranch memory nibbled = PolkadotTrieDb
-                        .decodeNibbledBranch(node);
-                    uint256 nibbledBranchKeyLength = NibbleSliceOps.len(
-                        nibbled.key
-                    );
-                    if (!NibbleSliceOps.startsWith(keyNibbles, nibbled.key)) {
+                    NibbledBranch memory nibbled = node.decodeNibbledBranch();
+                    uint256 nibbledBranchKeyLength = nibbled.key.len();
+                    if (!keyNibbles.startsWith(nibbled.key)) {
                         break;
                     }
 
-                    if (
-                        NibbleSliceOps.len(keyNibbles) == nibbledBranchKeyLength
-                    ) {
+                    if (keyNibbles.len() == nibbledBranchKeyLength) {
                         values[i].keyPresent = true;
                         if (Option.isSome(nibbled.value)) {
                             values[i].value = TrieDB.load(
@@ -102,18 +108,12 @@ library PolkadotTrie {
                         }
                         break;
                     } else {
-                        uint256 index = NibbleSliceOps.at(
-                            keyNibbles,
-                            nibbledBranchKeyLength
-                        );
+                        uint256 index = keyNibbles.at(nibbledBranchKeyLength);
                         NodeHandleOption memory handle = nibbled.children[
                             index
                         ];
                         if (Option.isSome(handle)) {
-                            keyNibbles = NibbleSliceOps.mid(
-                                keyNibbles,
-                                nibbledBranchKeyLength + 1
-                            );
+                            keyNibbles = keyNibbles.mid(nibbledBranchKeyLength + 1);
                             nextNode = handle.value;
                         } else {
                             break;
