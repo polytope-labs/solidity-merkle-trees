@@ -32,6 +32,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run Forge build
         run: |
@@ -74,6 +75,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install cargo-fuzz
         # Pin: latest cargo-fuzz (0.13+) pulls clap_builder requiring the
