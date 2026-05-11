@@ -14,8 +14,15 @@
 // limitations under the License.
 pragma solidity ^0.8.20;
 
-import {NibbleSlice} from "./NibbleSlice.sol";
-import {ByteSlice} from "./Bytes.sol";
+struct ByteSlice {
+    bytes data;
+    uint256 offset;
+}
+
+struct NibbleSlice {
+    bytes data;
+    uint256 offset;
+}
 
 // This is an enum for the different node types.
 struct NodeKind {
@@ -72,4 +79,12 @@ struct Leaf {
 struct TrieNode {
     bytes32 hash;
     bytes node;
+}
+
+// Outcome of a successfully verified merkle-patricia proof.
+struct StorageValue {
+    // the storage key
+    bytes key;
+    // the encoded value
+    bytes value;
 }

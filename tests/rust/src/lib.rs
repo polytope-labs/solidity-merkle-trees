@@ -6,8 +6,8 @@ pub mod merkle_multi_proof;
 pub mod merkle_patricia;
 pub mod multi_proof_utils;
 
+use ::merkle_mountain_range::{Error, Merge};
 use alloy_primitives::keccak256;
-use ckb_merkle_mountain_range::{Error, Merge};
 use rs_merkle::Hasher;
 
 #[derive(Clone)]

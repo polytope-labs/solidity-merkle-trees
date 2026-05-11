@@ -8,7 +8,7 @@ use codec::Decode;
 use hex_literal::hex;
 use primitive_types::H256;
 use sp_core::KeccakHasher;
-use sp_trie::{LayoutV0, MemoryDB, NodeCodec, StorageProof};
+use sp_trie::{LayoutV0, LayoutV1, MemoryDB, NodeCodec, StorageProof};
 use std::collections::HashSet;
 use trie_db::{
     DBValue, Hasher, NodeCodec as NodeCodecT, Recorder, Trie, TrieDBBuilder, TrieDBMutBuilder,
@@ -19,6 +19,12 @@ sol! {
     struct StorageValue {
         bytes key;
         bytes value;
+    }
+
+    struct PolkadotStorageValue {
+        bytes key;
+        bytes value;
+        bool keyPresent;
     }
 
     struct SolNibbleSlice {
@@ -56,7 +62,7 @@ sol! {
         SolByteSlice data;
     }
 
-    function VerifyKeys(bytes32 root, bytes[] proof, bytes[] keys) external pure returns (StorageValue[]);
+    function VerifyKeys(bytes32 root, bytes[] proof, bytes[] keys) external pure returns (PolkadotStorageValue[]);
     function VerifyEthereum(bytes32 root, bytes[] proof, bytes[] keys) external pure returns (StorageValue[]);
     function decodeNodeKind(bytes node) external pure returns (SolNodeKind);
     function decodeNibbledBranch(bytes node) external;
@@ -338,8 +344,8 @@ fn generate_proof<L: TrieLayout>(
 }
 
 #[test]
-fn test_merkle_patricia_trie_layout_v0() {
-    let (root, proof, entries) = generate_proof::<LayoutV0<KeccakHasher>>();
+fn test_merkle_patricia_trie_layout_v1() {
+    let (root, proof, entries) = generate_proof::<LayoutV1<KeccakHasher>>();
     let (mut runner, addr) = setup();
 
     for (key, value) in entries {
@@ -362,6 +368,110 @@ fn test_merkle_patricia_trie_layout_v0() {
     let result = runner.call_raw(addr, call.abi_encode());
     let decoded = VerifyKeysCall::abi_decode_returns(&result, true).unwrap();
     assert_eq!(decoded._0[0].value.len(), 0);
+}
+
+#[test]
+fn test_polkadot_trie_empty_value_membership() {
+    // Build a trie where some keys have empty values (simulating Substrate `()` storage).
+    // Verify that keyPresent distinguishes "key with empty value" from "absent key".
+    let (mut runner, addr) = setup();
+
+    let keys_with_values: Vec<(Vec<u8>, Vec<u8>)> = vec![
+        (b"alpha".to_vec(), b"hello".to_vec()),
+        (b"beta".to_vec(), vec![]), // empty value — key is present
+        (b"gamma".to_vec(), b"world".to_vec()),
+        (b"delta".to_vec(), vec![]), // empty value — key is present
+    ];
+
+    let all_keys: Vec<Vec<u8>> = keys_with_values.iter().map(|(k, _)| k.clone()).collect();
+    let absent_key = b"missing".to_vec();
+
+    let (db, root) = {
+        let mut db = <MemoryDB<KeccakHasher>>::default();
+        let mut root = Default::default();
+        {
+            let mut trie =
+                TrieDBMutBuilder::<LayoutV1<KeccakHasher>>::new(&mut db, &mut root).build();
+            for (key, value) in &keys_with_values {
+                trie.insert(key, value).unwrap();
+            }
+        }
+        (db, root)
+    };
+
+    let proof = {
+        let mut recorder = Recorder::<LayoutV1<KeccakHasher>>::new();
+        let trie_db = TrieDBBuilder::<LayoutV1<KeccakHasher>>::new(&db, &root)
+            .with_recorder(&mut recorder)
+            .build();
+        // Touch all keys (present and absent) to populate the recorder
+        for key in &all_keys {
+            let _ = trie_db.get(key).unwrap();
+        }
+        let _ = trie_db.get(&absent_key).unwrap();
+        recorder
+            .drain()
+            .into_iter()
+            .map(|f| f.data)
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect::<Vec<_>>()
+    };
+
+    // Verify keys with non-empty values: keyPresent = true, value non-empty
+    for (key, expected_value) in &keys_with_values {
+        if expected_value.is_empty() {
+            continue;
+        }
+        let call = VerifyKeysCall {
+            root: FixedBytes(root.into()),
+            proof: proof.clone().into_iter().map(Into::into).collect(),
+            keys: vec![key.clone().into()],
+        };
+        let result = runner.call_raw(addr, call.abi_encode());
+        let decoded = VerifyKeysCall::abi_decode_returns(&result, true).unwrap();
+        assert!(
+            decoded._0[0].keyPresent,
+            "key {:?} should be present",
+            String::from_utf8_lossy(key)
+        );
+        assert_eq!(decoded._0[0].value.to_vec(), *expected_value);
+    }
+
+    // Verify keys with empty values: keyPresent = true, value empty
+    for (key, expected_value) in &keys_with_values {
+        if !expected_value.is_empty() {
+            continue;
+        }
+        let call = VerifyKeysCall {
+            root: FixedBytes(root.into()),
+            proof: proof.clone().into_iter().map(Into::into).collect(),
+            keys: vec![key.clone().into()],
+        };
+        let result = runner.call_raw(addr, call.abi_encode());
+        let decoded = VerifyKeysCall::abi_decode_returns(&result, true).unwrap();
+        assert!(
+            decoded._0[0].keyPresent,
+            "key {:?} has empty value but should still be present",
+            String::from_utf8_lossy(key)
+        );
+        assert!(
+            decoded._0[0].value.is_empty(),
+            "key {:?} should have empty value",
+            String::from_utf8_lossy(key)
+        );
+    }
+
+    // Verify absent key: keyPresent = false, value empty
+    let call = VerifyKeysCall {
+        root: FixedBytes(root.into()),
+        proof: proof.into_iter().map(Into::into).collect(),
+        keys: vec![absent_key.clone().into()],
+    };
+    let result = runner.call_raw(addr, call.abi_encode());
+    let decoded = VerifyKeysCall::abi_decode_returns(&result, true).unwrap();
+    assert!(!decoded._0[0].keyPresent, "absent key should not be present");
+    assert!(decoded._0[0].value.is_empty());
 }
 
 #[test]

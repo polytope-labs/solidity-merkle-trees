@@ -2,10 +2,11 @@
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
-import {MerklePatricia} from "../../src/MerklePatricia.sol";
-import {SubstrateTrieDB} from "../../src/trie/substrate/SubstrateTrieDB.sol";
-import {NodeKind, NibbledBranch, Leaf} from "../../src/trie/Node.sol";
-import {ScaleCodec} from "../../src/trie/substrate/ScaleCodec.sol";
+import {PolkadotTrie} from "../../src/PolkadotTrie.sol";
+import {EthereumTrie} from "../../src/EthereumTrie.sol";
+import {PolkadotTrieDb} from "../../src/trie/polkadot/PolkadotTrieDb.sol";
+import {NodeKind, NibbledBranch, Leaf, StorageValue} from "../../src/trie/Node.sol";
+import {ScaleCodec} from "../../src/trie/polkadot/ScaleCodec.sol";
 import {NibbleSlice, NibbleSliceOps} from "../../src/trie/NibbleSlice.sol";
 import {ByteSlice} from "../../src/trie/Bytes.sol";
 
@@ -26,8 +27,8 @@ contract MerklePatriciaTest is Test {
         ] = hex"9f00c365c3cf59d671eb72da0e7a4113c41002505f0e7b9012096b41c4eb3aaf947f6ea429080000685f0f1f0515f462cdcf84e0f1d6045dfcbb2035e90c7f86010000";
 
         bytes32 root = hex"6b5710000eccbd59b6351fc2eb53ff2c1df8e0f816f7186ddd309ca85e8798dd";
-        bytes memory value = MerklePatricia
-        .VerifySubstrateProof(root, proof, keys)[0].value;
+        bytes memory value = PolkadotTrie
+        .VerifyProof(root, proof, keys)[0].value;
         uint256 timestamp = ScaleCodec.decodeUint256(value);
         assert(timestamp == 1677168798005);
     }
@@ -43,12 +44,104 @@ contract MerklePatriciaTest is Test {
         ] = hex"8100110034402c280401000b5db899138701804f1dc18c0729c67df638dcb17ff86372be663d0d85339a845510498c6c42fc3b";
 
         bytes32 root = hex"9ec7b55dd538898d95dec220abf8f60e8c626bdb4a348d117d1ecaa564cb565c";
-        bytes memory value = MerklePatricia
-        .VerifySubstrateProof(root, proof, keys)[0].value;
+        bytes memory value = PolkadotTrie
+        .VerifyProof(root, proof, keys)[0].value;
         assertEq(
             ScaleCodec.decodeUintCompact(ByteSlice(value, 4)),
             1679661054045
         );
+    }
+
+    // Empty Ethereum trie root (keccak256(rlp("""")) ). All keys must resolve
+    // to non-membership without reverting on the empty proof.
+    function testEthereumEmptyTrieRoot() public pure {
+        bytes32 emptyRoot = hex"56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421";
+
+        bytes[] memory keys = new bytes[](2);
+        keys[0] = hex"75b20eef8615de99c108b05f0dbda081c91897128caa336d75dffb97c4132b4d";
+        keys[1] = hex"00";
+
+        bytes[] memory proof = new bytes[](0);
+
+        StorageValue[] memory values = EthereumTrie
+            .VerifyProof(emptyRoot, proof, keys);
+
+        assertEq(values.length, 2);
+        assertEq(values[0].key, keys[0]);
+        assertEq(values[0].value.length, 0);
+        assertEq(values[1].key, keys[1]);
+        assertEq(values[1].value.length, 0);
+    }
+
+    // Inline child references: a branch whose child encoding is shorter than
+    // 32 bytes embeds the full RLP of the child rather than a hash. The
+    // verifier must follow the inline child instead of treating it as absent.
+    //
+    // Trie shape (single key 0x12 -> "v"):
+    //   root branch: child[1] = inline leaf encoding
+    //   inline leaf: key nibble [2] (compact "0x32"), value "v"
+    function testEthereumInlineBranchChild() public pure {
+        // Inline leaf RLP encoding: list[ encoded_key = 0x32, value = 0x76 ].
+        // 0x32 = leaf-prefix(3) | nibble(2) for an odd-length key with one nibble.
+        // Both items self-encode (< 0x80). Total inline leaf = 3 bytes < 32 → embedded.
+        bytes memory inlineLeaf = hex"c23276";
+        // Branch with 17 items. Child[1] = inlineLeaf (raw RLP list).
+        // All other slots = 0x80 (empty), value slot = 0x80. Payload = 19 bytes.
+        bytes memory branch = abi.encodePacked(
+            hex"d3",
+            hex"80", inlineLeaf,
+            hex"80808080808080808080808080",
+            hex"80",
+            hex"80"
+        );
+        bytes32 root = keccak256(branch);
+
+        bytes[] memory keys = new bytes[](1);
+        keys[0] = hex"12";
+
+        bytes[] memory proof = new bytes[](1);
+        proof[0] = branch;
+
+        StorageValue[] memory values = EthereumTrie
+            .VerifyProof(root, proof, keys);
+
+        assertEq(values[0].value, hex"76");
+    }
+
+    // Issue #6 regression: odd-length leaf paths must not alias different keys.
+    //
+    // Trie with a single key 0x12 -> "v". The leaf has an odd compact path
+    // (one nibble: 2), reached via branch child[1]. Before the fix, querying
+    // key 0x12 and 0x1F would both match because the first nibble of the
+    // odd leaf suffix was dropped from both the decoded leaf and the queried key.
+    function testEthereumOddLeafNoAlias() public pure {
+        // Reuse the inline branch from testEthereumInlineBranchChild:
+        // root branch with child[1] = inline leaf for key 0x12, value 0x76.
+        bytes memory inlineLeaf = hex"c23276";
+        bytes memory branch = abi.encodePacked(
+            hex"d3",
+            hex"80", inlineLeaf,
+            hex"80808080808080808080808080",
+            hex"80",
+            hex"80"
+        );
+        bytes32 root = keccak256(branch);
+
+        bytes[] memory proof = new bytes[](1);
+        proof[0] = branch;
+
+        // Correct key 0x12 should return value
+        bytes[] memory correctKey = new bytes[](1);
+        correctKey[0] = hex"12";
+        StorageValue[] memory found = EthereumTrie.VerifyProof(root, proof, correctKey);
+        assertEq(found[0].value, hex"76");
+
+        // Different key 0x1F (differs at the nibble that was previously dropped)
+        // should return empty (non-membership)
+        bytes[] memory wrongKey = new bytes[](1);
+        wrongKey[0] = hex"1f";
+        StorageValue[] memory notFound = EthereumTrie.VerifyProof(root, proof, wrongKey);
+        assertEq(notFound[0].value.length, 0, "key 0x1F must not alias key 0x12");
     }
 
     function testEthereumMerklePatricia() public {
@@ -93,35 +186,35 @@ contract MerklePatriciaTest is Test {
         bytes32 root,
         bytes[] memory proof,
         bytes[] memory keys
-    ) public pure returns (MerklePatricia.StorageValue[] memory) {
-        return MerklePatricia.VerifySubstrateProof(root, proof, keys);
+    ) public pure returns (PolkadotTrie.StorageValue[] memory) {
+        return PolkadotTrie.VerifyProof(root, proof, keys);
     }
 
     function VerifyEthereum(
         bytes32 root,
         bytes[] memory proof,
         bytes[] memory keys
-    ) public pure returns (MerklePatricia.StorageValue[] memory) {
-        return MerklePatricia.VerifyEthereumProof(root, proof, keys);
+    ) public pure returns (StorageValue[] memory) {
+        return EthereumTrie.VerifyProof(root, proof, keys);
     }
 
     function decodeNodeKind(
         bytes memory node
     ) public pure returns (NodeKind memory) {
-        return SubstrateTrieDB.decodeNodeKind(node);
+        return PolkadotTrieDb.decodeNodeKind(node);
     }
 
     function decodeNibbledBranch(
         bytes memory node
     ) external pure returns (NibbledBranch memory) {
         return
-            SubstrateTrieDB.decodeNibbledBranch(
-                SubstrateTrieDB.decodeNodeKind(node)
+            PolkadotTrieDb.decodeNibbledBranch(
+                PolkadotTrieDb.decodeNodeKind(node)
             );
     }
 
     function decodeLeaf(bytes memory node) external pure returns (Leaf memory) {
-        return SubstrateTrieDB.decodeLeaf(SubstrateTrieDB.decodeNodeKind(node));
+        return PolkadotTrieDb.decodeLeaf(PolkadotTrieDb.decodeNodeKind(node));
     }
 
     function nibbleLen(

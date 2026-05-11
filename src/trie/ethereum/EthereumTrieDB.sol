@@ -26,15 +26,19 @@ library EthereumTrieDB {
     using RLPReader for RLPReader.RLPItem;
     using RLPReader for RLPReader.Iterator;
 
-    bytes constant HASHED_NULL_NODE =
-        hex"56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421";
+    // keccak256(rlp("")) — root hash of an empty Ethereum trie.
+    bytes32 constant HASHED_NULL_NODE =
+        0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421;
+
+    // Canonical RLP encoding of the empty trie node (an empty string).
+    bytes constant EMPTY_NODE_ENCODING = hex"80";
 
     function decodeNodeKind(
         bytes memory encoded
-    ) external pure returns (NodeKind memory) {
+    ) internal pure returns (NodeKind memory) {
         NodeKind memory node;
         ByteSlice memory input = ByteSlice(encoded, 0);
-        if (Bytes.equals(encoded, HASHED_NULL_NODE)) {
+        if (Bytes.equals(encoded, EMPTY_NODE_ENCODING)) {
             node.isEmpty = true;
             return node;
         }
@@ -67,7 +71,7 @@ library EthereumTrieDB {
 
     function decodeLeaf(
         NodeKind memory node
-    ) external pure returns (Leaf memory) {
+    ) internal pure returns (Leaf memory) {
         Leaf memory leaf;
         RLPReader.RLPItem[] memory decoded = node
             .data
@@ -75,8 +79,13 @@ library EthereumTrieDB {
             .toRlpItem()
             .toList();
         bytes memory data = decoded[1].toBytes();
-        // Remove the first byte, which is the prefix and not present in the user provided key
-        leaf.key = NibbleSlice(Bytes.substr(decoded[0].toBytes(), 1), 0);
+        uint8 isOdd = uint8(decoded[0].toBytes()[0] >> 4) & 0x01;
+        // For even: strip the full prefix byte (prefix nibble + padding nibble), offset 0.
+        // For odd: keep the byte containing the first path nibble, offset 1 to skip the prefix nibble.
+        leaf.key = NibbleSlice(
+            Bytes.substr(decoded[0].toBytes(), (isOdd + 1) % 2),
+            isOdd
+        );
         leaf.value = NodeHandle(false, bytes32(0), true, data);
 
         return leaf;
@@ -84,32 +93,26 @@ library EthereumTrieDB {
 
     function decodeExtension(
         NodeKind memory node
-    ) external pure returns (Extension memory) {
+    ) internal pure returns (Extension memory) {
         Extension memory extension;
         RLPReader.RLPItem[] memory decoded = node
             .data
             .data
             .toRlpItem()
             .toList();
-        bytes memory data = decoded[1].toBytes();
         uint8 isOdd = uint8(decoded[0].toBytes()[0] >> 4) & 0x01;
         // Remove the first byte, which is the prefix and not present in the user provided key
         extension.key = NibbleSlice(
             Bytes.substr(decoded[0].toBytes(), (isOdd + 1) % 2),
             isOdd
         );
-        extension.node = NodeHandle(
-            true,
-            Bytes.toBytes32(data),
-            false,
-            new bytes(0)
-        );
+        extension.node = decodeChildHandle(decoded[1]);
         return extension;
     }
 
     function decodeBranch(
         NodeKind memory node
-    ) external pure returns (Branch memory) {
+    ) internal pure returns (Branch memory) {
         Branch memory branch;
         RLPReader.RLPItem[] memory decoded = node
             .data
@@ -120,19 +123,7 @@ library EthereumTrieDB {
         NodeHandleOption[16] memory childrens;
 
         for (uint256 i = 0; i < 16; i++) {
-            bytes memory dataAsBytes = decoded[i].toBytes();
-            if (dataAsBytes.length != 32) {
-                childrens[i] = NodeHandleOption(
-                    false,
-                    NodeHandle(false, bytes32(0), false, new bytes(0))
-                );
-            } else {
-                bytes32 data = Bytes.toBytes32(dataAsBytes);
-                childrens[i] = NodeHandleOption(
-                    true,
-                    NodeHandle(true, data, false, new bytes(0))
-                );
-            }
+            childrens[i] = decodeChildOption(decoded[i]);
         }
         if (isEmpty(decoded[16].toBytes())) {
             branch.value = NodeHandleOption(
@@ -152,5 +143,46 @@ library EthereumTrieDB {
 
     function isEmpty(bytes memory item) internal pure returns (bool) {
         return item.length > 0 && (item[0] == 0xc0 || item[0] == 0x80);
+    }
+
+    // A branch child slot is one of: an empty string (absent), a 32-byte hash
+    // reference, or an embedded RLP-encoded child node when its encoding is
+    // shorter than 32 bytes. See https://ethereum.org/developers/docs/data-structures-and-encoding/patricia-merkle-trie/.
+    function decodeChildOption(
+        RLPReader.RLPItem memory item
+    ) private pure returns (NodeHandleOption memory) {
+        if (RLPReader.isList(item)) {
+            return NodeHandleOption(
+                true,
+                NodeHandle(false, bytes32(0), true, RLPReader.toRlpBytes(item))
+            );
+        }
+        bytes memory data = item.toBytes();
+        if (data.length == 0) {
+            return NodeHandleOption(
+                false,
+                NodeHandle(false, bytes32(0), false, new bytes(0))
+            );
+        }
+        if (data.length == 32) {
+            return NodeHandleOption(
+                true,
+                NodeHandle(true, Bytes.toBytes32(data), false, new bytes(0))
+            );
+        }
+        revert("Invalid branch child reference");
+    }
+
+    // Extensions always reference a child (never absent). The reference is
+    // either a 32-byte hash or an embedded RLP-encoded node.
+    function decodeChildHandle(
+        RLPReader.RLPItem memory item
+    ) private pure returns (NodeHandle memory) {
+        if (RLPReader.isList(item)) {
+            return NodeHandle(false, bytes32(0), true, RLPReader.toRlpBytes(item));
+        }
+        bytes memory data = item.toBytes();
+        require(data.length == 32, "Invalid extension child reference");
+        return NodeHandle(true, Bytes.toBytes32(data), false, new bytes(0));
     }
 }

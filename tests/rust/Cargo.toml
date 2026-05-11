@@ -29,8 +29,13 @@ indexmap = "=2.7.1"
 ruint = "=1.12.3"
 
 # Merkle libraries
-ckb-merkle-mountain-range = { git = "https://github.com/polytope-labs/merkle-mountain-range", branch = "seun/simplified-mmr" }
-rs_merkle = { git = "https://github.com/polytope-labs/rs-merkle", branch = "seun/2d-merkle-proofs" }
+[dependencies.rs_merkle]
+git = "https://github.com/polytope-labs/rs-merkle"
+rev = "f14a8aaec1a617dd5f8d032198821d658805ba92"
+
+[dependencies.merkle-mountain-range]
+package = "polkadot-ckb-merkle-mountain-range"
+version = "0.8.2"
 
 # Prevent this from interfering with workspaces
 [workspace]

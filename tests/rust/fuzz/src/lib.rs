@@ -11,12 +11,13 @@ use trie_db::{
 };
 
 sol! {
-    struct StorageValue {
+    struct PolkadotStorageValue {
         bytes key;
         bytes value;
+        bool keyPresent;
     }
 
-    function VerifyKeys(bytes32 root, bytes[] proof, bytes[] keys) external pure returns (StorageValue[]);
+    function VerifyKeys(bytes32 root, bytes[] proof, bytes[] keys) external pure returns (PolkadotStorageValue[]);
 }
 
 fn data_sorted_unique(input: Vec<(Vec<u8>, Vec<u8>)>) -> Vec<(Vec<u8>, Vec<u8>)> {

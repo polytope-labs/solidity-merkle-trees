@@ -15,11 +15,7 @@
 pragma solidity ^0.8.20;
 
 import {Memory} from "./Memory.sol";
-
-struct ByteSlice {
-    bytes data;
-    uint256 offset;
-}
+import {ByteSlice} from "./Node.sol";
 
 library Bytes {
     uint256 internal constant BYTES_HEADER_SIZE = 32;
