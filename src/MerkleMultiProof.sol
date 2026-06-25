@@ -41,6 +41,8 @@ library MerkleMultiProof {
     error LeafIndexOutOfBounds();
     // @dev Thrown when leaves are not strictly sorted by index (catches duplicates too).
     error UnsortedLeaves();
+    // @dev Thrown when leaves are unconsumed.
+    error UnconsumedLeaves(uint256 len);
 
     /**
      * @notice Verify a Merkle Multi Proof
@@ -168,6 +170,9 @@ library MerkleMultiProof {
             len = j;
             nodesAtLevel = (nodesAtLevel + 1) >> 1;
         }
+
+        // invariant: all leaves must have been consumed.
+        if (len != 1) revert UnconsumedLeaves(len);
 
         return hashes[0];
     }
