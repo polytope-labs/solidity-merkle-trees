@@ -182,6 +182,61 @@ contract MerklePatriciaTest is Test {
         assertEq(value, expectedOutput);
     }
 
+    // A key that ends exactly at a branch node is present only when the
+    // branch carries a value. A branch without a value slot must report
+    // non-membership for that key.
+    //
+    // Trie shape: nibbles [A,B] end at a branch; [A,B,5,C] -> "v" (0x76).
+    //   branch-without-value: header 0x82 = BRANCH_WITHOUT (0x80) | size 2,
+    //   key byte 0xAB, bitmap LE 0x0020 (child index 5), child[5] holds the
+    //   compact length 0x10 + inline leaf `41 0C 04 76` (odd-size leaf key
+    //   [C] left-padded to 0x0C, compact len 0x04, value 0x76).
+    function testPolkadotValuelessBranchKeyAbsent() public pure {
+        bytes memory branch = hex"82ab200010410c0476";
+        bytes32 root = keccak256(branch);
+
+        bytes[] memory keys = new bytes[](2);
+        keys[0] = hex"ab"; // ends at the valueless branch -> absent
+        keys[1] = hex"ab5c"; // continues through child[5] -> leaf "v"
+
+        bytes[] memory proof = new bytes[](1);
+        proof[0] = branch;
+
+        PolkadotTrie.StorageValue[] memory values = VerifyKeys(
+            root,
+            proof,
+            keys
+        );
+
+        assertFalse(values[0].keyPresent);
+        assertEq(values[0].value.length, 0);
+        assertTrue(values[1].keyPresent);
+        assertEq(values[1].value, hex"76");
+    }
+
+    // Same layout with a value slot on the branch: header 0xC2 =
+    // BRANCH_WITH (0xC0) | size 2, compact len 0x04 + value 0x76 between
+    // the bitmap and the children. The exact key is present.
+    function testPolkadotValuedBranchKeyPresent() public pure {
+        bytes memory branch = hex"c2ab2000047610410c0476";
+        bytes32 root = keccak256(branch);
+
+        bytes[] memory keys = new bytes[](1);
+        keys[0] = hex"ab";
+
+        bytes[] memory proof = new bytes[](1);
+        proof[0] = branch;
+
+        PolkadotTrie.StorageValue[] memory values = VerifyKeys(
+            root,
+            proof,
+            keys
+        );
+
+        assertTrue(values[0].keyPresent);
+        assertEq(values[0].value, hex"76");
+    }
+
     function VerifyKeys(
         bytes32 root,
         bytes[] memory proof,

@@ -99,8 +99,8 @@ library PolkadotTrie {
                     }
 
                     if (keyNibbles.len() == nibbledBranchKeyLength) {
-                        values[i].keyPresent = true;
                         if (Option.isSome(nibbled.value)) {
+                            values[i].keyPresent = true;
                             values[i].value = TrieDB.load(
                                 nodes,
                                 nibbled.value.value
